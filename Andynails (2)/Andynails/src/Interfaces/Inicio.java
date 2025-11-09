@@ -286,7 +286,7 @@ public class Inicio extends javax.swing.JFrame {
         //para arir uñas
         // Abrir catálogo de uñas - siempre permitido ver
 
-        NewJCatalogoUñas catalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas0 catalogoUñas = new NewJCatalogoUñas0();
         catalogoUñas.setVisible(true);
         // Si no está logueado, deshabilitar la selección en el catálogo
         if (!andynails.SesionUsuario.sesionActiva()) {
@@ -306,7 +306,7 @@ public class Inicio extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
         // Abrir catálogo de peinados - siempre permitido ver
-       NewJCatalogoPeinado catalogoPeinado = new NewJCatalogoPeinado();
+       NewJCatalogoPeinado0 catalogoPeinado = new NewJCatalogoPeinado0();
         catalogoPeinado.setVisible(true);
 
         // Si no está logueado, deshabilitar la selección en el catálogo
@@ -324,7 +324,7 @@ public class Inicio extends javax.swing.JFrame {
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
         // Abrir catálogo de maquillaje - siempre permitido ver
-         NewJCatalogoMaq catalogoMaq = new NewJCatalogoMaq();
+         NewJCatalogoMaq0 catalogoMaq = new NewJCatalogoMaq0();
          catalogoMaq.setVisible(true);
 
         // Si no está logueado, deshabilitar la selección en el catálogo

@@ -491,7 +491,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas0 NewJCatalogoUñas = new NewJCatalogoUñas0();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -500,7 +500,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
         //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -509,7 +509,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
         //para maquillaje
-        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq0 NewJCatalogoMaq = new NewJCatalogoMaq0();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
 

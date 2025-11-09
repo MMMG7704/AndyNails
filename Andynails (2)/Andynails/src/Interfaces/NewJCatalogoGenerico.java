@@ -4,7 +4,6 @@ import javax.swing.ImageIcon;
 import java.awt.Image;
 
 import andynails.ConexionBD;
-import andynails.RedesSociales;
 import javax.swing.JFrame;
 
 /*
@@ -27,8 +26,7 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
      */
     public NewJCatalogoGenerico() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-        conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
+        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         //iniciarCarruseles();
 
@@ -48,9 +46,9 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
-        WPP = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         labelCategoria2 = new java.awt.Label();
         labelCategoria3 = new java.awt.Label();
@@ -96,11 +94,11 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
 
         jPanel3.setBackground(new java.awt.Color(204, 0, 204));
 
-        INS.setText("INS");
+        jLabel3.setText("INS");
 
-        FACE.setText("FACE");
+        jLabel6.setText("FACE");
 
-        WPP.setText("WPP");
+        jLabel7.setText("WPP");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -108,21 +106,21 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(166, 166, 166)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(136, 136, 136)
-                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(175, 175, 175)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(469, Short.MAX_VALUE))
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(692, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
-                    .addComponent(WPP)
-                    .addComponent(FACE))
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel7)
+                    .addComponent(jLabel6))
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
@@ -272,6 +270,9 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
                                     .addComponent(lblDesc3))))
                         .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
             .addGroup(jPanel2Layout.createSequentialGroup()
+                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
+            .addGroup(jPanel2Layout.createSequentialGroup()
                 .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(460, 460, 460)
@@ -287,9 +288,6 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
                         .addGap(266, 266, 266)
                         .addComponent(labelCategoria3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(jPanel2Layout.createSequentialGroup()
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -457,7 +455,7 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
         //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas0 NewJCatalogoUñas = new NewJCatalogoUñas0();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -468,7 +466,7 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
         // TODO add your handling code here:
 
         //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -598,6 +596,30 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
         //</editor-fold>
         //</editor-fold>
         //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -608,14 +630,14 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel FACE;
-    private javax.swing.JLabel INS;
-    private javax.swing.JLabel WPP;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;

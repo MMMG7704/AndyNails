@@ -682,21 +682,21 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas(); // <-- PASAMOS "this"
+        NewJCatalogoUñas0 NewJCatalogoUñas = new NewJCatalogoUñas0(); // <-- PASAMOS "this"
         NewJCatalogoUñas.setVisible(true);
            this.dispose();
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
-         NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado(); // <-- PASAMOS "this"
+         NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0(); // <-- PASAMOS "this"
         NewJCatalogoPeinado.setVisible(true);
            this.dispose();
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-          NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq(); // <-- PASAMOS "this"
+          NewJCatalogoMaq0 NewJCatalogoMaq = new NewJCatalogoMaq0(); // <-- PASAMOS "this"
         NewJCatalogoMaq.setVisible(true);
            this.dispose();
     }//GEN-LAST:event_jMenuItem3ActionPerformed
