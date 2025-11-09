@@ -3,6 +3,7 @@ package Interfaces;
 import java.awt.*;
 import java.awt.event.*;
 import andynails.ConexionBD;
+import andynails.RedesSociales;
 import java.awt.Color;
 import java.awt.Image;
 import javax.swing.ImageIcon;
@@ -61,6 +62,8 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         cargarCategoriasDesdeBD();
         iniciarCarrusel(); 
+                        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+
 
     }
       public void deshabilitarSeleccion() {
@@ -218,9 +221,9 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         jLabel9 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         labelCategoria1 = new java.awt.Label();
         labelCategoria3 = new java.awt.Label();
@@ -268,11 +271,11 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
         jPanel3.setBackground(new java.awt.Color(204, 0, 204));
 
-        jLabel3.setText("INS");
+        INS.setText("INS");
 
-        jLabel6.setText("FACE");
+        FACE.setText("FACE");
 
-        jLabel7.setText("WPP");
+        WPP.setText("WPP");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -280,11 +283,11 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(345, 345, 345)
-                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(167, 167, 167)
-                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(118, 118, 118)
-                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -292,9 +295,9 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel7)
-                    .addComponent(jLabel6))
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
@@ -629,7 +632,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
         //para abrir peinados
-        NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0();
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -638,7 +641,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
         //para maquillaje
-        NewJCatalogoMaq0 NewJCatalogoMaq = new NewJCatalogoMaq0();
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -724,13 +727,13 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel FACE;
+    private javax.swing.JLabel INS;
+    private javax.swing.JLabel WPP;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu2;

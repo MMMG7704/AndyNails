@@ -220,7 +220,7 @@ ConexionBD conexion;
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
         //para abrir peinados
-        NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0();
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -229,7 +229,7 @@ ConexionBD conexion;
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
       //para arir uñas
-        NewJCatalogoUñas0 NewJCatalogoUñas = new NewJCatalogoUñas0();
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
         NewJCatalogoUñas.setVisible(true); 
         this.dispose(); // cierra la actual
 
@@ -238,7 +238,7 @@ ConexionBD conexion;
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
 //para maquillaje
-        NewJCatalogoMaq0 NewJCatalogoMaq = new NewJCatalogoMaq0();
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
 

@@ -457,7 +457,7 @@ public class NewJCatalogoGenerico0 extends javax.swing.JFrame {
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
         //para arir uñas
-        NewJCatalogoUñas0 NewJCatalogoUñas = new NewJCatalogoUñas0();
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -468,7 +468,7 @@ public class NewJCatalogoGenerico0 extends javax.swing.JFrame {
         // TODO add your handling code here:
 
         //para abrir peinados
-        NewJCatalogoPeinado0 NewJCatalogoPeinado = new NewJCatalogoPeinado0();
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -487,7 +487,7 @@ public class NewJCatalogoGenerico0 extends javax.swing.JFrame {
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
         //para maquillaje
-        NewJCatalogoGenerico0 NewJCatalogoMaq = new NewJCatalogoGenerico0();
+        NewJCatalogoGenerico NewJCatalogoMaq = new NewJCatalogoGenerico();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
 
