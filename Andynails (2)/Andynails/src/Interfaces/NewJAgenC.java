@@ -1347,13 +1347,13 @@ private void insertarCitaYServicios(int idPago) {
 
         switch (servicioSeleccionado) {
             case "Uñas":
-                new NewJCatalogoUñas0().setVisible(true);
+                new NewJCatalogoUñas().setVisible(true);
                 break;
             case "Maquillaje":
-                new NewJCatalogoMaq0().setVisible(true);
+                new NewJCatalogoMaq().setVisible(true);
                 break;
             case "Peinados":
-                new NewJCatalogoPeinado0().setVisible(true);
+                new NewJCatalogoPeinado().setVisible(true);
                 break;
         }
 
