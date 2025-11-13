@@ -7,6 +7,19 @@ package Interfaces;
 import andynails.ConexionBD;
 import andynails.RedesSociales;
 import javax.swing.JFrame;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
+import java.sql.Statement;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Date;
+
+
+
+
 
 /**
  *
@@ -14,30 +27,187 @@ import javax.swing.JFrame;
  */
 public class NewJAgendarcita extends javax.swing.JFrame {
 ConexionBD conexion;
+private int idCita = -1;
+
+
 
     /**
      * Creates new form NewJCitaAgenda
      */
+
+// Constructor principal
+ public NewJAgendarcita(int idCita) {
+        initComponents();
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+
+        
+        txtnombrecliente.setEditable(false);
+        txttelefono.setEditable(false);
+        jTextField6.setEditable(false);
+        
+        setLocationRelativeTo(null);
+        conexion = new ConexionBD();
+        this.idCita = idCita;
+        jLabel1.setText("EDITAR CITA");
+        cargarDatosCita(idCita);
+    }
+ 
+ private JFrame ventanaAnterior;
+
+public NewJAgendarcita(JFrame ventanaAnterior) {
+    initComponents();
+    this.ventanaAnterior = ventanaAnterior;
+}
+
+
     public NewJAgendarcita() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-
-            conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
-            this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
+        setLocationRelativeTo(null);
+        conexion = new ConexionBD();
+        jLabel1.setText("REGISTRAR NUEVA CITA");
     }
+    
+public NewJAgendarcita(String idCita, String nombre, String telefono, 
+                        String correo, String servicio, String fecha, 
+                        String hora, String estado) {
+    initComponents();
+    setLocationRelativeTo(null);
+    jLabel1.setText("EDITAR CITA");
 
-    private void insertarServicio(int idCita, int idServicio) {
+    // Bloquear campos de texto
+    txtnumerocita.setText(idCita);
+    txtnumerocita.setEditable(false);
+
+    txtnombrecliente.setText(nombre);
+    txtnombrecliente.setEditable(false);
+
+    txttelefono.setText(telefono);
+    txttelefono.setEditable(false);
+
+    jTextField6.setText(correo);
+    jTextField6.setEditable(false);
+
+    // Servicios
+    chkUnas.setSelected(servicio.equalsIgnoreCase("Uñas acrilicas"));
+    chkMaquillaje.setSelected(servicio.equalsIgnoreCase("Maquillaje"));
+    chkPeinado.setSelected(servicio.equalsIgnoreCase("Peinado"));
+
+    // Bloquear edición de servicios
+    chkUnas.setEnabled(false);
+    chkMaquillaje.setEnabled(false);
+    chkPeinado.setEnabled(false);
+
+    // Anticipo
+    chksi.setSelected(estado.equalsIgnoreCase("Sí"));
+    chkno.setSelected(estado.equalsIgnoreCase("No"));
+
+    // Bloquear edición de anticipo
+    chksi.setEnabled(false);
+    chkno.setEnabled(false);
+
+    // Hora
+    jComboBox3hora.setSelectedItem(hora);
+    jComboBox3hora.setEnabled(false);
+
+    // Fecha al calendario
     try {
-        String sql = "INSERT INTO cita_has_servicios (idCita, idServicios) VALUES (?, ?)";
-        java.sql.PreparedStatement ps = conexion.getConexion().prepareStatement(sql);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        Date fechaDate = sdf.parse(fecha);
+        CalCitas.setDate(fechaDate);
+        CalCitas.setEnabled(false); // Bloquear edición de fecha
+    } catch (Exception e) {
+        System.out.println("Error al asignar fecha: " + e.getMessage());
+    }
+}
+
+
+    
+    
+ private void limpiarCampos() {
+        txtnombrecliente.setText("");
+        jComboBox3hora.setSelectedIndex(0);
+        CalCitas.setDate(null);
+        chkUnas.setSelected(false);
+        chkMaquillaje.setSelected(false);
+        chkPeinado.setSelected(false);
+ } 
+
+private void cargarDatosCita(int idCita) {
+    try (Connection con = conexion.conectar()) {
+        if (con == null) {
+            JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+            return;
+        }
+
+        String sql = "SELECT c.Fecha, c.Hora, u.Nombre, s.Nombre AS Servicio, c.Anticipo " +
+                     "FROM Cita c " +
+                     "JOIN Usuarios u ON c.idUsuarios = u.idUsuarios " +
+                     "LEFT JOIN cita_has_servicios chs ON c.idCita = chs.idCita " +
+                     "LEFT JOIN Servicios s ON chs.idServicios = s.idServicios " +
+                     "WHERE c.idCita = ?";
+
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setInt(1, idCita);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            txtnombrecliente.setText(rs.getString("Nombre"));
+            txtnombrecliente.setEditable(false);
+
+            // Fecha
+            Date fechaDate = rs.getDate("Fecha");
+            if (fechaDate != null) {
+                CalCitas.setDate(fechaDate);
+                CalCitas.setEnabled(false);
+            }
+
+            // Hora
+            String horaStr = rs.getString("Hora");
+            if (horaStr != null && horaStr.length() >= 5) {
+                horaStr = horaStr.substring(0,5);
+            }
+            jComboBox3hora.setSelectedItem(horaStr);
+            jComboBox3hora.setEnabled(false);
+
+            // Servicio
+            String servicio = rs.getString("Servicio");
+            chkUnas.setSelected("Uñas acrilicas".equalsIgnoreCase(servicio));
+            chkMaquillaje.setSelected("Maquillaje".equalsIgnoreCase(servicio));
+            chkPeinado.setSelected("Peinado".equalsIgnoreCase(servicio));
+            chkUnas.setEnabled(false);
+            chkMaquillaje.setEnabled(false);
+            chkPeinado.setEnabled(false);
+
+            // Anticipo
+            String anticipo = rs.getString("Anticipo"); // asumiendo que la BD tiene este campo
+            chksi.setSelected("Sí".equalsIgnoreCase(anticipo));
+            chkno.setSelected("No".equalsIgnoreCase(anticipo));
+            chksi.setEnabled(false);
+            chkno.setEnabled(false);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al cargar cita: " + e.getMessage());
+    }
+}
+
+
+
+private void insertarServicio(int idCita, int idServicio) {
+    String sql = "INSERT INTO cita_has_servicios (idCita, idServicios) VALUES (?, ?)";
+
+    try (Connection con = conexion.conectar();
+         PreparedStatement ps = con.prepareStatement(sql)) {
+
         ps.setInt(1, idCita);
         ps.setInt(2, idServicio);
         ps.executeUpdate();
-    } catch (Exception e) {
-        e.printStackTrace();
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al insertar servicio: " + e.getMessage());
     }
 }
+
 
     
     /**
@@ -50,17 +220,18 @@ ConexionBD conexion;
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
+        jPanel4 = new javax.swing.JPanel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jButton2 = new javax.swing.JButton();
-        jButton4 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
         jLabel8 = new javax.swing.JLabel();
-        jLabel9 = new javax.swing.JLabel();
         jComboBox1diseñoselecionado = new javax.swing.JComboBox<>();
         txttelefono = new javax.swing.JTextField();
-        jComboBox2fecha = new javax.swing.JComboBox<>();
         jLabel11 = new javax.swing.JLabel();
         txtnumerocita = new javax.swing.JTextField();
         txtnombrecliente = new javax.swing.JTextField();
@@ -68,11 +239,8 @@ ConexionBD conexion;
         jTextField6 = new javax.swing.JTextField();
         chkUnas = new javax.swing.JCheckBox();
         chkPeinado = new javax.swing.JCheckBox();
-        chkDecoracion = new javax.swing.JCheckBox();
         chkMaquillaje = new javax.swing.JCheckBox();
         jLabel13 = new javax.swing.JLabel();
-        jLabel14 = new javax.swing.JLabel();
-        txtduracion = new javax.swing.JTextField();
         jComboBox3hora = new javax.swing.JComboBox<>();
         jLabel15 = new javax.swing.JLabel();
         jLabel16 = new javax.swing.JLabel();
@@ -80,55 +248,69 @@ ConexionBD conexion;
         chkno = new javax.swing.JCheckBox();
         jLabel17 = new javax.swing.JLabel();
         jLabel18 = new javax.swing.JLabel();
-        jComboBox4metodopago = new javax.swing.JComboBox<>();
-        jPanel5 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
-        WPP = new javax.swing.JLabel();
-        jLabel10 = new javax.swing.JLabel();
+        btnRegresar = new javax.swing.JButton();
+        CalCitas = new com.toedter.calendar.JCalendar();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
-        jMenu2 = new javax.swing.JMenu();
-        jMenuItem3 = new javax.swing.JMenuItem();
-        jMenuItem1 = new javax.swing.JMenuItem();
-        jMenuItem6 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        jPanel4.setBackground(new java.awt.Color(204, 0, 204));
+
+        INS.setText("INS");
+
+        FACE.setText("FACE");
+
+        WPP.setText("WPP");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(115, 115, 115)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(190, 190, 190)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 230, Short.MAX_VALUE)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(79, 79, 79))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
+
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
-        jLabel2.setText("AGENDAR CITAS ");
+        jLabel2.setText("CITA ");
 
         jButton2.setBackground(new java.awt.Color(255, 204, 255));
-        jButton2.setText("guardar cita");
+        jButton2.setText("Guardar cita");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }
         });
 
-        jButton4.setBackground(new java.awt.Color(255, 204, 255));
-        jButton4.setText("cancelar cita");
-        jButton4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton4ActionPerformed(evt);
-            }
-        });
-
         jLabel1.setText("Nombre del cliente:");
 
-        jLabel4.setText("fecha");
+        jLabel4.setText("Fecha");
 
-        jLabel5.setText("servicio a realizar:");
+        jLabel5.setText("Servicio a realizar:");
 
-        jLabel8.setText("numero de cita");
-
-        jLabel9.setText("Metodo de Pago");
+        jLabel8.setText("Numero de cita");
 
         jComboBox1diseñoselecionado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         jComboBox1diseñoselecionado.setToolTipText("Hora");
@@ -144,15 +326,7 @@ ConexionBD conexion;
             }
         });
 
-        jComboBox2fecha.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hora" }));
-        jComboBox2fecha.setToolTipText("Diseño selecionado");
-        jComboBox2fecha.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox2fechaActionPerformed(evt);
-            }
-        });
-
-        jLabel11.setText("telefono");
+        jLabel11.setText("Telefono");
 
         txtnombrecliente.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -160,7 +334,7 @@ ConexionBD conexion;
             }
         });
 
-        jLabel12.setText("correo electronico");
+        jLabel12.setText("Correo electronico");
 
         jTextField6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -168,11 +342,14 @@ ConexionBD conexion;
             }
         });
 
-        chkUnas.setText("uñas acrilicas");
+        chkUnas.setText("Uñas acrilicas");
 
-        chkPeinado.setText("peinado");
-
-        chkDecoracion.setText("Decoracion extra");
+        chkPeinado.setText("Peinado");
+        chkPeinado.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chkPeinadoActionPerformed(evt);
+            }
+        });
 
         chkMaquillaje.setText("Maquillaje");
         chkMaquillaje.addActionListener(new java.awt.event.ActionListener() {
@@ -182,15 +359,6 @@ ConexionBD conexion;
         });
 
         jLabel13.setText("Diseño selecionado");
-
-        jLabel14.setText("duracion estimada");
-
-        txtduracion.setText("duracion");
-        txtduracion.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtduracionActionPerformed(evt);
-            }
-        });
 
         jComboBox3hora.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Hora" }));
         jComboBox3hora.setToolTipText("Diseño selecionado");
@@ -204,214 +372,147 @@ ConexionBD conexion;
 
         jLabel16.setText("¿Anticipo recibido?");
 
-        chksi.setText("si");
+        chksi.setText("Si");
 
         chkno.setText("no");
+        chkno.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                chknoActionPerformed(evt);
+            }
+        });
 
         jLabel17.setText("Monto recibido");
 
         jLabel18.setText("$100 MXN");
 
-        jComboBox4metodopago.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        jComboBox4metodopago.setToolTipText("Hora");
-        jComboBox4metodopago.addActionListener(new java.awt.event.ActionListener() {
+        btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
+        btnRegresar.setText("Regresar");
+        btnRegresar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jComboBox4metodopagoActionPerformed(evt);
+                btnRegresarActionPerformed(evt);
             }
         });
-
-        jPanel5.setBackground(new java.awt.Color(204, 0, 204));
-
-        INS.setText("INS");
-
-        FACE.setText("FACE");
-
-        WPP.setText("WPP");
-
-        javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
-        jPanel5.setLayout(jPanel5Layout);
-        jPanel5Layout.setHorizontalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
-                .addGap(115, 115, 115)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(109, 109, 109)
-                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(79, 79, 79))
-        );
-        jPanel5Layout.setVerticalGroup(
-            jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel5Layout.createSequentialGroup()
-                .addGap(14, 14, 14)
-                .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
-                    .addComponent(WPP)
-                    .addComponent(FACE))
-                .addContainerGap(14, Short.MAX_VALUE))
-        );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(0, 0, Short.MAX_VALUE)
-                .addComponent(jLabel2)
-                .addGap(360, 360, 360))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                    .addComponent(txtnombrecliente, javax.swing.GroupLayout.DEFAULT_SIZE, 275, Short.MAX_VALUE)
-                    .addComponent(txttelefono)
-                    .addComponent(jTextField6))
-                .addGap(395, 395, 395))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
-                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                        .addGap(28, 28, 28)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel15)
-                                .addGap(39, 39, 39)
-                                .addComponent(jComboBox3hora, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addGap(36, 36, 36)
-                                .addComponent(jComboBox2fecha, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jLabel9)
-                                        .addGap(34, 34, 34)
-                                        .addComponent(jComboBox4metodopago, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                            .addComponent(jLabel17)
-                                            .addGap(37, 37, 37)
-                                            .addComponent(jLabel18))
-                                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                            .addComponent(jLabel16)
-                                            .addGap(31, 31, 31)
-                                            .addComponent(chksi)
-                                            .addGap(18, 18, 18)
-                                            .addComponent(chkno))))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGap(45, 45, 45)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel16)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel12)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(jLabel1)
+                                        .addComponent(jLabel11))
+                                    .addGap(62, 62, 62)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(txttelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(txtnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGroup(jPanel1Layout.createSequentialGroup()
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addComponent(jLabel8)
+                                        .addComponent(jLabel5))
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                            .addComponent(chkUnas)
+                                            .addGap(21, 21, 21)
+                                            .addComponent(chkMaquillaje)
+                                            .addGap(18, 18, 18)
+                                            .addComponent(chkPeinado))
+                                        .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel11, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel5, javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jLabel13)
-                                        .addGap(22, 22, 22)
-                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                                    .addComponent(chkPeinado)
-                                                    .addComponent(chkUnas))
-                                                .addGap(18, 18, 18)
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(chkMaquillaje)
-                                                    .addComponent(chkDecoracion)))))
-                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jLabel14)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(txtduracion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addGap(0, 395, Short.MAX_VALUE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel8)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel15)
+                                    .addComponent(jLabel17))
                                 .addGap(88, 88, 88)
-                                .addComponent(txtnumerocita)))))
-                .addGap(92, 92, 92))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addContainerGap())
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(chksi)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(chkno))
+                                    .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jLabel18)
+                                        .addGap(133, 133, 133)
+                                        .addComponent(btnRegresar)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(jLabel4)))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(347, 347, 347)
+                        .addComponent(jLabel2))
+                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(95, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addGap(15, 15, 15)
+                .addContainerGap()
                 .addComponent(jLabel2)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(34, 34, 34)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                            .addComponent(jLabel1)
-                            .addComponent(txtnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(23, 23, 23)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel11)
-                            .addComponent(txttelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(10, 10, 10)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel12)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabel8)
-                                    .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                        .addGap(22, 22, 22)
-                        .addComponent(jLabel5)
-                        .addGap(67, 67, 67))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(chkUnas)
-                            .addComponent(chkMaquillaje))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(chkPeinado)
-                            .addComponent(chkDecoracion))
-                        .addGap(12, 12, 12)))
+                .addGap(46, 46, 46)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(txtnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel11)
+                    .addComponent(txttelefono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel12)
+                    .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel8)
+                    .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(28, 28, 28)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(chkUnas)
+                    .addComponent(chkMaquillaje)
+                    .addComponent(chkPeinado))
+                .addGap(29, 29, 29)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel13)
                     .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel14)
-                    .addComponent(txtduracion, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(27, 27, 27)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel4)
-                    .addComponent(jComboBox2fecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 9, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel15)
-                    .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(30, 30, 30)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel16)
-                    .addComponent(chksi)
-                    .addComponent(chkno))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel17)
-                    .addComponent(jLabel18)
-                    .addComponent(jButton4))
-                .addGap(35, 35, 35)
-                .addComponent(jButton2)
-                .addGap(1, 1, 1)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel9)
-                    .addComponent(jComboBox4metodopago, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(29, 29, 29)
-                .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
+                        .addComponent(jLabel4)
+                        .addGap(0, 0, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(9, 9, 9)
+                        .addComponent(CalCitas, javax.swing.GroupLayout.DEFAULT_SIZE, 208, Short.MAX_VALUE)
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel15)
+                            .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel16)
+                            .addComponent(chksi)
+                            .addComponent(chkno))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel17)
+                            .addComponent(jLabel18)
+                            .addComponent(jButton2)
+                            .addComponent(btnRegresar))
+                        .addGap(31, 31, 31)
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
         );
-
-        jLabel10.setIcon(new javax.swing.ImageIcon("C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\Andynails\\Andynails\\Img\\logo.jpg")); // NOI18N
 
         jMenu4.setText("INICIO");
         jMenu4.addMenuListener(new javax.swing.event.MenuListener() {
@@ -449,34 +550,6 @@ ConexionBD conexion;
 
         jMenuBar1.add(jMenu6);
 
-        jMenu2.setText("CATALÓGO");
-
-        jMenuItem3.setText("UÑAS");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
-            }
-        });
-        jMenu2.add(jMenuItem3);
-
-        jMenuItem1.setText("PEINADO");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
-            }
-        });
-        jMenu2.add(jMenuItem1);
-
-        jMenuItem6.setText("MAQUILLAJES");
-        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem6ActionPerformed(evt);
-            }
-        });
-        jMenu2.add(jMenuItem6);
-
-        jMenuBar1.add(jMenu2);
-
         jMenu7.setText("LOGIN");
 
         jMenuItem5.setText("login");
@@ -495,22 +568,13 @@ ConexionBD conexion;
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+            .addGroup(layout.createSequentialGroup()
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(68, Short.MAX_VALUE))
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jLabel10, javax.swing.GroupLayout.PREFERRED_SIZE, 543, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
 
         pack();
@@ -542,6 +606,35 @@ ConexionBD conexion;
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem4ActionPerformed
+private int obtenerIdUsuario(String nombreCliente) {
+    int idUsuario = -1; // Valor por defecto si no se encuentra
+    Connection con = conexion.conectar(); // Usa tu clase de conexión a la BD
+
+    if (con == null) {
+        JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+        return idUsuario;
+    }
+
+    String sql = "SELECT idUsuarios FROM Usuarios WHERE Nombre = ?";
+
+    try (PreparedStatement ps = con.prepareStatement(sql)) {
+        ps.setString(1, nombreCliente);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            idUsuario = rs.getInt("idUsuarios");
+        } else {
+            JOptionPane.showMessageDialog(this, "No se encontró el usuario con nombre: " + nombreCliente);
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al obtener ID de usuario: " + e.getMessage());
+    } finally {
+        try { con.close(); } catch (SQLException ex) { /* ignorar */ }
+    }
+
+    return idUsuario;
+}
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
         // TODO add your handling code here:
@@ -551,89 +644,132 @@ ConexionBD conexion;
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem5ActionPerformed
-
-    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jButton4ActionPerformed
-
-    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
-        // TODO add your handling code here:
-    try {
-        // Obtener datos del formulario
-        String nombreCliente = txtnombrecliente.getText().trim();
-        String telefono = txttelefono.getText().trim();
-        String correo = jTextField6.getText().trim();
-        String numeroCita = txtnumerocita.getText().trim();
-        String fecha = (String) jComboBox2fecha.getSelectedItem(); // formato 'YYYY-MM-DD'
-        String hora = (String) jComboBox3hora.getSelectedItem();   // formato 'HH:MM'
-        String metodoPago = (String) jComboBox4metodopago.getSelectedItem();
-        boolean anticipo = chksi.isSelected();
-
-        // Validar campos obligatorios
-        if(nombreCliente.isEmpty() || telefono.isEmpty() || fecha.equals("Fecha") || hora.equals("Hora")) {
-            javax.swing.JOptionPane.showMessageDialog(this, "Por favor llena todos los campos obligatorios.");
+private void registrarCitaNueva() {
+    try (Connection con = conexion.conectar()) {
+        if (con == null) {
+            JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
             return;
         }
 
-        // Insertar en tabla cita
-        String sqlCita = "INSERT INTO cita (NumeroCita, NombreCliente, Telefono, Correo, Fecha, Hora, Estado) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        java.sql.PreparedStatement ps = conexion.getConexion().prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
-        ps.setString(1, numeroCita);
-        ps.setString(2, nombreCliente);
-        ps.setString(3, telefono);
-        ps.setString(4, correo);
-        ps.setString(5, fecha);
-        ps.setString(6, hora);
-        ps.setString(7, "Agendada");
-        ps.executeUpdate();
-
-        // Obtener ID de la cita insertada
-        java.sql.ResultSet rs = ps.getGeneratedKeys();
-        int idCita = 0;
-        if(rs.next()) {
-            idCita = rs.getInt(1);
+        // Validar datos obligatorios
+        if (txtnombrecliente.getText().isEmpty() || CalCitas.getDate() == null || 
+            jComboBox3hora.getSelectedItem() == null) {
+            JOptionPane.showMessageDialog(this, "Por favor completa todos los campos antes de registrar la cita.");
+            return;
         }
 
-        // Insertar servicios seleccionados
-        if(chkUnas.isSelected()) insertarServicio(idCita, 1);       // Uñas acrílicas
-        if(chkMaquillaje.isSelected()) insertarServicio(idCita, 2); // Maquillaje
-        if(chkPeinado.isSelected()) insertarServicio(idCita, 3);    // Peinado
-        if(chkDecoracion.isSelected()) insertarServicio(idCita, 4); // Decoración extra
-
-        // Insertar pago si hay anticipo
-        if(anticipo) {
-            String sqlPago = "INSERT INTO pago (idCita, Monto, MetodoPago) VALUES (?, ?, ?)";
-            java.sql.PreparedStatement psPago = conexion.getConexion().prepareStatement(sqlPago);
-            psPago.setInt(1, idCita);
-            psPago.setDouble(2, 100); // Puedes hacer que sea editable desde el formulario
-            psPago.setString(3, metodoPago);
-            psPago.executeUpdate();
+        // Convertir fecha de CalCitas a java.sql.Date
+        java.util.Date fechaSeleccionada = CalCitas.getDate();
+        if (fechaSeleccionada == null) {
+            JOptionPane.showMessageDialog(this, "Por favor selecciona una fecha válida.");
+            return;
         }
-
-        javax.swing.JOptionPane.showMessageDialog(this, "Cita registrada correctamente.");
-        // Limpiar formulario
-        txtnombrecliente.setText("");
-        txttelefono.setText("");
-        jTextField6.setText("");
-        txtnumerocita.setText("");
-        txtduracion.setText("duracion");
-        jComboBox1diseñoselecionado.setSelectedIndex(0);
-        jComboBox2fecha.setSelectedIndex(0);
-        jComboBox3hora.setSelectedIndex(0);
-        jComboBox4metodopago.setSelectedIndex(0);
-        chksi.setSelected(false);
-        chkno.setSelected(false);
-        chkUnas.setSelected(false);
-        chkMaquillaje.setSelected(false);
-        chkPeinado.setSelected(false);
-        chkDecoracion.setSelected(false);
-
-    } catch(Exception e) {
-        e.printStackTrace();
-        javax.swing.JOptionPane.showMessageDialog(this, "Error al guardar la cita: " + e.getMessage());
-    }
-
         
+        java.sql.Date fechaSQL = new java.sql.Date(fechaSeleccionada.getTime());
+
+        // Convertir la hora seleccionada
+        String horaStr = jComboBox3hora.getSelectedItem().toString();
+        if (!horaStr.contains(":")) {
+            horaStr += ":00";
+        }
+        
+        // Asegurar formato HH:mm:ss
+        if (horaStr.length() == 5) { // Si es "HH:mm"
+            horaStr += ":00";
+        }
+        
+        java.sql.Time horaSQL = java.sql.Time.valueOf(horaStr);
+
+        // Obtener ID del usuario
+        int idUsuario = obtenerIdUsuario(txtnombrecliente.getText());
+        if (idUsuario == -1) {
+            JOptionPane.showMessageDialog(this, "No se encontró el usuario especificado.");
+            return;
+        }
+
+        // Insertar cita
+        String sql = "INSERT INTO Cita (idUsuarios, Fecha, Hora) VALUES (?, ?, ?)";
+        PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+        ps.setInt(1, idUsuario);
+        ps.setDate(2, fechaSQL);
+        ps.setTime(3, horaSQL);
+        
+        int filasAfectadas = ps.executeUpdate();
+        
+        if (filasAfectadas > 0) {
+            JOptionPane.showMessageDialog(this, "Cita registrada correctamente.");
+            limpiarCampos();
+            this.dispose();
+        }
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al registrar cita: " + e.getMessage());
+        e.printStackTrace();
+    } catch (IllegalArgumentException e) {
+        JOptionPane.showMessageDialog(this, "Formato de hora inválido. Use HH:mm");
+    }
+}
+
+private void actualizarCita() {
+    try (Connection con = conexion.conectar()) {
+        if (con == null) {
+            JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+            return;
+        }
+
+        // Validar fecha
+        if (CalCitas.getDate() == null) {
+            JOptionPane.showMessageDialog(this, "Por favor selecciona una fecha antes de continuar.");
+            return;
+        }
+
+        String sql = "UPDATE Cita SET Fecha = ?, Hora = ? WHERE idCita = ?";
+        PreparedStatement ps = con.prepareStatement(sql);
+
+        // Convertir fecha
+        java.util.Date fechaSeleccionada = CalCitas.getDate();
+        java.sql.Date fechaSQL = new java.sql.Date(fechaSeleccionada.getTime());
+
+        // Procesar hora
+        String horaStr = jComboBox3hora.getSelectedItem().toString();
+        if (!horaStr.contains(":")) {
+            horaStr += ":00";
+        }
+        if (horaStr.length() == 5) {
+            horaStr += ":00";
+        }
+
+        ps.setDate(1, fechaSQL);
+        ps.setString(2, horaStr);
+        ps.setInt(3, idCita);
+
+        int filasAfectadas = ps.executeUpdate();
+        
+        if (filasAfectadas > 0) {
+            JOptionPane.showMessageDialog(this, "Cita actualizada correctamente.");
+            this.dispose();
+        } else {
+            JOptionPane.showMessageDialog(this, "No se pudo actualizar la cita.");
+        }
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al actualizar cita: " + e.getMessage());
+        e.printStackTrace();
+    }
+}
+
+
+
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+                                         
+    // Determinar si estamos creando o editando una cita
+    if (idCita > 0) {
+        actualizarCita();
+    } else {
+        registrarCitaNueva();
+    }
+  
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jComboBox1diseñoselecionadoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1diseñoselecionadoActionPerformed
@@ -643,10 +779,6 @@ ConexionBD conexion;
     private void txttelefonoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txttelefonoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txttelefonoActionPerformed
-
-    private void jComboBox2fechaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2fechaActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBox2fechaActionPerformed
 
     private void txtnombreclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtnombreclienteActionPerformed
         // TODO add your handling code here:
@@ -660,41 +792,28 @@ ConexionBD conexion;
         // TODO add your handling code here:
     }//GEN-LAST:event_chkMaquillajeActionPerformed
 
-    private void txtduracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtduracionActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtduracionActionPerformed
-
     private void jComboBox3horaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3horaActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBox3horaActionPerformed
 
-    private void jComboBox4metodopagoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox4metodopagoActionPerformed
+    private void chkPeinadoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chkPeinadoActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jComboBox4metodopagoActionPerformed
+    }//GEN-LAST:event_chkPeinadoActionPerformed
 
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+    private void chknoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_chknoActionPerformed
         // TODO add your handling code here:
-        //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
-        NewJCatalogoUñas.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
+    }//GEN-LAST:event_chknoActionPerformed
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
-        //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
-        NewJCatalogoPeinado.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
+    private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
+                                            
+    if (ventanaAnterior != null) {
+        ventanaAnterior.setVisible(true);
+        this.dispose();
+    } else {
+        this.dispose(); // fallback para evitar el NullPointer
+    }
 
-    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        // TODO add your handling code here:
-        //para maquillaje
-        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
-        NewJCatalogoMaq.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem6ActionPerformed
+    }//GEN-LAST:event_btnRegresarActionPerformed
 
     /**
      * @param args the command line arguments
@@ -722,14 +841,7 @@ ConexionBD conexion;
             java.util.logging.Logger.getLogger(NewJAgendarcita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-
+       
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
@@ -739,27 +851,23 @@ ConexionBD conexion;
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private com.toedter.calendar.JCalendar CalCitas;
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
-    private javax.swing.JCheckBox chkDecoracion;
+    private javax.swing.JButton btnRegresar;
     private javax.swing.JCheckBox chkMaquillaje;
     private javax.swing.JCheckBox chkPeinado;
     private javax.swing.JCheckBox chkUnas;
     private javax.swing.JCheckBox chkno;
     private javax.swing.JCheckBox chksi;
     private javax.swing.JButton jButton2;
-    private javax.swing.JButton jButton4;
     private javax.swing.JComboBox<String> jComboBox1diseñoselecionado;
-    private javax.swing.JComboBox<String> jComboBox2fecha;
     private javax.swing.JComboBox<String> jComboBox3hora;
-    private javax.swing.JComboBox<String> jComboBox4metodopago;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel13;
-    private javax.swing.JLabel jLabel14;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
@@ -768,23 +876,17 @@ ConexionBD conexion;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JLabel jLabel9;
-    private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem2;
-    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
-    private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel5;
+    private javax.swing.JPanel jPanel4;
     private javax.swing.JTextField jTextField6;
-    private javax.swing.JTextField txtduracion;
     private javax.swing.JTextField txtnombrecliente;
     private javax.swing.JTextField txtnumerocita;
     private javax.swing.JTextField txttelefono;

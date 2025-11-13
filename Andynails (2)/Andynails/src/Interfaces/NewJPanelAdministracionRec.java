@@ -5,6 +5,21 @@ import andynails.RedesSociales;
 import com.toedter.calendar.JDateChooser;
 import javax.swing.JFrame;
 import java.util.Date;
+import javax.swing.table.DefaultTableModel;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import javax.swing.JOptionPane;
+import java.sql.Connection;
+import java.awt.Color;
+import java.awt.Component;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableCellRenderer;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.DayOfWeek;
+import java.util.Locale;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -23,17 +38,233 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
      */
     public NewJPanelAdministracionRec() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
-        conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
+        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
-     //   JDateChooser dateChooser = new JDateChooser();
-       // dateChooser.setDateFormatString("yyyy-MM-dd");
+        cargarCategorias();
+        //   JDateChooser dateChooser = new JDateChooser();
+        // dateChooser.setDateFormatString("yyyy-MM-dd");
         //dateChooser.setDate(new Date());
         //this.add(dateChooser); // Agregar al JFrame
         //dateChooser.setBounds(20, 20, 120, 30); // Posición
+        DefaultTableModel modelo = new DefaultTableModel();
+        modelo.addColumn("Hora");
+        modelo.addColumn("Lunes");
+        modelo.addColumn("Martes");
+        modelo.addColumn("Miércoles");
+        modelo.addColumn("Jueves");
+        modelo.addColumn("Viernes");
+        modelo.addColumn("Sábado");
+        modelo.addColumn("Domingo");
 
+// Horas manuales
+        modelo.addRow(new Object[]{"9:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"10:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"11:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"12:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"13:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"14:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"15:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"16:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"17:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"18:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"19:00", "", "", "", "", "", "", ""});
+        modelo.addRow(new Object[]{"20:00", "", "", "", "", "", "", ""});
+
+        tabla.setModel(modelo);
+        tabla.setDefaultRenderer(Object.class, new AgendaRenderer());
+
+        cargarAgendaSemanal("Maquillaje");
+
+    }
+
+    private JFrame ventanaAnterior;
+
+    public NewJPanelAdministracionRec(JFrame anterior) {
+        initComponents();
+        conexion = new ConexionBD("andynails");
+        this.ventanaAnterior = anterior;
+    }
+
+    private void regresar() {
+        if (ventanaAnterior != null) {
+            ventanaAnterior.setVisible(true);
+        }
+        this.dispose();
+    }
+
+    private void cargarAgendaSemanal(String servicioSeleccionado) {
+        try (Connection con = conexion.conectar()) {
+            LocalDate hoy = LocalDate.now();
+            LocalDate inicioSemana = hoy.with(DayOfWeek.MONDAY);
+            LocalDate finSemana = hoy.with(DayOfWeek.SUNDAY);
+
+            // Mostrar rango de semana arriba
+            lblfecha.setText("Semana del " + inicioSemana + " al " + finSemana);
+
+            // --- Encabezados de días con fecha ---
+            String[] diasSemana = new String[8];
+            diasSemana[0] = "Hora";
+            DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM");
+
+            for (int i = 0; i < 7; i++) {
+                LocalDate dia = inicioSemana.plusDays(i);
+                String nombreDia = dia.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("es", "ES"));
+                nombreDia = Character.toUpperCase(nombreDia.charAt(0)) + nombreDia.substring(1); // Mayúscula inicial
+                diasSemana[i + 1] = nombreDia + " (" + dia.format(formato) + ")";
+            }
+
+            // --- Modelo de tabla ---
+            DefaultTableModel modelo = new DefaultTableModel(diasSemana, 0);
+
+            String[] horas = {"9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"};
+            for (String h : horas) {
+                modelo.addRow(new Object[]{h, "", "", "", "", "", "", ""});
+            }
+
+            String sql = """
+            SELECT c.Fecha, c.Hora,
+                   s.Nombre_servicio,
+                   p.Estado_pago
+            FROM cita c
+            JOIN cita_has_servicios chs ON c.idCita = chs.idCita
+            JOIN servicios s ON chs.idServicios = s.idServicios
+            LEFT JOIN pago p ON chs.Pago_idPago = p.idPago
+            WHERE c.Fecha BETWEEN ? AND ?
+              AND s.Nombre_servicio LIKE ?
+            ORDER BY c.Fecha, c.Hora;
+        """;
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setDate(1, java.sql.Date.valueOf(inicioSemana));
+            ps.setDate(2, java.sql.Date.valueOf(finSemana));
+            ps.setString(3, "%" + servicioSeleccionado + "%");
+            ResultSet rs = ps.executeQuery();
+
+            int totalCitasHoy = 0, pendientes = 0, confirmadas = 0;
+            LocalDate hoyFecha = LocalDate.now();
+
+            while (rs.next()) {
+                LocalDate fecha = rs.getDate("Fecha").toLocalDate();
+                String hora = rs.getTime("Hora").toString().substring(0, 5);
+                String servicio = rs.getString("Nombre_servicio");
+                String estado = rs.getString("Estado_pago");
+
+                int diaColumna = fecha.getDayOfWeek().getValue(); // Lunes=1 ... Domingo=7
+                int filaHora = -1;
+
+                for (int i = 0; i < horas.length; i++) {
+                    if (horas[i].equals(hora)) {
+                        filaHora = i;
+                        break;
+                    }
+                }
+
+                if (filaHora != -1 && diaColumna <= 7) {
+                    String textoCelda = servicio;
+                    Object actual = modelo.getValueAt(filaHora, diaColumna);
+                    if (actual != null && !actual.toString().isEmpty()) {
+                        textoCelda = actual + " | " + textoCelda;
+                    }
+                    modelo.setValueAt(textoCelda, filaHora, diaColumna);
+                }
+
+                // Contadores del panel lateral
+                if (fecha.equals(hoyFecha)) {
+                    totalCitasHoy++;
+                    if (estado == null || estado.equalsIgnoreCase("Pendiente")) {
+                        pendientes++;
+                    } else if (estado.equalsIgnoreCase("Validado")) {
+                        confirmadas++;
+                    }
+                }
+            }
+
+            tabla.setModel(modelo);
+            tabla.setDefaultRenderer(Object.class, new AgendaRenderer());
+
+            // Totales panel lateral
+            jTable1.setValueAt(totalCitasHoy, 0, 1);
+            jTable1.setValueAt(pendientes, 1, 1);
+            jTable1.setValueAt(confirmadas, 2, 1);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + e.getMessage());
+        }
+    }
+
+    private void cargarCategorias() {
+        try {
+            Connection conn = new ConexionBD().conectar();
+            String sql = "SELECT Nombre_categoria FROM categoria_Servicio";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+
+            cmbservicio.removeAllItems(); // Limpia el ComboBox antes de llenarlo
+
+            while (rs.next()) {
+                cmbservicio.addItem(rs.getString("Nombre_categoria"));
+            }
+
+            rs.close();
+            ps.close();
+            conn.close();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Error al cargar categorías: " + e.getMessage());
+        }
+    }
+
+    private void cmbservicioActionPerformed(java.awt.event.ActionEvent evt) {
+        if (cmbservicio.getSelectedItem() != null) {
+            String categoriaSeleccionada = cmbservicio.getSelectedItem().toString();
+            cargarAgendaPorCategoria(categoriaSeleccionada);
+        }
+    }
+
+    private void cargarAgendaPorCategoria(String categoria) {
+
+        try {
+            Connection conn = new ConexionBD().conectar();
+            String sql = """
+            SELECT c.idCita, u.Nombre AS Cliente, s.Nombre_servicio, c.Fecha, c.Hora, c.Estado
+            FROM cita c
+            JOIN usuarios u ON c.idUsuarios = u.idUsuarios
+            JOIN cita_has_servicios chs ON c.idCita = chs.idCita
+            JOIN servicios s ON chs.idServicios = s.idServicios
+            JOIN categoria_servicio cs ON s.idServicios = cs.idServicios
+            WHERE cs.Nombre_categoria = ?
+            ORDER BY c.Fecha, c.Hora;
+        """;
+
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, categoria);
+            ResultSet rs = ps.executeQuery();
+
+            DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
+            modelo.setRowCount(0);
+
+            while (rs.next()) {
+                Object[] fila = {
+                    rs.getInt("idCita"),
+                    rs.getString("Cliente"),
+                    rs.getString("Nombre_servicio"),
+                    rs.getDate("Fecha"),
+                    rs.getTime("Hora"),
+                    rs.getString("Estado")
+                };
+                modelo.addRow(fila);
+            }
+
+            rs.close();
+            ps.close();
+            conn.close();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(null, "Error al cargar agenda: " + e.getMessage());
+        }
     }
 
     /**
@@ -76,20 +307,19 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         jTable1 = new javax.swing.JTable();
         jLabel3 = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
-        jTable2 = new javax.swing.JTable();
-        btnBuscarcitas = new javax.swing.JButton();
+        tabla = new javax.swing.JTable();
+        jLabel6 = new javax.swing.JLabel();
+        lblfecha = new javax.swing.JLabel();
+        cmbservicio = new javax.swing.JComboBox<>();
         jMenuBar1 = new javax.swing.JMenuBar();
-        jMenu1 = new javax.swing.JMenu();
-        jMenu15 = new javax.swing.JMenu();
-        jMenuItem11 = new javax.swing.JMenuItem();
-        jMenuItem12 = new javax.swing.JMenuItem();
-        jMenuItem13 = new javax.swing.JMenuItem();
-        jMenuItem14 = new javax.swing.JMenuItem();
-        jMenu3 = new javax.swing.JMenu();
-        jMenuItem4 = new javax.swing.JMenuItem();
-        jMenu12 = new javax.swing.JMenu();
-        jMenuItem8 = new javax.swing.JMenuItem();
-        jMenu6 = new javax.swing.JMenu();
+        jMenuInicio = new javax.swing.JMenu();
+        jMenuCitas = new javax.swing.JMenu();
+        menuBuscarCitas = new javax.swing.JMenuItem();
+        menuCitas = new javax.swing.JMenuItem();
+        menuAgendarCita = new javax.swing.JMenuItem();
+        jMenuPagos = new javax.swing.JMenu();
+        menuPagoRestante = new javax.swing.JMenuItem();
+        jMenuLogin = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
@@ -275,22 +505,24 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jTable1);
 
-        jLabel3.setText("Bienvenid@, Recepcionista! Hoy es 00/00/00");
+        jLabel3.setText("Bienvenid@, Recepcionista! Hoy es ");
 
-        jTable2.setModel(new javax.swing.table.DefaultTableModel(
+        tabla.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"
+                "Hora", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"
             }
         ));
-        jScrollPane3.setViewportView(jTable2);
+        jScrollPane3.setViewportView(tabla);
 
-        btnBuscarcitas.setText("Buscar Citas");
+        lblfecha.setText("jLabel7");
+
+        cmbservicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Maquillaje", "Uñas", "Peinados", " " }));
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -299,22 +531,24 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
             .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(16, 16, 16)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 327, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 930, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 280, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(46, 46, 46))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(btnBuscarcitas)
-                        .addGap(96, 96, 96))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(46, 46, 46))
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(513, 513, 513)
+                .addGap(29, 29, 29)
+                .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(318, 318, 318)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel21)
-                    .addComponent(jLabel3))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(lblfecha, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jLabel6)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -322,96 +556,85 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(28, 28, 28)
                 .addComponent(jLabel21)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 21, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel3)
+                            .addComponent(jLabel6)
+                            .addComponent(lblfecha))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 39, Short.MAX_VALUE))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(64, 64, 64))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(62, 62, 62)
-                                .addComponent(btnBuscarcitas)))
-                        .addGap(34, 34, 34)))
-                .addGap(53, 53, 53)
+                                .addGap(15, 15, 15)
+                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(20, 20, 20)))
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        jMenu1.setText("INICIO ");
-        jMenu1.addMenuListener(new javax.swing.event.MenuListener() {
+        jMenuInicio.setText("INICIO ");
+        jMenuInicio.addMenuListener(new javax.swing.event.MenuListener() {
             public void menuCanceled(javax.swing.event.MenuEvent evt) {
             }
             public void menuDeselected(javax.swing.event.MenuEvent evt) {
             }
             public void menuSelected(javax.swing.event.MenuEvent evt) {
-                jMenu1MenuSelected(evt);
+                jMenuInicioMenuSelected(evt);
             }
         });
-        jMenuBar1.add(jMenu1);
+        jMenuBar1.add(jMenuInicio);
 
-        jMenu15.setText("CITAS");
+        jMenuCitas.setText("CITAS");
 
-        jMenuItem11.setText("Buscar citas");
-        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+        menuBuscarCitas.setText("Buscar citas");
+        menuBuscarCitas.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem11ActionPerformed(evt);
+                menuBuscarCitasActionPerformed(evt);
             }
         });
-        jMenu15.add(jMenuItem11);
+        jMenuCitas.add(menuBuscarCitas);
 
-        jMenuItem12.setText("Citas");
-        jMenuItem12.addActionListener(new java.awt.event.ActionListener() {
+        menuCitas.setText("Agenda de citas");
+        menuCitas.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem12ActionPerformed(evt);
+                menuCitasActionPerformed(evt);
             }
         });
-        jMenu15.add(jMenuItem12);
+        jMenuCitas.add(menuCitas);
 
-        jMenuItem13.setText("Agendar cita");
-        jMenuItem13.addActionListener(new java.awt.event.ActionListener() {
+        menuAgendarCita.setText("Agendar cita");
+        menuAgendarCita.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem13ActionPerformed(evt);
+                menuAgendarCitaActionPerformed(evt);
             }
         });
-        jMenu15.add(jMenuItem13);
+        jMenuCitas.add(menuAgendarCita);
 
-        jMenuItem14.setText("Buscar citas");
-        jMenuItem14.addActionListener(new java.awt.event.ActionListener() {
+        jMenuBar1.add(jMenuCitas);
+
+        jMenuPagos.setText("PAGOS  ");
+
+        menuPagoRestante.setText("Pago Restante");
+        menuPagoRestante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem14ActionPerformed(evt);
+                menuPagoRestanteActionPerformed(evt);
             }
         });
-        jMenu15.add(jMenuItem14);
+        jMenuPagos.add(menuPagoRestante);
 
-        jMenuBar1.add(jMenu15);
+        jMenuBar1.add(jMenuPagos);
 
-        jMenu3.setText("AGENDAR CITA");
-
-        jMenuItem4.setText("Agendar Cita");
-        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem4ActionPerformed(evt);
-            }
-        });
-        jMenu3.add(jMenuItem4);
-
-        jMenuBar1.add(jMenu3);
-
-        jMenu12.setText("PAGOS  ");
-
-        jMenuItem8.setText("Confirmacion de pagos");
-        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem8ActionPerformed(evt);
-            }
-        });
-        jMenu12.add(jMenuItem8);
-
-        jMenuBar1.add(jMenu12);
-
-        jMenu6.setText("LOGIN");
+        jMenuLogin.setText("LOGIN");
 
         jMenuItem6.setText("Login");
         jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
@@ -419,9 +642,9 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
                 jMenuItem6ActionPerformed(evt);
             }
         });
-        jMenu6.add(jMenuItem6);
+        jMenuLogin.add(jMenuItem6);
 
-        jMenuBar1.add(jMenu6);
+        jMenuBar1.add(jMenuLogin);
 
         setJMenuBar(jMenuBar1);
 
@@ -451,23 +674,14 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButton2ActionPerformed
 
-    private void jMenu1MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu1MenuSelected
+    private void jMenuInicioMenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenuInicioMenuSelected
         // TODO add your handling code here:       
 //inicio
-        Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);
+        Inicio NewJPanelAdministracionRec = new Inicio();
+        NewJPanelAdministracionRec.setVisible(true);
         this.dispose(); // cierra la actual
 
-    }//GEN-LAST:event_jMenu1MenuSelected
-
-    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
-        // TODO add your handling code here:
-        //agendar cita
-        NewJAgenC NewJAgenC = new NewJAgenC();
-        NewJAgenC.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem4ActionPerformed
+    }//GEN-LAST:event_jMenuInicioMenuSelected
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
@@ -478,39 +692,34 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
 
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
-    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
+    private void menuPagoRestanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuPagoRestanteActionPerformed
         // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem8ActionPerformed
+        NewJPagoRestante pago = new NewJPagoRestante(this);
+        pago.setVisible(true);
+        this.setVisible(false);
+    }//GEN-LAST:event_menuPagoRestanteActionPerformed
 
-    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+    private void menuAgendarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAgendarCitaActionPerformed
         // TODO add your handling code here:
-            // TODO add your handling code here:
-        //login
-        NewJBuscarCita NewJBuscarCita = new NewJBuscarCita();
-        NewJBuscarCita.setVisible(true);
-        this.dispose(); // cierra la actual
+        NewJAgendarcita agendar = new NewJAgendarcita(this);
+        agendar.setVisible(true);
+        this.setVisible(false);
+    }//GEN-LAST:event_menuAgendarCitaActionPerformed
 
-        
-    }//GEN-LAST:event_jMenuItem11ActionPerformed
-
-    private void jMenuItem12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem12ActionPerformed
+    private void menuCitasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuCitasActionPerformed
         // TODO add your handling code here:
-         NewJCita NewJCita = new NewJCita();
-        NewJCita.setVisible(true);
-        this.dispose(); // cierra la actual
+        NewJCitaAgenda agenda = new NewJCitaAgenda(this);
+        agenda.setVisible(true);
+        this.setVisible(false);
+    }//GEN-LAST:event_menuCitasActionPerformed
 
-    }//GEN-LAST:event_jMenuItem12ActionPerformed
-
-    private void jMenuItem13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem13ActionPerformed
+    private void menuBuscarCitasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuBuscarCitasActionPerformed
         // TODO add your handling code here:
-         NewJAgendarcita NewJAgendarcita = new NewJAgendarcita();
-        NewJAgendarcita.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem13ActionPerformed
+        NewJBuscarCita buscar = new NewJBuscarCita(this);
+        buscar.setVisible(true);
+        this.setVisible(false);
 
-    private void jMenuItem14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem14ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jMenuItem14ActionPerformed
+    }//GEN-LAST:event_menuBuscarCitasActionPerformed
 
     /**
      * @param args the command line arguments
@@ -537,38 +746,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(NewJPanelAdministracionRec.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
+
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -578,11 +756,51 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         });
     }
 
+    public class AgendaRenderer extends DefaultTableCellRenderer {
+
+        private String filtroServicio = "Todos";
+
+        public void setFiltroServicio(String servicio) {
+            this.filtroServicio = servicio;
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+
+            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+
+            c.setBackground(Color.WHITE);
+            c.setForeground(Color.BLACK);
+
+            if (value != null) {
+                String texto = value.toString().toLowerCase();
+
+                // FILTRO visual
+                if (!filtroServicio.equals("Todos") && !texto.contains(filtroServicio.toLowerCase())) {
+                    c.setForeground(new Color(200, 200, 200)); // gris tenue si no coincide
+                }
+
+                // COLORES por tipo de servicio
+                if (texto.contains("uña") || texto.contains("manic")) {
+                    c.setBackground(new Color(255, 182, 193)); // Rosa
+                } else if (texto.contains("pein")) {
+                    c.setBackground(new Color(173, 216, 230)); // Azul claro
+                } else if (texto.contains("maqu")) {
+                    c.setBackground(new Color(255, 222, 173)); // Amarillo claro
+                }
+            }
+
+            return c;
+        }
+    }
+
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
-    private javax.swing.JButton btnBuscarcitas;
+    private javax.swing.JComboBox<String> cmbservicio;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
@@ -593,14 +811,10 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel21;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel5;
-    private javax.swing.JMenu jMenu1;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
-    private javax.swing.JMenu jMenu12;
-    private javax.swing.JMenu jMenu15;
-    private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
-    private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
     private javax.swing.JMenu jMenu9;
@@ -608,13 +822,11 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenuBar jMenuBar3;
     private javax.swing.JMenuBar jMenuBar4;
-    private javax.swing.JMenuItem jMenuItem11;
-    private javax.swing.JMenuItem jMenuItem12;
-    private javax.swing.JMenuItem jMenuItem13;
-    private javax.swing.JMenuItem jMenuItem14;
-    private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenu jMenuCitas;
+    private javax.swing.JMenu jMenuInicio;
     private javax.swing.JMenuItem jMenuItem6;
-    private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenu jMenuLogin;
+    private javax.swing.JMenu jMenuPagos;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;
@@ -622,8 +834,13 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTable jTable2;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
+    private javax.swing.JLabel lblfecha;
+    private javax.swing.JMenuItem menuAgendarCita;
+    private javax.swing.JMenuItem menuBuscarCitas;
+    private javax.swing.JMenuItem menuCitas;
+    private javax.swing.JMenuItem menuPagoRestante;
+    private javax.swing.JTable tabla;
     // End of variables declaration//GEN-END:variables
 }

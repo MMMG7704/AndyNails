@@ -1,16 +1,7 @@
 package Interfaces;
 
 import andynails.ConexionBD;
-import andynails.RedesSociales;
 import javax.swing.JFrame;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.Connection;
-import java.sql.*;
-import java.text.SimpleDateFormat;
-import javax.swing.JOptionPane; 
-
-
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -20,7 +11,7 @@ import javax.swing.JOptionPane;
  *
  * @author User
  */
-public class NewJBuscarCita extends javax.swing.JFrame {
+public class NewJPagoRestante extends javax.swing.JFrame {
     // Declaro una variable para la conexión a la base de datos
 
     ConexionBD conexion;
@@ -28,31 +19,18 @@ public class NewJBuscarCita extends javax.swing.JFrame {
     /**
      * Creates new form NewJAgenC
      */
-    public NewJBuscarCita() {
+    public NewJPagoRestante() {
         initComponents();
-                            RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
+        conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
     }
-    
-    private JFrame ventanaAnterior;
+private JFrame ventanaAnterior;
 
-public NewJBuscarCita(JFrame anterior) {
+public NewJPagoRestante(JFrame anterior) {
     initComponents();
     this.ventanaAnterior = anterior;
-    conexion = new ConexionBD("andynails");
 }
-
-
-
-private void regresar() {
-    if (ventanaAnterior != null) {
-        ventanaAnterior.setVisible(true);
-    }
-    this.dispose();
-}
-
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -92,25 +70,31 @@ private void regresar() {
         jMenuItem9 = new javax.swing.JMenuItem();
         jMenu18 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jTextField3 = new javax.swing.JTextField();
+        jTextField5 = new javax.swing.JTextField();
+        jTextField7 = new javax.swing.JTextField();
+        jTextField9 = new javax.swing.JTextField();
         jPanel3 = new javax.swing.JPanel();
         jLabel1 = new javax.swing.JLabel();
         jLabel11 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
-        WPP = new javax.swing.JLabel();
-        btnBuscar = new javax.swing.JButton();
-        txtMaterno = new javax.swing.JTextField();
-        txtNombre = new javax.swing.JTextField();
-        txtPaterno = new javax.swing.JTextField();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        jButton4 = new javax.swing.JButton();
         jLabel4 = new javax.swing.JLabel();
         jLabel5 = new javax.swing.JLabel();
-        jLabel8 = new javax.swing.JLabel();
-        btnRegresar = new javax.swing.JButton();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        txtFecha = new javax.swing.JTextField();
-        txtHora = new javax.swing.JTextField();
+        jLabel13 = new javax.swing.JLabel();
+        jTextField1 = new javax.swing.JTextField();
+        jLabel8 = new javax.swing.JLabel();
+        jTextField2 = new javax.swing.JTextField();
+        jTextField4 = new javax.swing.JTextField();
+        jTextField6 = new javax.swing.JTextField();
+        jTextField8 = new javax.swing.JTextField();
+        jTextField10 = new javax.swing.JTextField();
+        btnRegresar = new javax.swing.JButton();
         jMenuBar5 = new javax.swing.JMenuBar();
         jMenu19 = new javax.swing.JMenu();
         jMenu21 = new javax.swing.JMenu();
@@ -297,21 +281,29 @@ private void regresar() {
         });
         jMenu18.add(jMenuItem5);
 
+        jTextField3.setText("jTextField1");
+
+        jTextField5.setText("jTextField1");
+
+        jTextField7.setText("jTextField1");
+
+        jTextField9.setText("jTextField1");
+
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(243, 224, 255));
 
         jPanel3.setBackground(new java.awt.Color(243, 224, 255));
 
         jLabel11.setFont(new java.awt.Font("Serif", 3, 18)); // NOI18N
-        jLabel11.setText("Buscar cita");
+        jLabel11.setText("Pago Restante");
 
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
-        INS.setText("INS");
+        jLabel3.setText("INS");
 
-        FACE.setText("FACE");
+        jLabel6.setText("FACE");
 
-        WPP.setText("WPP");
+        jLabel7.setText("WPP");
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -319,11 +311,11 @@ private void regresar() {
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGap(115, 115, 115)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(110, 110, 110)
-                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(127, 127, 127)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(194, Short.MAX_VALUE))
         );
         jPanel4Layout.setVerticalGroup(
@@ -331,53 +323,39 @@ private void regresar() {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
-                    .addComponent(WPP)
-                    .addComponent(FACE))
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel7)
+                    .addComponent(jLabel6))
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
-        btnBuscar.setBackground(new java.awt.Color(255, 204, 255));
-        btnBuscar.setText("Buscar");
-        btnBuscar.addActionListener(new java.awt.event.ActionListener() {
+        jButton4.setBackground(new java.awt.Color(255, 204, 255));
+        jButton4.setText("Registrar pago");
+        jButton4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnBuscarActionPerformed(evt);
+                jButton4ActionPerformed(evt);
             }
         });
 
-        txtMaterno.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtMaternoActionPerformed(evt);
-            }
-        });
+        jLabel4.setText("Numero de cita");
 
-        txtPaterno.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtPaternoActionPerformed(evt);
-            }
-        });
+        jLabel5.setText("Fecha");
 
-        jLabel4.setText("Nombre:");
+        jLabel9.setText("Monto total");
 
-        jLabel5.setText("Apellido paterno:");
+        jLabel10.setText("Anticipo");
 
-        jLabel8.setText("Apellido materno:");
+        jLabel13.setText("Monto recibido");
+
+        jLabel8.setText("Nombre completo");
+
+        jTextField10.setText("jTextField1");
 
         btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
         btnRegresar.setText("Regresar");
         btnRegresar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegresarActionPerformed(evt);
-            }
-        });
-
-        jLabel9.setText("Fecha:");
-
-        jLabel10.setText("Hora:");
-
-        txtHora.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtHoraActionPerformed(evt);
             }
         });
 
@@ -388,79 +366,75 @@ private void regresar() {
             .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addContainerGap()
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel9)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(txtFecha, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel10)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(txtHora, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel4)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(txtNombre, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel5)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(txtPaterno, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel8)
-                                .addGap(18, 18, 18)
-                                .addComponent(txtMaterno, javax.swing.GroupLayout.PREFERRED_SIZE, 139, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(74, 74, 74))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addGap(98, 98, 98)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(jLabel11)
-                                .addGap(184, 184, 184))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
-                                .addComponent(btnRegresar)
-                                .addGap(18, 18, 18)
-                                .addComponent(btnBuscar)
-                                .addGap(84, 84, 84))))))
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel8)
+                            .addComponent(jLabel5)
+                            .addComponent(jLabel9)
+                            .addComponent(jLabel10)
+                            .addComponent(jLabel13))
+                        .addGap(24, 24, 24)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jTextField4)
+                            .addComponent(jTextField2)
+                            .addComponent(jTextField1)
+                            .addComponent(jTextField6)
+                            .addComponent(jTextField8, javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jTextField10))
+                        .addGap(39, 39, 39))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(153, 153, 153)
+                        .addComponent(jLabel11)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnRegresar)
+                .addGap(18, 18, 18)
+                .addComponent(jButton4)
+                .addGap(39, 39, 39))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(15, 15, 15)
-                .addComponent(jLabel11)
+                .addGap(42, 42, 42)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(23, 23, 23)
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel4)
-                            .addComponent(txtNombre, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jButton4)
+                            .addComponent(btnRegresar)))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addComponent(jLabel11)
+                        .addGap(33, 33, 33)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel4))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(txtPaterno, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel5))
-                        .addGap(18, 18, 18)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(txtMaterno, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel8))
-                        .addGap(19, 19, 19)
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel5)
+                            .addComponent(jTextField4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel9)
-                            .addComponent(txtFecha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jTextField6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(18, 18, 18)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel10)
-                            .addComponent(txtHora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(3, 3, 3)
-                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnBuscar)
-                    .addComponent(btnRegresar))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 26, Short.MAX_VALUE)
+                            .addComponent(jTextField8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel10))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jTextField10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel13))
+                        .addGap(0, 55, Short.MAX_VALUE)))
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -558,71 +532,9 @@ private void regresar() {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btnBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarActionPerformed
+    private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
         // TODO add your handling code here:
-                                          
-    String nombre = txtNombre.getText().trim();
-    String paterno = txtPaterno.getText().trim();
-    String materno = txtMaterno.getText().trim();
-    String fechaTexto = txtFecha.getText().trim();
-    String horaTexto = txtHora.getText().trim();
-
-    if (nombre.isEmpty() || paterno.isEmpty() || materno.isEmpty() || fechaTexto.isEmpty() || horaTexto.isEmpty()) {
-        javax.swing.JOptionPane.showMessageDialog(this, "Por favor completa todos los campos");
-        return;
-    }
-
-    try {
-        // 🔹 Convertir formato de fecha de dd-MM-yyyy → yyyy-MM-dd
-        java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("dd-MM-yyyy");
-        java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        String fechaConvertida = "";
-        try {
-            java.util.Date fecha = formatoEntrada.parse(fechaTexto);
-            fechaConvertida = formatoSalida.format(fecha);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Formato de fecha inválido. Usa dd-MM-yyyy");
-            return;
-        }
-
-        // 🔹 Ajustar formato de hora (añadir segundos si faltan)
-        if (horaTexto.length() == 5) {
-            horaTexto += ":00";
-        }
-
-        java.sql.Connection con = conexion.conectar();
-
-        String sql = "SELECT c.idCita FROM cita c "
-                   + "JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
-                   + "WHERE u.Nombre = ? AND u.Paterno = ? AND u.Materno = ? "
-                   + "AND c.Fecha = ? AND c.Hora = ?";
-
-        java.sql.PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, nombre);
-        ps.setString(2, paterno);
-        ps.setString(3, materno);
-        ps.setString(4, fechaConvertida);
-        ps.setString(5, horaTexto);
-
-        java.sql.ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            int idCita = rs.getInt("idCita");
-            NewJDatosCita datosCita = new NewJDatosCita(this, idCita);
-            datosCita.setVisible(true);
-            this.dispose();
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró la cita con esos datos");
-        }
-
-        con.close();
-
-    } catch (Exception e) {
-        e.printStackTrace();
-        javax.swing.JOptionPane.showMessageDialog(this, "Error al buscar la cita: " + e.getMessage());
-    }
-
-    }//GEN-LAST:event_btnBuscarActionPerformed
+    }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jMenu12MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu12MenuSelected
         // TODO add your handling code here:
@@ -767,25 +679,13 @@ private void regresar() {
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-                                                 
+                                          
     // Regresar al panel anterior
     NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
     anterior.setVisible(true);
     this.dispose(); // Cierra la ventana actual
 
     }//GEN-LAST:event_btnRegresarActionPerformed
-
-    private void txtPaternoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPaternoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtPaternoActionPerformed
-
-    private void txtMaternoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtMaternoActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtMaternoActionPerformed
-
-    private void txtHoraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtHoraActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtHoraActionPerformed
 
     /**
      * @param args the command line arguments
@@ -804,14 +704,30 @@ private void regresar() {
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(NewJBuscarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJPagoRestante.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(NewJBuscarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJPagoRestante.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(NewJBuscarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJPagoRestante.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(NewJBuscarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJPagoRestante.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
         //</editor-fold>
         //</editor-fold>
         //</editor-fold>
@@ -832,23 +748,24 @@ private void regresar() {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new NewJBuscarCita().setVisible(true);
+                new NewJPagoRestante().setVisible(true);
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel FACE;
-    private javax.swing.JLabel INS;
-    private javax.swing.JLabel WPP;
-    private javax.swing.JButton btnBuscar;
     private javax.swing.JButton btnRegresar;
+    private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu10;
@@ -891,10 +808,15 @@ private void regresar() {
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JTextField txtFecha;
-    private javax.swing.JTextField txtHora;
-    private javax.swing.JTextField txtMaterno;
-    private javax.swing.JTextField txtNombre;
-    private javax.swing.JTextField txtPaterno;
+    private javax.swing.JTextField jTextField1;
+    private javax.swing.JTextField jTextField10;
+    private javax.swing.JTextField jTextField2;
+    private javax.swing.JTextField jTextField3;
+    private javax.swing.JTextField jTextField4;
+    private javax.swing.JTextField jTextField5;
+    private javax.swing.JTextField jTextField6;
+    private javax.swing.JTextField jTextField7;
+    private javax.swing.JTextField jTextField8;
+    private javax.swing.JTextField jTextField9;
     // End of variables declaration//GEN-END:variables
 }
