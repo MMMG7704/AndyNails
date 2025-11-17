@@ -294,6 +294,8 @@ public NewJPagoRestante(JFrame anterior) {
 
         jPanel3.setBackground(new java.awt.Color(243, 224, 255));
 
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Img/logo.jpg"))); // NOI18N
+
         jLabel11.setFont(new java.awt.Font("Serif", 3, 18)); // NOI18N
         jLabel11.setText("Pago Restante");
 
@@ -348,8 +350,6 @@ public NewJPagoRestante(JFrame anterior) {
         jLabel13.setText("Monto recibido");
 
         jLabel8.setText("Nombre completo");
-
-        jTextField10.setText("jTextField1");
 
         btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
         btnRegresar.setText("Regresar");
