@@ -30,12 +30,12 @@ public class NewJAgendarcita extends javax.swing.JFrame {
     public NewJAgendarcita(int idCita) {
         initComponents();
         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-        
+
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         this.idCita = idCita;
         jLabel1.setText("EDITAR CITA");
-        
+
         // Cargar datos
         cargarClientes();
         cargarServicios();
@@ -43,35 +43,40 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         generarNumeroCitaAutomatico();
         cargarDatosCita(idCita);
     }
- 
 
     private JFrame ventanaAnterior;
 
-   public NewJAgendarcita(JFrame ventanaAnterior) {
+    public NewJAgendarcita(JFrame ventanaAnterior) {
         initComponents();
         this.ventanaAnterior = ventanaAnterior;
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
-        
+
         // Cargar datos
         cargarClientes();
         cargarServicios();
         cargarHoras();
         generarNumeroCitaAutomatico();
     }
-   
-   public NewJAgendarcita() {
+
+    public NewJAgendarcita() {
         initComponents();
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         jLabel1.setText("REGISTRAR NUEVA CITA");
-        
+
+        if (lblTelefono == null) {
+            System.out.println("ADVERTENCIA: lblTelefono no está inicializado");
+        }
+        if (lblCorreo == null) {
+            System.out.println("ADVERTENCIA: lblCorreo no está inicializado");
+        }
+
         // Cargar datos
         cargarClientes();
         cargarServicios();
         cargarHoras();
         generarNumeroCitaAutomatico();
-    
     }
 
     private void cargarClientes() {
@@ -87,13 +92,13 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("Seleccione un cliente");
-            
+
             while (rs.next()) {
                 model.addElement(rs.getString("Nombre"));
             }
-            
+
             jComboBoxnombrecliente.setModel(model);
-            
+
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar clientes: " + e.getMessage());
         }
@@ -113,13 +118,13 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("Seleccione un servicio");
-            
+
             while (rs.next()) {
                 model.addElement(rs.getString("Nombre_servicio"));
             }
-            
+
             jComboBox1servicios.setModel(model);
-            
+
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
         }
@@ -143,25 +148,25 @@ public class NewJAgendarcita extends javax.swing.JFrame {
                 return;
             }
 
-            String sql = "SELECT DISTINCT cs.Nombre_categoria " +
-                         "FROM categoria_Servicio cs " +
-                         "JOIN Servicios s ON cs.idServicios = s.idServicios " +
-                         "WHERE s.Nombre_servicio = ? " +
-                         "ORDER BY cs.Nombre_categoria";
-            
+            String sql = "SELECT DISTINCT cs.Nombre_categoria "
+                    + "FROM categoria_Servicio cs "
+                    + "JOIN Servicios s ON cs.idServicios = s.idServicios "
+                    + "WHERE s.Nombre_servicio = ? "
+                    + "ORDER BY cs.Nombre_categoria";
+
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setString(1, nombreServicio);
             ResultSet rs = ps.executeQuery();
 
             DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
             model.addElement("Seleccione una categoría");
-            
+
             while (rs.next()) {
                 model.addElement(rs.getString("Nombre_categoria"));
             }
-            
+
             jComboBox1diseñoselecionado.setModel(model);
-            
+
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
         }
@@ -173,7 +178,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
             String sql = "SELECT COALESCE(MAX(idCita), 0) + 1 as siguiente_cita FROM Cita";
             PreparedStatement ps = con.prepareStatement(sql);
             ResultSet rs = ps.executeQuery();
-            
+
             if (rs.next()) {
                 txtnumerocita.setText(String.valueOf(rs.getInt("siguiente_cita")));
             }
@@ -210,11 +215,11 @@ public class NewJAgendarcita extends javax.swing.JFrame {
             if (rs.next()) {
                 return rs.getInt("count") > 0;
             }
-            
+
         } catch (SQLException e) {
             System.out.println("Error al verificar fecha bloqueada: " + e.getMessage());
         }
-        
+
         return false;
     }
 
@@ -222,7 +227,9 @@ public class NewJAgendarcita extends javax.swing.JFrame {
     private void mostrarInfoBloqueo(Date fecha) {
         if (verificarFechaBloqueada(fecha)) {
             try (Connection con = conexion.conectar()) {
-                if (con == null) return;
+                if (con == null) {
+                    return;
+                }
 
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 String fechaStr = sdf.format(fecha);
@@ -234,17 +241,17 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
                 StringBuilder mensaje = new StringBuilder();
                 mensaje.append("️ ATENCIÓN: Esta fecha está bloqueada\n\n");
-                
+
                 while (rs.next()) {
                     mensaje.append("Motivo: ").append(rs.getString("Motivo")).append("\n");
                     mensaje.append("Horario bloqueado: ").append(rs.getString("Hora_inicio"))
-                           .append(" - ").append(rs.getString("Hora_fin")).append("\n\n");
+                            .append(" - ").append(rs.getString("Hora_fin")).append("\n\n");
                 }
-                
+
                 mensaje.append("Por favor seleccione otra fecha.");
-                
+
                 JOptionPane.showMessageDialog(this, mensaje.toString(), "Fecha Bloqueada", JOptionPane.WARNING_MESSAGE);
-                
+
             } catch (SQLException e) {
                 System.out.println("Error al obtener información de bloqueo: " + e.getMessage());
             }
@@ -252,38 +259,52 @@ public class NewJAgendarcita extends javax.swing.JFrame {
     }
 
     // Método para cargar los datos del cliente cuando se selecciona
-private void cargarDatosCliente(String nombreCliente) {
-    try (Connection con = conexion.conectar()) {
-        if (con == null) {
-            return;
+// Método para cargar los datos del cliente cuando se selecciona
+    private void cargarDatosCliente(String nombreCliente) {
+        try (Connection con = conexion.conectar()) {
+            if (con == null) {
+                JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+                return;
+            }
+
+            // CORRECCIÓN: Quitar el espacio antes de "Telefono"
+            String sql = "SELECT Telefono, Correo FROM Usuarios WHERE Nombre = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombreCliente);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String telefono = rs.getString("Telefono"); // Sin espacio
+                String correo = rs.getString("Correo");
+
+                // Actualizar la interfaz con los datos del cliente
+                actualizarDatosClienteEnInterfaz(telefono, correo);
+            } else {
+                // Limpiar datos si no se encuentra el cliente
+                actualizarDatosClienteEnInterfaz("", "");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar datos del cliente: " + e.getMessage());
+            System.out.println("Error al cargar datos del cliente: " + e.getMessage());
         }
-
-        String sql = "SELECT Telefono, Correo FROM Usuarios WHERE Nombre = ?";
-        PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, nombreCliente);
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            // Aquí necesitamos crear JLabels o JTextFields para mostrar estos datos
-            String telefono = rs.getString("Telefono");
-            String correo = rs.getString("Correo");
-            
-            // Actualizar la interfaz con los datos del cliente
-            actualizarDatosClienteEnInterfaz(telefono, correo);
-        }
-
-    } catch (SQLException e) {
-        System.out.println("Error al cargar datos del cliente: " + e.getMessage());
     }
-}
 
 // Método para actualizar la interfaz con los datos del cliente
-private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
-    // Necesitamos agregar JLabels o JTextFields no editables para mostrar estos datos
-    // Por ejemplo:
-    lblTelefono.setText("Teléfono: " + (telefono != null ? telefono : "No disponible"));
-    lblCorreo.setText("Correo: " + (correo != null ? correo : "No disponible"));
-}
+    private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
+        // Verificar que los JLabels no sean nulos antes de actualizarlos
+        if (lblTelefono != null) {
+            lblTelefono.setText("Teléfono: " + (telefono != null && !telefono.isEmpty() ? telefono : "No disponible"));
+        } else {
+            System.out.println("lblTelefono es null");
+        }
+
+        if (lblCorreo != null) {
+            lblCorreo.setText("Correo: " + (correo != null && !correo.isEmpty() ? correo : "No disponible"));
+        } else {
+            System.out.println("lblCorreo es null");
+        }
+    }
 
     private void cargarDatosCita(int idCita) {
         try (Connection con = conexion.conectar()) {
@@ -292,14 +313,12 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
                 return;
             }
 
-            String sql = "SELECT c.Fecha, c.Hora, u.Nombre, s.Nombre_servicio AS Servicio, " +
-                         "cs.Nombre_categoria AS Categoria, c.Anticipo " +
-                         "FROM Cita c " +
-                         "JOIN Usuarios u ON c.idUsuarios = u.idUsuarios " +
-                         "LEFT JOIN cita_has_servicios chs ON c.idCita = chs.idCita " +
-                         "LEFT JOIN Servicios s ON chs.idServicios = s.idServicios " +
-                         "LEFT JOIN categoria_Servicio cs ON chs.idCategoria_Servicio = cs.idCategoria_Servicio " +
-                         "WHERE c.idCita = ?";
+            String sql = "SELECT c.Fecha, c.Hora, u.Nombre, s.Nombre_servicio AS Servicio, c.Estado "
+                    + "FROM Cita c "
+                    + "JOIN Usuarios u ON c.idUsuarios = u.idUsuarios "
+                    + "LEFT JOIN cita_has_servicios chs ON c.idCita = chs.idCita "
+                    + "LEFT JOIN Servicios s ON chs.idServicios = s.idServicios "
+                    + "WHERE c.idCita = ?";
 
             PreparedStatement ps = con.prepareStatement(sql);
             ps.setInt(1, idCita);
@@ -323,31 +342,25 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
                 // Hora
                 String horaStr = rs.getString("Hora");
                 if (horaStr != null && horaStr.length() >= 5) {
-                    horaStr = horaStr.substring(0,5);
+                    horaStr = horaStr.substring(0, 5);
                 }
                 jComboBox3hora.setSelectedItem(horaStr);
                 jComboBox3hora.setEnabled(false);
 
-                // Servicio y Categoría
+                // Servicio (sin categoría)
                 String servicio = rs.getString("Servicio");
-                String categoria = rs.getString("Categoria");
-                
                 if (servicio != null) {
                     jComboBox1servicios.setSelectedItem(servicio);
-                    // Cargar categorías para el servicio seleccionado
-                    cargarCategoriasPorServicio(servicio);
-                    if (categoria != null) {
-                        jComboBox1diseñoselecionado.setSelectedItem(categoria);
-                    }
+                    // Ya no cargamos categorías
                 }
-                
+
                 jComboBox1servicios.setEnabled(false);
                 jComboBox1diseñoselecionado.setEnabled(false);
 
-                // Anticipo
-                String anticipo = rs.getString("Anticipo");
-                chksi.setSelected("Sí".equalsIgnoreCase(anticipo));
-                chkno.setSelected("No".equalsIgnoreCase(anticipo));
+                // Estado
+                String estado = rs.getString("Estado");
+                chksi.setSelected("Sí".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado));
+                chkno.setSelected("No".equalsIgnoreCase(estado) || "Pendiente".equalsIgnoreCase(estado));
                 chksi.setEnabled(false);
                 chkno.setEnabled(false);
             }
@@ -381,24 +394,55 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al obtener ID de usuario: " + e.getMessage());
         } finally {
-            try { con.close(); } catch (SQLException ex) { /* ignorar */ }
+            try {
+                con.close();
+            } catch (SQLException ex) {
+                /* ignorar */ }
         }
 
         return idUsuario;
     }
 
-    private void insertarServicio(int idCita, String nombreServicio, String nombreCategoria) {
-        String sql = "INSERT INTO cita_has_servicios (idCita, idServicios, idCategoria_Servicio) " +
-                     "VALUES (?, (SELECT idServicios FROM Servicios WHERE Nombre_servicio = ?), " +
-                     "(SELECT idCategoria_Servicio FROM categoria_Servicio WHERE Nombre_categoria = ? AND idServicios = (SELECT idServicios FROM Servicios WHERE Nombre_servicio = ?)))";
+    private void insertarServicio(int idCita, String nombreServicio) {
+        // Primero crear un pago temporal
+        int idPago = crearPagoTemporal();
 
-        try (Connection con = conexion.conectar();
-             PreparedStatement ps = con.prepareStatement(sql)) {
+        if (idPago == -1) {
+            JOptionPane.showMessageDialog(this, "Error al crear pago temporal para el servicio");
+            return;
+        }
+
+        String sql = "INSERT INTO cita_has_servicios (idCita, idServicios, Pago_idPago) VALUES (?, ?, ?)";
+
+        try (Connection con = conexion.conectar(); PreparedStatement ps = con.prepareStatement(sql)) {
 
             ps.setInt(1, idCita);
-            ps.setString(2, nombreServicio);
-            ps.setString(3, nombreCategoria);
-            ps.setString(4, nombreServicio);
+
+            // Mapear nombre del servicio a ID
+            int idServicio = -1;
+            switch (nombreServicio) {
+                case "Uñas":
+                    idServicio = 1;
+                    break;
+                case "Maquillaje":
+                    idServicio = 2;
+                    break;
+                case "Peinado":
+                    idServicio = 3;
+                    break;
+                case "Tatuajes":
+                    idServicio = 4;
+                    break;
+                case "otros":
+                    idServicio = 13;
+                    break;
+                default:
+                    idServicio = 1;
+            }
+
+            ps.setInt(2, idServicio);
+            ps.setInt(3, idPago);
+
             ps.executeUpdate();
 
         } catch (SQLException e) {
@@ -414,17 +458,17 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
             }
 
             // Validar campos obligatorios
-            if (jComboBoxnombrecliente.getSelectedIndex() == 0 ||
-                jComboBox3hora.getSelectedIndex() == 0 ||
-                jComboBox1servicios.getSelectedIndex() == 0 ||
-                jComboBox1diseñoselecionado.getSelectedIndex() == 0) {
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Por favor complete todos los campos:\n" +
-                    "- Seleccione un cliente\n" + 
-                    "- Seleccione un servicio\n" +
-                    "- Seleccione una categoría\n" +
-                    "- Seleccione una hora");
+            if (jComboBoxnombrecliente.getSelectedIndex() == 0
+                    || jComboBox3hora.getSelectedIndex() == 0
+                    || jComboBox1servicios.getSelectedIndex() == 0
+                    || jComboBox1diseñoselecionado.getSelectedIndex() == 0) {
+
+                JOptionPane.showMessageDialog(this,
+                        "Por favor complete todos los campos:\n"
+                        + "- Seleccione un cliente\n"
+                        + "- Seleccione un servicio\n"
+                        + "- Seleccione una categoría\n"
+                        + "- Seleccione una hora");
                 return;
             }
 
@@ -455,7 +499,7 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
             if (horaStr.length() == 5) {
                 horaStr += ":00";
             }
-            
+
             Time horaSQL;
             try {
                 horaSQL = Time.valueOf(horaStr);
@@ -479,15 +523,15 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
             }
 
             // Insertar cita
-            String sql = "INSERT INTO Cita (idUsuarios, Fecha, Hora, Anticipo) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO Cita (idUsuarios, Fecha, Hora, Estado) VALUES (?, ?, ?, ?)";
             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setInt(1, idUsuario);
             ps.setDate(2, fechaSQL);
             ps.setTime(3, horaSQL);
             ps.setString(4, anticipo);
-            
+
             int filasAfectadas = ps.executeUpdate();
-            
+
             if (filasAfectadas > 0) {
                 // Obtener el ID de la cita recién insertada
                 ResultSet generatedKeys = ps.getGeneratedKeys();
@@ -499,15 +543,14 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
                 // Insertar servicio y categoría seleccionados
                 String servicio = jComboBox1servicios.getSelectedItem().toString();
                 String categoria = jComboBox1diseñoselecionado.getSelectedItem().toString();
-                insertarServicio(idCitaGenerada, servicio, categoria);
+                insertarServicio(idCitaGenerada, servicio);
+                JOptionPane.showMessageDialog(this,
+                        " Cita registrada exitosamente\n"
+                        + "Número de cita: " + idCitaGenerada + "\n"
+                        + "Cliente: " + nombreCliente + "\n"
+                        + "Fecha: " + fechaSQL + "\n"
+                        + "Hora: " + horaStr);
 
-                JOptionPane.showMessageDialog(this, 
-                    "✅ Cita registrada exitosamente\n" +
-                    "Número de cita: " + idCitaGenerada + "\n" +
-                    "Cliente: " + nombreCliente + "\n" +
-                    "Fecha: " + fechaSQL + "\n" +
-                    "Hora: " + horaStr);
-                
                 limpiarCampos();
                 this.dispose();
             }
@@ -518,6 +561,33 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
         }
     }
 
+    private int crearPagoTemporal() {
+        Connection con = conexion.conectar();
+        if (con == null) {
+            return -1;
+        }
+
+        try {
+            // Usar las columnas correctas de tu tabla Pago
+            String sql = "INSERT INTO Pago (Estado_pago, fecha_pago, Monto) VALUES ('Pendiente', CURDATE(), 0)";
+            PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.executeUpdate();
+
+            ResultSet generatedKeys = ps.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                return generatedKeys.getInt(1);
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al crear pago temporal: " + e.getMessage());
+        } finally {
+            try {
+                con.close();
+            } catch (SQLException ex) {
+                /* ignorar */ }
+        }
+        return -1;
+    }
+
     private void actualizarCita() {
         try (Connection con = conexion.conectar()) {
             if (con == null) {
@@ -526,8 +596,8 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
             }
 
             Date fechaSeleccionada = obtenerFechaSeleccionada();
-            if (fechaSeleccionada == null || jComboBox1servicios.getSelectedIndex() == 0 ||
-                jComboBox1diseñoselecionado.getSelectedIndex() == 0) {
+            if (fechaSeleccionada == null || jComboBox1servicios.getSelectedIndex() == 0
+                    || jComboBox1diseñoselecionado.getSelectedIndex() == 0) {
                 JOptionPane.showMessageDialog(this, "Por favor completa todos los campos antes de continuar.");
                 return;
             }
@@ -555,7 +625,7 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
                 anticipo = "Sí";
             }
 
-            String sql = "UPDATE Cita SET Fecha = ?, Hora = ?, Anticipo = ? WHERE idCita = ?";
+            String sql = "UPDATE Cita SET Fecha = ?, Hora = ?, Estado = ? WHERE idCita = ?";
             PreparedStatement ps = con.prepareStatement(sql);
 
             ps.setDate(1, fechaSQL);
@@ -564,7 +634,7 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
             ps.setInt(4, idCita);
 
             int filasAfectadas = ps.executeUpdate();
-            
+
             if (filasAfectadas > 0) {
                 // Actualizar servicios (primero eliminar los existentes y luego insertar los nuevos)
                 String deleteSql = "DELETE FROM cita_has_servicios WHERE idCita = ?";
@@ -576,14 +646,14 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
                 // Insertar servicio y categoría seleccionados
                 String servicio = jComboBox1servicios.getSelectedItem().toString();
                 String categoria = jComboBox1diseñoselecionado.getSelectedItem().toString();
-                insertarServicio(idCita, servicio, categoria);
+                insertarServicio(idCita, servicio);
 
                 JOptionPane.showMessageDialog(this, "Cita actualizada correctamente.");
                 this.dispose();
             } else {
                 JOptionPane.showMessageDialog(this, "No se pudo actualizar la cita.");
             }
-            
+
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al actualizar cita: " + e.getMessage());
             e.printStackTrace();
@@ -591,92 +661,87 @@ private void actualizarDatosClienteEnInterfaz(String telefono, String correo) {
     }
 
     private void limpiarDatosCliente() {
-    lblTelefono.setText("Teléfono: ");
-    lblCorreo.setText("Correo: ");
-}
-    
+        lblTelefono.setText("Telefono:  ");
+        lblCorreo.setText("Correo:  ");
+    }
+
     private void limpiarCampos() {
-jComboBoxnombrecliente.setSelectedIndex(0);
-    jComboBox3hora.setSelectedIndex(0);
-    CalCitas.setCalendar(java.util.Calendar.getInstance());
-    jComboBox1servicios.setSelectedIndex(0);
-    DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
-    model.addElement("Seleccione una categoría");
-    jComboBox1diseñoselecionado.setModel(model);
-    chksi.setSelected(false);
-    chkno.setSelected(false);
-    generarNumeroCitaAutomatico();
-    limpiarDatosCliente(); // Limpiar también los datos del cliente
-    }
-
-    
-    public NewJAgendarcita(int idCita, String nombreCliente, String telefono, 
-                       String correo, String servicio, String fecha, 
-                       String hora, String estado) {
-    initComponents();
-    setLocationRelativeTo(null);
-    conexion = new ConexionBD();
-    this.idCita = idCita;
-    jLabel1.setText("EDITAR CITA");
-
-    // Cargar datos en los combobox
-    cargarClientes();
-    cargarServicios();
-    cargarHoras();
-
-    // Establecer número de cita
-    txtnumerocita.setText(String.valueOf(idCita));
-    txtnumerocita.setEditable(false);
-
-    // Establecer cliente
-    jComboBoxnombrecliente.setSelectedItem(nombreCliente);
-    jComboBoxnombrecliente.setEnabled(false);
-
-    // Establecer servicio
-    if (servicio != null && !servicio.isEmpty()) {
-        jComboBox1servicios.setSelectedItem(servicio);
-        // Cargar categorías para este servicio
-        cargarCategoriasPorServicio(servicio);
-    }
-    jComboBox1servicios.setEnabled(false);
-
-    // Establecer hora
-    if (hora != null && !hora.isEmpty()) {
-        // Formatear hora si es necesario (quitar segundos)
-        if (hora.length() > 5) {
-            hora = hora.substring(0, 5);
-        }
-        jComboBox3hora.setSelectedItem(hora);
-    }
-    jComboBox3hora.setEnabled(false);
-
-    // Establecer anticipo
-    if ("Sí".equalsIgnoreCase(estado)) {
-        chksi.setSelected(true);
-        chkno.setSelected(false);
-    } else {
-        chksi.setSelected(false);
-        chkno.setSelected(true);
-    }
-    chksi.setEnabled(false);
-    chkno.setEnabled(false);
-
-    // Establecer fecha
-    try {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        Date fechaDate = sdf.parse(fecha);
-        
-        java.util.Calendar cal = java.util.Calendar.getInstance();
-        cal.setTime(fechaDate);
-        CalCitas.setCalendar(cal);
-        CalCitas.setEnabled(false);
-    } catch (Exception e) {
-        System.out.println("Error al asignar fecha: " + e.getMessage());
-        // Si hay error, establecer fecha actual
+        jComboBoxnombrecliente.setSelectedIndex(0);
+        jComboBox3hora.setSelectedIndex(0);
         CalCitas.setCalendar(java.util.Calendar.getInstance());
+        jComboBox1servicios.setSelectedIndex(0);
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        model.addElement("Seleccione una categoría");
+        jComboBox1diseñoselecionado.setModel(model);
+        chksi.setSelected(false);
+        chkno.setSelected(false);
+        generarNumeroCitaAutomatico();
+
+        // Limpiar datos del cliente
+        if (lblTelefono != null) {
+            lblTelefono.setText("Teléfono: ");
+        }
+        if (lblCorreo != null) {
+            lblCorreo.setText("Correo: ");
+        }
     }
 
-}
+// Constructor para editar cita
+    public NewJAgendarcita(int idCita, String nombreCliente, String telefono,
+            String correo, String servicio, String fecha,
+            String hora, String estado) {
+        initComponents();
+        setLocationRelativeTo(null);
+        conexion = new ConexionBD();
+        this.idCita = idCita;
+        jLabel1.setText("EDITAR CITA");
+
+        cargarClientes();
+        cargarServicios();
+        cargarHoras();
+
+        txtnumerocita.setText(String.valueOf(idCita));
+        txtnumerocita.setEditable(false);
+
+        jComboBoxnombrecliente.setSelectedItem(nombreCliente);
+        jComboBoxnombrecliente.setEnabled(false);
+
+        if (servicio != null && !servicio.isEmpty()) {
+            jComboBox1servicios.setSelectedItem(servicio);
+        }
+        jComboBox1servicios.setEnabled(false);
+
+        if (hora != null && !hora.isEmpty()) {
+            if (hora.length() > 5) {
+                hora = hora.substring(0, 5);
+            }
+            jComboBox3hora.setSelectedItem(hora);
+        }
+        jComboBox3hora.setEnabled(false);
+
+        if ("Sí".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado)) {
+            chksi.setSelected(true);
+            chkno.setSelected(false);
+        } else {
+            chksi.setSelected(false);
+            chkno.setSelected(true);
+        }
+        chksi.setEnabled(false);
+        chkno.setEnabled(false);
+
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            Date fechaDate = sdf.parse(fecha);
+
+            java.util.Calendar cal = java.util.Calendar.getInstance();
+            cal.setTime(fechaDate);
+            CalCitas.setCalendar(cal);
+            CalCitas.setEnabled(false);
+        } catch (Exception e) {
+            System.out.println("Error al asignar fecha: " + e.getMessage());
+            CalCitas.setCalendar(java.util.Calendar.getInstance());
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -863,17 +928,18 @@ jComboBoxnombrecliente.setSelectedIndex(0);
                                         .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jLabel1)
-                                        .addComponent(jLabel11)
-                                        .addComponent(jLabel12))
-                                    .addGap(74, 74, 74)
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                        .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(lblTelefono, javax.swing.GroupLayout.DEFAULT_SIZE, 271, Short.MAX_VALUE)
-                                        .addComponent(lblCorreo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel1)
+                                            .addComponent(jLabel11)
+                                            .addComponent(jLabel12))
+                                        .addGap(74, 74, 74)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                     .addComponent(jLabel15)
@@ -1106,13 +1172,14 @@ jComboBoxnombrecliente.setSelectedIndex(0);
 
     private void jComboBoxnombreclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxnombreclienteActionPerformed
         // TODO add your handling code here:
-         if (jComboBoxnombrecliente.getSelectedIndex() > 0) {
-        String nombreCliente = jComboBoxnombrecliente.getSelectedItem().toString();
-        cargarDatosCliente(nombreCliente);
-    } else {
-        // Limpiar datos si no hay cliente seleccionado
-        limpiarDatosCliente();
-    }
+        if (jComboBoxnombrecliente.getSelectedIndex() > 0) {
+            String nombreCliente = jComboBoxnombrecliente.getSelectedItem().toString();
+            cargarDatosCliente(nombreCliente);
+        } else {
+            // Limpiar datos si no hay cliente seleccionado
+            lblTelefono.setText("Teléfono: ");
+            lblCorreo.setText("Correo: ");
+        }
     }//GEN-LAST:event_jComboBoxnombreclienteActionPerformed
 
     private void CalCitasPropertyChange(java.beans.PropertyChangeEvent evt) {
