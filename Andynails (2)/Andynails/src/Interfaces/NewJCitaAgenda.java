@@ -18,94 +18,191 @@ import java.util.Map;
 import java.util.HashMap;
 import java.awt.event.ActionListener;
 
-
-
 /**
  *
  * @author User
  */
 public class NewJCitaAgenda extends javax.swing.JFrame {
-ConexionBD conexion;
- 
 
-DisponibilidadManager dispManager;
+    ConexionBD conexion;
+    DisponibilidadManager dispManager;
+    private JFrame ventanaAnterior;
 
-public NewJCitaAgenda() {
-    initComponents();
-                    RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-    conexion = new ConexionBD();
-    dispManager = new DisponibilidadManager(conexion);
 
-    llenarComboRoles(); // ahora solo llena roles
+    public NewJCitaAgenda() {
+        initComponents();
+        inicializarComponentes();
+    }
 
-    CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
-        Date fechaSeleccionada = CalCitasAgendadas.getDate();
-        if (fechaSeleccionada != null) {
-            cargarCitasPorFecha(fechaSeleccionada);
+    public NewJCitaAgenda(JFrame anterior) {
+        initComponents();
+        this.ventanaAnterior = anterior;
+        inicializarComponentes();
+    }
+
+    private void inicializarComponentes() {
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        conexion = new ConexionBD();
+        dispManager = new DisponibilidadManager(conexion);
+
+        llenarComboRoles();
+        configurarCalendario();
+    }
+    
+    private void configurarCalendario() {
+        CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
+            java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+            if (cal != null) {
+                Date fechaSeleccionada = cal.getTime();
+                cargarCitasPorFecha(fechaSeleccionada);
+            }
+        });
+    }
+
+    private void regresar() {
+        if (ventanaAnterior != null) {
+            ventanaAnterior.setVisible(true);
         }
-    });
+        this.dispose();
+    }
 
-    // Cargar día actual
-    cargarCitasPorFecha(new Date());
-}
+    private void llenarComboRoles() {
+      comboRoles.removeAllItems();
+        comboRoles.addItem("Todos");
+        comboRoles.addItem("Manicurista");
+        comboRoles.addItem("Estilista");
+        comboRoles.addItem("Maquillista");
+        comboRoles.addItem("Tatuadora"); 
 
+        comboRoles.addActionListener(e -> {
+            java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+            if (cal != null) {
+                Date fecha = cal.getTime();
+                cargarCitasPorFecha(fecha);
+            }
+        });
+    }
+    
+    private void cargarCitasPorFecha(Date fechaSeleccionada) {
+        DefaultTableModel model = (DefaultTableModel) jTablecontenidocitas.getModel();
+        model.setRowCount(0);
 
-private JFrame ventanaAnterior;
-
-public NewJCitaAgenda(JFrame anterior) {
-    initComponents();
-    this.ventanaAnterior = anterior;
-
-    conexion = new ConexionBD();
-    dispManager = new DisponibilidadManager(conexion);
-
-    llenarComboRoles(); // llenar roles
-
-    CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
-        Date fechaSeleccionada = CalCitasAgendadas.getDate();
-        if (fechaSeleccionada != null) {
-            cargarCitasPorFecha(fechaSeleccionada);
+        if (fechaSeleccionada == null) {
+            return;
         }
-    });
 
-    cargarCitasPorFecha(new Date()); // cargar día actual
-}
+        String rolSeleccionado = comboRoles.getSelectedItem() != null ? comboRoles.getSelectedItem().toString() : "Todos";
 
+        StringBuilder sql = new StringBuilder("""
+            SELECT c.idCita,
+                   CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS Cliente,
+                   u.Telefono, u.Correo,
+                   s.Nombre_servicio AS Servicio,
+                   c.Fecha, c.Hora,
+                   CASE 
+                      WHEN phs.Pago_idPago IS NULL THEN 'Pendiente'
+                      WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
+                      ELSE 'Pendiente'
+                   END AS Estado
+            FROM Cita c
+            INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios
+            INNER JOIN Cita_has_Servicios phs ON c.idCita = phs.idCita
+            INNER JOIN Servicios s ON phs.idServicios = s.idServicios
+            LEFT JOIN Pago p ON phs.Pago_idPago = p.idPago
+            WHERE c.Fecha = ?
+            """);
 
-private void regresar() {
-    if (ventanaAnterior != null) {
-        ventanaAnterior.setVisible(true);
+        if (!rolSeleccionado.equals("Todos")) {
+            switch (rolSeleccionado) {
+                case "Manicurista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Uñas%'");
+                    break;
+                case "Estilista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Peinado%'");
+                    break;
+                case "Maquillista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Maquillaje%'");
+                    break;
+                case "Tatuadora":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Tatuajes%'");
+                    break;
+            }
+        }
+
+        sql.append(" ORDER BY c.Hora");
+
+        try (Connection con = conexion.conectar(); 
+             PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+            ps.setDate(1, new java.sql.Date(fechaSeleccionada.getTime()));
+            
+            ResultSet rs = ps.executeQuery();
+            
+            while (rs.next()) {
+              model.addRow(new Object[]{
+                    rs.getString("Cliente"),
+                    rs.getString("Telefono"),
+                    rs.getString("Correo"),
+                    rs.getString("Servicio"),
+                    rs.getDate("Fecha"),
+                    rs.getString("Hora"),
+                    rs.getString("Estado")
+                });
+            }
+
+            if (model.getRowCount() == 0) {
+                if (fechaSeleccionada != null) {
+                    JOptionPane.showMessageDialog(this, "No hay citas para la fecha seleccionada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar citas: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
-    this.dispose();
-}
 
-
-
-private void cargarServiciosEnCombo() {
-    comboRoles.removeAllItems();
-    Map<Integer, String> servicios = dispManager.obtenerServicios();
-    comboRoles.addItem("Todos"); // opción para mostrar todas las citas
-    for (String nombre : servicios.values()) {
-        comboRoles.addItem(nombre); // cada servicio disponible
+    private void actualizarTabla() {
+        java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+        if (cal != null) {
+            Date fecha = cal.getTime();
+            cargarCitasPorFecha(fecha);
+        }
+    }    
+    
+        private String obtenerIdCita(String nombreCliente, String telefono, String fecha, String hora) {
+        String sql = """
+            SELECT c.idCita 
+            FROM Cita c 
+            INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios 
+            WHERE CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) = ? 
+            AND u.Telefono = ? 
+            AND c.Fecha = ? 
+            AND c.Hora = ?
+            """;
+        
+        try (Connection con = conexion.conectar(); 
+             PreparedStatement ps = con.prepareStatement(sql)) {
+            
+            ps.setString(1, nombreCliente);
+            ps.setString(2, telefono);
+            ps.setString(3, fecha);
+            ps.setString(4, hora);
+            
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("idCita");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al buscar ID de cita: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
     }
-}
 
-private void actualizarTabla() {
-    Date fecha = CalCitasAgendadas.getDate();
-    if (fecha != null) {
-        cargarCitasPorFecha(fecha);
-    }
-}
-
-
-
-
-
-
+    
+    
     /**
      * Creates new form NewJCitaAgenda
      */
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -121,7 +218,6 @@ private void actualizarTabla() {
         INS = new javax.swing.JLabel();
         FACE = new javax.swing.JLabel();
         WPP = new javax.swing.JLabel();
-        CalCitasAgendadas = new com.toedter.calendar.JCalendar();
         jLabel2 = new javax.swing.JLabel();
         btnEditarCita = new javax.swing.JButton();
         btnRegistrarCita = new javax.swing.JButton();
@@ -130,6 +226,7 @@ private void actualizarTabla() {
         jTablecontenidocitas = new javax.swing.JTable();
         comboRoles = new javax.swing.JComboBox<>();
         btnRegresar = new javax.swing.JButton();
+        CalCitasAgendadas = new com.toedter.calendar.JCalendar();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -175,8 +272,6 @@ private void actualizarTabla() {
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
-        CalCitasAgendadas.setBackground(new java.awt.Color(255, 204, 255));
-
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("CITAS AGENDADAS");
 
@@ -190,6 +285,11 @@ private void actualizarTabla() {
 
         btnRegistrarCita.setBackground(new java.awt.Color(255, 204, 255));
         btnRegistrarCita.setText("Registar cita");
+        btnRegistrarCita.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegistrarCitaActionPerformed(evt);
+            }
+        });
 
         btnEliminarCita.setBackground(new java.awt.Color(255, 204, 255));
         btnEliminarCita.setText("Eliminar cita");
@@ -202,13 +302,13 @@ private void actualizarTabla() {
 
         jTablecontenidocitas.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Id Cita", "Nombre del Cliente", "Teléfono", "Correo Electrónico", "Nombre de servicio", "Fecha ", "Hora", "Estado"
+                "Nombre del Cliente", "Teléfono", "Correo Electrónico", "Nombre de servicio", "Fecha ", "Hora", "Estado"
             }
         ));
         jScrollPane1.setViewportView(jTablecontenidocitas);
@@ -228,29 +328,29 @@ private void actualizarTabla() {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(28, 28, 28)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(380, 380, 380)
-                        .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(315, 315, 315)
-                        .addComponent(jLabel2))
+                        .addGap(28, 28, 28)
+                        .addComponent(btnRegistrarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(93, 93, 93)
+                        .addComponent(btnEditarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(72, 72, 72)
+                        .addComponent(btnEliminarCita))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                            .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(btnRegistrarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(93, 93, 93)
-                                .addComponent(btnEditarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(72, 72, 72)
-                                .addComponent(btnEliminarCita)))
+                        .addGap(101, 101, 101)
+                        .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(51, 51, 51)
+                        .addComponent(btnRegresar))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(18, 18, 18)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 935, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(51, 51, 51)
-                                .addComponent(btnRegresar)))))
+                                .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(216, 216, 216)
+                                .addComponent(jLabel2))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 935, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -259,17 +359,17 @@ private void actualizarTabla() {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(36, 36, 36)
-                        .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 186, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(23, 23, 23)
+                        .addComponent(jLabel2))
+                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnRegistrarCita)
@@ -362,99 +462,97 @@ private void actualizarTabla() {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
- private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {                                                
-    NewJAgendarcita registrar = new NewJAgendarcita();
-    registrar.setVisible(true);
-    this.dispose();
-}
-
 
     private void btnEditarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarCitaActionPerformed
-                                             
-    int fila = jTablecontenidocitas.getSelectedRow();
+ int fila = jTablecontenidocitas.getSelectedRow();
     if (fila == -1) {
-        JOptionPane.showMessageDialog(this, "Selecciona una cita para editar.");
+        JOptionPane.showMessageDialog(this, "Selecciona una cita para editar.", "Advertencia", JOptionPane.WARNING_MESSAGE);
         return;
     }
 
-    // Toma los valores de la fila seleccionada
-    String idCita = jTablecontenidocitas.getValueAt(fila, 0).toString();
-    String nombre = jTablecontenidocitas.getValueAt(fila, 1).toString();
-    String telefono = jTablecontenidocitas.getValueAt(fila, 2).toString();
-    String correo = jTablecontenidocitas.getValueAt(fila, 3).toString();
-    String servicio = jTablecontenidocitas.getValueAt(fila, 4).toString();
-    String fecha = jTablecontenidocitas.getValueAt(fila, 5).toString();
-    String hora = jTablecontenidocitas.getValueAt(fila, 6).toString();
-    String estado = jTablecontenidocitas.getValueAt(fila, 7).toString();
-
-    // Abre la pantalla de edición con los datos
-    NewJAgendarcita editar = new NewJAgendarcita(idCita, nombre, telefono, correo, servicio, fecha, hora, estado);
-    editar.setVisible(true);
-    this.dispose();
-
+    try {
+        String idCitaStr = jTablecontenidocitas.getValueAt(fila, 7).toString(); // Asumiendo que el ID está en la columna 7
+        int idCita = Integer.parseInt(idCitaStr);
+        
+        // Usar el constructor simple que ya tienes
+        NewJAgendarcita editar = new NewJAgendarcita(idCita);
+        editar.setVisible(true);
+        this.dispose();
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error al abrir edición: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_btnEditarCitaActionPerformed
 
     private void btnEliminarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarCitaActionPerformed
-                                                  
-    int fila = jTablecontenidocitas.getSelectedRow();
-    if (fila == -1) {
-        JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.");
-        return;
-    }
-
-    // Obtener idCita correctamente (independiente del tipo en la tabla)
-    Object valorId = jTablecontenidocitas.getValueAt(fila, 0);
-    int idCita;
-    try {
-        idCita = Integer.parseInt(valorId.toString());
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error al leer el ID de la cita.");
-        return;
-    }
-
-    int confirm = JOptionPane.showConfirmDialog(this,
-            "¿Deseas eliminar esta cita?",
-            "Confirmar eliminación",
-            JOptionPane.YES_NO_OPTION);
-
-    if (confirm != JOptionPane.YES_OPTION) {
-        return;
-    }
-
-    try (Connection con = conexion.conectar()) {
-        if (con == null) {
-            JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+        int fila = jTablecontenidocitas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.", "Advertencia", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        // Primero eliminamos relaciones en cita_has_servicios
-        String sql1 = "DELETE FROM cita_has_servicios WHERE idCita = ?";
-        try (PreparedStatement ps1 = con.prepareStatement(sql1)) {
-            ps1.setInt(1, idCita);
-            ps1.executeUpdate();
+        try {
+            // Obtener datos para buscar el ID
+String nombreCliente = jTablecontenidocitas.getValueAt(fila, 0).toString();
+String telefono = jTablecontenidocitas.getValueAt(fila, 1).toString();
+String fecha = jTablecontenidocitas.getValueAt(fila, 4).toString();
+String hora = jTablecontenidocitas.getValueAt(fila, 5).toString();            
+            String idCitaStr = obtenerIdCita(nombreCliente, telefono, fecha, hora);
+            if (idCitaStr == null) {
+                JOptionPane.showMessageDialog(this, "No se pudo encontrar la cita seleccionada.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            
+            int idCita = Integer.parseInt(idCitaStr);
+
+Object[] opciones = {"Sí", "No"};
+int confirm = JOptionPane.showOptionDialog(this,
+        "¿Estás seguro de que deseas eliminar esta cita?",
+        "Confirmar eliminación",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.WARNING_MESSAGE,
+        null,
+        opciones,
+        opciones[1]);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+
+            try (Connection con = conexion.conectar()) {
+                if (con == null) {
+                    JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                // Eliminar relaciones en cita_has_servicios
+                String sql1 = "DELETE FROM cita_has_servicios WHERE idCita = ?";
+                try (PreparedStatement ps1 = con.prepareStatement(sql1)) {
+                    ps1.setInt(1, idCita);
+                    ps1.executeUpdate();
+                }
+
+                // Eliminar la cita principal
+                String sql2 = "DELETE FROM cita WHERE idCita = ?";
+                try (PreparedStatement ps2 = con.prepareStatement(sql2)) {
+                    ps2.setInt(1, idCita);
+                    ps2.executeUpdate();
+                }
+
+                JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                actualizarTabla();
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Error: ID de cita inválido.", "Error", JOptionPane.ERROR_MESSAGE);
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al eliminar cita: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-        //  Luego la cita principal
-        String sql2 = "DELETE FROM cita WHERE idCita = ?";
-        try (PreparedStatement ps2 = con.prepareStatement(sql2)) {
-            ps2.setInt(1, idCita);
-            ps2.executeUpdate();
-        }
-
-        JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
-        cargarCitasPorFecha(CalCitasAgendadas.getDate());
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al eliminar cita: " + e.getMessage());
-    }
 
     }//GEN-LAST:event_btnEliminarCitaActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
         // TODO add your handling code here:
-     //inicio
+        //inicio
         Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);   
+        Inicio.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu4MenuSelected
@@ -488,7 +586,7 @@ private void actualizarTabla() {
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
-         //agendar cancelar
+        //agendar cancelar
         NewJCancelarC NewJCancelarC = new NewJCancelarC();
         NewJCancelarC.setVisible(true);
         this.dispose(); // cierra la actual
@@ -506,135 +604,20 @@ private void actualizarTabla() {
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-                                                
-    // Regresar al panel anterior
-    NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
-    anterior.setVisible(true);
-    this.dispose(); // Cierra la ventana actual
+
+        // Regresar al panel anterior
+        NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
 
     }//GEN-LAST:event_btnRegresarActionPerformed
-private void llenarComboRoles() {
-    comboRoles.removeAllItems();
-    comboRoles.addItem("Todos");
-    comboRoles.addItem("Manicurista");
-    comboRoles.addItem("Estilista");
-    comboRoles.addItem("Maquillista");
 
-    // 🔹 Listener solo una vez
-    comboRoles.addActionListener(e -> {
-        Date fecha = CalCitasAgendadas.getDate();
-        if (fecha != null) {
-            cargarCitasPorFecha(fecha);
-        }
-    });
-}
-
-
-private void filtrarServiciosPorRol(String rol) {
-    // Guardar listener actual
-    ActionListener[] listeners = comboRoles.getActionListeners();
-
-    comboRoles.removeAllItems(); // solo borra items
-    comboRoles.addItem("Todos"); 
-
-    String sql = "SELECT Nombre_servicio FROM Servicios";
-    if (rol.equals("Manicurista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Manicure%'";
-    } else if (rol.equals("Estilista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Peinado%'";
-    } else if (rol.equals("Maquillista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Maquillaje%'";
-    }
-
-    try (Connection con = conexion.conectar();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
-
-        while (rs.next()) {
-            comboRoles.addItem(rs.getString("Nombre_servicio"));
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
-    }
-
-    // 🔹 Reagregar listener al combo
-    for (ActionListener l : listeners) {
-        comboRoles.addActionListener(l);
-    }
-}
-
-    
-private void cargarCitasPorFecha(Date fechaSeleccionada) {
-    DefaultTableModel model = (DefaultTableModel) jTablecontenidocitas.getModel();
-    model.setRowCount(0);
-
-    String rolSeleccionado = comboRoles.getSelectedItem() != null ? comboRoles.getSelectedItem().toString() : "Todos";
-
-    // Mapear rol a servicio
-    String servicioFiltro = null;
-    switch (rolSeleccionado) {
-        case "Manicurista": servicioFiltro = "Manicure"; break;
-        case "Estilista":   servicioFiltro = "Peinado";  break;
-        case "Maquillista": servicioFiltro = "Maquillaje"; break;
-    }
-
-    String sql = """
-    SELECT c.idCita,
-           CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS Cliente,
-           u.Telefono, u.Correo,
-           s.Nombre_servicio AS Servicio,
-           c.Fecha, c.Hora,
-           CASE WHEN phs.Pago_idPago IS NULL THEN 'Pendiente'
-                WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
-                ELSE 'Pendiente'
-           END AS Estado
-    FROM Cita c
-    INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios
-    INNER JOIN Cita_has_Servicios phs ON c.idCita = phs.idCita
-    INNER JOIN Servicios s ON phs.idServicios = s.idServicios
-    LEFT JOIN Pago p ON phs.Pago_idPago = p.idPago
-    WHERE c.Fecha = ?
-    """;
-
-    if (servicioFiltro != null) {
-        sql += " AND s.Nombre_servicio LIKE ?";
-    }
-
-    sql += " ORDER BY c.Hora";
-
-    try (Connection con = conexion.conectar();
-         PreparedStatement ps = con.prepareStatement(sql)) {
-
-        ps.setDate(1, new java.sql.Date(fechaSeleccionada.getTime()));
-        if (servicioFiltro != null) {
-            ps.setString(2, "%" + servicioFiltro + "%");
-        }
-
-        ResultSet rs = ps.executeQuery();
-        int numeroCita = 1;
-        while (rs.next()) {
-            // Aquí el orden coincide con las columnas de tu DefaultTableModel:
-            // "Id Cita", "Nombre del Cliente", "Teléfono", "Correo Electrónico", "Nombre de servicio", "Fecha", "Hora", "Estado"
-            model.addRow(new Object[]{
-                rs.getInt("idCita"),
-                rs.getString("Cliente"),
-                rs.getString("Telefono"),
-                rs.getString("Correo"),
-                rs.getString("Servicio"),
-                rs.getDate("Fecha"),
-                rs.getString("Hora"),
-                rs.getString("Estado")
-            });
-            numeroCita++;
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar citas: " + e.getMessage());
-    }
-}
-
-
+    private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarCitaActionPerformed
+        // TODO add your handling code here:
+        NewJAgendarcita registrar = new NewJAgendarcita();
+        registrar.setVisible(true);
+        this.dispose();
+    }//GEN-LAST:event_btnRegistrarCitaActionPerformed
 
 
     /**
