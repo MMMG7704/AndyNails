@@ -808,6 +808,11 @@ private void eliminarCliente() {
         jMenu7.setText("LOGIN");
 
         jMenuItem5.setText("Login");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
         jMenu7.add(jMenuItem5);
 
         jMenuBar1.add(jMenu7);
@@ -898,6 +903,13 @@ private void eliminarCliente() {
     private void jComboBoxNombreClieActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxNombreClieActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBoxNombreClieActionPerformed
+
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+        // TODO add your handling code here:
+         NewJLogin NewJLogin = new NewJLogin();
+        NewJLogin.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     /**
      * @param args the command line arguments
