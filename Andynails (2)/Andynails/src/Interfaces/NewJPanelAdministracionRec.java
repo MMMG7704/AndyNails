@@ -12,6 +12,7 @@ import javax.swing.JOptionPane;
 import java.sql.Connection;
 import java.awt.Color;
 import java.awt.Component;
+import java.sql.SQLException;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import java.time.LocalDate;
@@ -31,241 +32,493 @@ import java.util.Locale;
  */
 public class NewJPanelAdministracionRec extends javax.swing.JFrame {
 
-    ConexionBD conexion;
+   private Connection cn;
+private ConexionBD conexion;
+
+private LocalDate fechaSeleccionada = LocalDate.now();
+private com.toedter.calendar.JDateChooser dateChooser;
+private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+
+private void actualizarEncabezadosSemana(LocalDate fechaBase) {
+    DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
+
+    // Obtener lunes de la semana
+    LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+
+    // Formato: dd/MM
+    DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM");
+
+    // Columnas: 1 = lunes ... 7 = domingo
+    String[] dias = {"Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+
+    for (int i = 0; i < 7; i++) {
+        LocalDate dia = lunes.plusDays(i);
+        String nombreColumna = dias[i] + " " + dia.format(formato);
+        tabla.getColumnModel().getColumn(i + 1).setHeaderValue(nombreColumna);
+    }
+
+    // Refrescar la tabla para que se vea el cambio
+    tabla.getTableHeader().repaint();
+}
+
+
+
+
 
     /**
      * Creates new form NewJRegistro
      */
-    public NewJPanelAdministracionRec() {
-        initComponents();
-        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+public NewJPanelAdministracionRec() {
+    initComponents();
 
-        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        cargarCategorias();
-        //   JDateChooser dateChooser = new JDateChooser();
-        // dateChooser.setDateFormatString("yyyy-MM-dd");
-        //dateChooser.setDate(new Date());
-        //this.add(dateChooser); // Agregar al JFrame
-        //dateChooser.setBounds(20, 20, 120, 30); // Posición
-        DefaultTableModel modelo = new DefaultTableModel();
-        modelo.addColumn("Hora");
-        modelo.addColumn("Lunes");
-        modelo.addColumn("Martes");
-        modelo.addColumn("Miércoles");
-        modelo.addColumn("Jueves");
-        modelo.addColumn("Viernes");
-        modelo.addColumn("Sábado");
-        modelo.addColumn("Domingo");
+    // === SIEMPRE carga la conexión con el nombre de tu BD ===
+    conexion = new ConexionBD("andynails");
+    cn = conexion.conectar(); 
 
-// Horas manuales
-        modelo.addRow(new Object[]{"9:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"10:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"11:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"12:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"13:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"14:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"15:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"16:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"17:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"18:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"19:00", "", "", "", "", "", "", ""});
-        modelo.addRow(new Object[]{"20:00", "", "", "", "", "", "", ""});
+    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        tabla.setModel(modelo);
-        tabla.setDefaultRenderer(Object.class, new AgendaRenderer());
+    // === FECHA INICIAL ===
+    fechaSeleccionada = LocalDate.now();
 
-        cargarAgendaSemanal("Maquillaje");
+    // === JDATECHOOSER DEL FORM ===
+    dateChooser = jDateInicio;
+    dateChooser.setDate(java.sql.Date.valueOf(fechaSeleccionada));
 
+    actualizarLabelFecha();
+
+    // === TABLA PRINCIPAL ===
+    DefaultTableModel modelo = new DefaultTableModel();
+    modelo.addColumn("Hora");
+    modelo.addColumn("Lunes");
+    modelo.addColumn("Martes");
+    modelo.addColumn("Miércoles");
+    modelo.addColumn("Jueves");
+    modelo.addColumn("Viernes");
+    modelo.addColumn("Sábado");
+    modelo.addColumn("Domingo");
+
+    String[] horas = {
+        "9:00","10:00","11:00","12:00","13:00","14:00",
+        "15:00","16:00","17:00","18:00","19:00","20:00"
+    };
+
+    for (String h : horas) {
+        modelo.addRow(new Object[]{h, "", "", "", "", "", "", ""});
     }
 
-    private JFrame ventanaAnterior;
+    tabla.setModel(modelo);
+    tabla.setDefaultRenderer(Object.class, new AgendaRenderer());
 
-    public NewJPanelAdministracionRec(JFrame anterior) {
-        initComponents();
-        conexion = new ConexionBD("andynails");
-        this.ventanaAnterior = anterior;
-    }
+    // === TABLA RESUMEN ===
+    DefaultTableModel modeloConteo = new DefaultTableModel(
+        new Object[][] {
+            {"Total de Citas Hoy", 0},
+            {"Citas Pendientes", 0},
+            {"Citas Confirmadas", 0}
+        },
+        new String[] {"Concepto", "Cantidad"}
+    );
+    tablaResumen.setModel(modeloConteo);
 
-    private void regresar() {
-        if (ventanaAnterior != null) {
-            ventanaAnterior.setVisible(true);
+    // === EVENTO FECHA ===
+    dateChooser.addPropertyChangeListener("date", evt -> {
+        if (evt.getNewValue() != null) {
+            fechaSeleccionada = ((java.util.Date) evt.getNewValue())
+                    .toInstant()
+                    .atZone(java.time.ZoneId.systemDefault())
+                    .toLocalDate();
         }
-        this.dispose();
+    });
+
+    // === CARGAR PRIMERA VEZ ===
+    cargarCategorias();  // <-- esto NO lo tenías
+    String servicio = (String) cmbservicio.getSelectedItem();
+
+    if (servicio != null) {
+        cargarAgendaSemanal(servicio, fechaSeleccionada);
+        actualizarEncabezadosSemana(fechaSeleccionada);
     }
 
-    private void cargarAgendaSemanal(String servicioSeleccionado) {
-        try (Connection con = conexion.conectar()) {
-            LocalDate hoy = LocalDate.now();
-            LocalDate inicioSemana = hoy.with(DayOfWeek.MONDAY);
-            LocalDate finSemana = hoy.with(DayOfWeek.SUNDAY);
+    actualizarTotales();
 
-            // Mostrar rango de semana arriba
-            lblfecha.setText("Semana del " + inicioSemana + " al " + finSemana);
+    btnFiltrarRango.addActionListener(e -> filtrarPorRango());
+}
 
-            // --- Encabezados de días con fecha ---
-            String[] diasSemana = new String[8];
-            diasSemana[0] = "Hora";
-            DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM");
 
-            for (int i = 0; i < 7; i++) {
-                LocalDate dia = inicioSemana.plusDays(i);
-                String nombreDia = dia.getDayOfWeek().getDisplayName(java.time.format.TextStyle.FULL, new java.util.Locale("es", "ES"));
-                nombreDia = Character.toUpperCase(nombreDia.charAt(0)) + nombreDia.substring(1); // Mayúscula inicial
-                diasSemana[i + 1] = nombreDia + " (" + dia.format(formato) + ")";
+
+private void actualizarTotales() {
+    try (Connection con = conexion.conectar()) {
+
+        DefaultTableModel modelo = (DefaultTableModel) tablaResumen.getModel();
+
+        // Total citas HOY
+        String sqlHoy = "SELECT COUNT(*) FROM cita WHERE Fecha = CURDATE()";
+        PreparedStatement psHoy = con.prepareStatement(sqlHoy);
+        ResultSet rsHoy = psHoy.executeQuery();
+        if (rsHoy.next()) modelo.setValueAt(rsHoy.getInt(1), 0, 1);
+
+        // Citas Pendientes
+        String sqlPend = "SELECT COUNT(*) FROM cita WHERE Estado = 'Pendiente'";
+        PreparedStatement psPend = con.prepareStatement(sqlPend);
+        ResultSet rsPend = psPend.executeQuery();
+        if (rsPend.next()) modelo.setValueAt(rsPend.getInt(1), 1, 1);
+
+        // Citas Confirmadas
+        String sqlConf = "SELECT COUNT(*) FROM cita WHERE Estado = 'Confirmada'";
+        PreparedStatement psConf = con.prepareStatement(sqlConf);
+        ResultSet rsConf = psConf.executeQuery();
+        if (rsConf.next()) modelo.setValueAt(rsConf.getInt(1), 2, 1);
+
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al actualizar resumen: " + e.getMessage());
+    }
+}
+
+private void filtrarPorRango() {
+
+    if (jDateInicio.getDate() == null || jDateFin.getDate() == null) {
+        JOptionPane.showMessageDialog(this, "Seleccione fecha inicio y fecha fin");
+        return;
+    }
+
+    LocalDate inicio = jDateInicio.getDate().toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+    LocalDate fin = jDateFin.getDate().toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+    if (inicio.isAfter(fin)) {
+        JOptionPane.showMessageDialog(this, "La fecha inicio no puede ser mayor que la fecha fin");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE NO EXCEDA UNA SEMANA
+    if (fin.isAfter(inicio.plusDays(6))) {
+        JOptionPane.showMessageDialog(this,
+            "El rango excede una semana. Solo puedes seleccionar una semana completa (lunes a domingo).");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE INICIO SEA LUNES
+    if (inicio.getDayOfWeek() != DayOfWeek.MONDAY) {
+        JOptionPane.showMessageDialog(this,
+            "La fecha de inicio debe ser lunes para consultar una semana completa.");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE FIN SEA DOMINGO
+    if (fin.getDayOfWeek() != DayOfWeek.SUNDAY) {
+        JOptionPane.showMessageDialog(this,
+            "La fecha final debe ser domingo para consultar una semana completa.");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE SEA LUNES → DOMINGO (6 días exactos)
+    if (!fin.equals(inicio.plusDays(6))) {
+        JOptionPane.showMessageDialog(this,
+            "Debes seleccionar una semana completa: del lunes al domingo.");
+        return;
+    }
+
+    // ✔️ SI TODO ES CORRECTO, CARGAR AGENDA
+    String servicio = (String) cmbservicio.getSelectedItem();
+
+    if (servicio != null) {
+        cargarAgendaPorRango(servicio, inicio, fin);
+        actualizarEncabezadosSemana(inicio);
+    }
+
+    try (Connection cn = conexion.conectar()) {
+        actualizarConteoDiario(cn, inicio);
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+
+    actualizarTotales();
+}
+
+
+ private void cargarAgendaPorRango(String servicio, LocalDate inicio, LocalDate fin) {
+    try (Connection cn = conexion.conectar()) {
+
+        // Limpiar tabla
+        DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            for (int j = 1; j < modelo.getColumnCount(); j++) {
+                modelo.setValueAt("", i, j);
             }
+        }
 
-            // --- Modelo de tabla ---
-            DefaultTableModel modelo = new DefaultTableModel(diasSemana, 0);
-
-            String[] horas = {"9:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"};
-            for (String h : horas) {
-                modelo.addRow(new Object[]{h, "", "", "", "", "", "", ""});
-            }
-
-            String sql = """
-            SELECT c.Fecha, c.Hora,
-                   s.Nombre_servicio,
-                   p.Estado_pago
+        // Consulta correcta: unir usuarios para obtener nombre completo
+        String sql = """
+            SELECT 
+                CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
+                s.Nombre_servicio,
+                c.Fecha,
+                c.Hora,
+                c.Estado
             FROM cita c
-            JOIN cita_has_servicios chs ON c.idCita = chs.idCita
-            JOIN servicios s ON chs.idServicios = s.idServicios
-            LEFT JOIN pago p ON chs.Pago_idPago = p.idPago
-            WHERE c.Fecha BETWEEN ? AND ?
-              AND s.Nombre_servicio LIKE ?
-            ORDER BY c.Fecha, c.Hora;
+            INNER JOIN usuarios u ON u.idUsuarios = c.idUsuarios
+            INNER JOIN cita_has_servicios chs ON chs.idCita = c.idCita
+            INNER JOIN servicios s ON s.idServicios = chs.idServicios
+            WHERE s.Nombre_servicio = ? AND c.Fecha BETWEEN ? AND ?
+            ORDER BY c.Fecha, c.Hora
         """;
 
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setDate(1, java.sql.Date.valueOf(inicioSemana));
-            ps.setDate(2, java.sql.Date.valueOf(finSemana));
-            ps.setString(3, "%" + servicioSeleccionado + "%");
-            ResultSet rs = ps.executeQuery();
+        PreparedStatement ps = cn.prepareStatement(sql);
+        ps.setString(1, servicio);
+        ps.setDate(2, java.sql.Date.valueOf(inicio));
+        ps.setDate(3, java.sql.Date.valueOf(fin));
+        ResultSet rs = ps.executeQuery();
 
-            int totalCitasHoy = 0, pendientes = 0, confirmadas = 0;
-            LocalDate hoyFecha = LocalDate.now();
+        while (rs.next()) {
+            String cliente = rs.getString("NombreCliente"); // nombre completo
+            LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+            String hora = rs.getString("Hora");
+            String estado = rs.getString("Estado");
 
-            while (rs.next()) {
-                LocalDate fecha = rs.getDate("Fecha").toLocalDate();
-                String hora = rs.getTime("Hora").toString().substring(0, 5);
-                String servicio = rs.getString("Nombre_servicio");
-                String estado = rs.getString("Estado_pago");
+            int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1=Lunes
+            int col = diaSemana; // columna de lunes a domingo
+            int fila = obtenerFilaPorHora(hora);
 
-                int diaColumna = fecha.getDayOfWeek().getValue(); // Lunes=1 ... Domingo=7
-                int filaHora = -1;
+            if (fila != -1 && col <= 7) {
+                String texto = cliente; // solo nombre del cliente
+                if ("Completada".equalsIgnoreCase(estado)) texto += " (✔)";
+                if ("Pendiente".equalsIgnoreCase(estado)) texto += " (⏳)";
+                modelo.setValueAt(texto, fila, col);
+            }
+        }
 
-                for (int i = 0; i < horas.length; i++) {
-                    if (horas[i].equals(hora)) {
-                        filaHora = i;
-                        break;
-                    }
+        // Actualizar conteo diario solo del primer día del rango
+        actualizarConteoDiario(cn, inicio);
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error cargando rango: " + e.getMessage());
+    }
+}
+
+
+
+private void cambiarSemana(int desplazamiento) {
+    fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
+    dateChooser.setDate(java.sql.Date.valueOf(fechaSeleccionada));
+    actualizarLabelFecha();
+    String servicio = (String) cmbservicio.getSelectedItem();
+    if (servicio != null) {
+        cargarAgendaSemanal(servicio, fechaSeleccionada);
+    }
+    if (servicio != null) {
+    cargarAgendaSemanal(servicio, fechaSeleccionada);
+    actualizarEncabezadosSemana(fechaSeleccionada);
+}
+
+}
+
+    
+    
+private void actualizarLabelFecha() {
+    DateTimeFormatter formato = DateTimeFormatter.ofPattern(
+        "EEEE, dd 'de' MMMM 'de' yyyy", new Locale("es", "ES")
+    );
+    lblFechaHoy.setText("Bienvenid@, Recepcionista! Hoy es " + 
+        fechaSeleccionada.format(formato));
+}
+
+    
+    
+    
+private JFrame ventanaAnterior;
+
+public NewJPanelAdministracionRec(JFrame anterior) {
+    initComponents();
+    conexion = new ConexionBD("andynails");
+    this.ventanaAnterior = anterior;
+}
+private void regresar() {
+    if (ventanaAnterior != null) {
+        ventanaAnterior.setVisible(true);
+    }
+    this.dispose();
+}
+
+private void actualizarConteoDiario(Connection cn, LocalDate fecha) throws SQLException {
+    DefaultTableModel modeloConteo = (DefaultTableModel) tablaResumen.getModel();
+
+    String sql = """
+        SELECT Estado, COUNT(*) AS cantidad
+        FROM cita
+        WHERE Fecha = ?
+        GROUP BY Estado
+    """;
+
+    PreparedStatement ps = cn.prepareStatement(sql);
+    ps.setDate(1, java.sql.Date.valueOf(fecha));
+    ResultSet rs = ps.executeQuery();
+
+    int total = 0, pendientes = 0, confirmadas = 0;
+    while (rs.next()) {
+        String estado = rs.getString("Estado");
+        int cant = rs.getInt("cantidad");
+        total += cant;
+
+        if ("Pendiente".equalsIgnoreCase(estado)) pendientes += cant;
+        if ("Confirmada".equalsIgnoreCase(estado)) confirmadas += cant;
+    }
+
+    modeloConteo.setValueAt(total, 0, 1);
+    modeloConteo.setValueAt(pendientes, 1, 1);
+    modeloConteo.setValueAt(confirmadas, 2, 1);
+}
+
+
+
+
+// === MÉTODO PARA CARGAR LA AGENDA DE UNA SEMANA ===
+private void cargarAgendaSemanal(String servicio, LocalDate fechaBase) {
+    try (Connection cn = conexion.conectar()) {
+
+        // Determinar lunes y domingo de la semana del filtro
+        LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+        LocalDate domingo = fechaBase.with(DayOfWeek.SUNDAY);
+
+        // Limpiar tabla (desde columna 1 = lunes hasta domingo)
+        DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            for (int j = 1; j < modelo.getColumnCount(); j++) {
+                modelo.setValueAt("", i, j);
+            }
+        }
+
+        
+        String sql = """
+    SELECT 
+        CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
+        s.Nombre_servicio,
+        c.Fecha,
+        c.Hora,
+        c.Estado
+    FROM cita c
+    INNER JOIN usuarios u ON u.idUsuarios = c.idUsuarios
+    INNER JOIN cita_has_servicios chs ON chs.idCita = c.idCita
+    INNER JOIN servicios s ON s.idServicios = chs.idServicios
+    WHERE s.Nombre_servicio LIKE ?
+      AND c.Fecha BETWEEN ? AND ?
+    ORDER BY c.Fecha, c.Hora
+""";
+
+PreparedStatement ps = cn.prepareStatement(sql);
+ps.setString(1, "%" + servicio + "%"); // <-- importante: % antes y después
+ps.setDate(2, java.sql.Date.valueOf(lunes));
+ps.setDate(3, java.sql.Date.valueOf(domingo));
+
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+
+            String cliente = rs.getString("NombreCliente");
+            String nombreServicio = rs.getString("Nombre_servicio");
+            LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+            String hora = rs.getString("Hora");
+            String estado = rs.getString("Estado");
+
+            int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1 = Lunes
+            int col = diaSemana; // columna de lunes a domingo
+            int fila = obtenerFilaPorHora(hora);
+
+            if (fila != -1 && col <= 7) {
+
+                String texto = cliente; // SOLO nombre completo
+                // Si quieres: texto = cliente + " - " + nombreServicio;
+
+                if ("Completada".equalsIgnoreCase(estado)) {
+                    texto += " (✔)";
+                } else if ("Pendiente".equalsIgnoreCase(estado)) {
+                    texto += " (⏳)";
                 }
 
-                if (filaHora != -1 && diaColumna <= 7) {
-                    String textoCelda = servicio;
-                    Object actual = modelo.getValueAt(filaHora, diaColumna);
-                    if (actual != null && !actual.toString().isEmpty()) {
-                        textoCelda = actual + " | " + textoCelda;
-                    }
-                    modelo.setValueAt(textoCelda, filaHora, diaColumna);
-                }
+                modelo.setValueAt(texto, fila, col);
+                actualizarTotales();
 
-                // Contadores del panel lateral
-                if (fecha.equals(hoyFecha)) {
-                    totalCitasHoy++;
-                    if (estado == null || estado.equalsIgnoreCase("Pendiente")) {
-                        pendientes++;
-                    } else if (estado.equalsIgnoreCase("Validado")) {
-                        confirmadas++;
-                    }
-                }
             }
-
-            tabla.setModel(modelo);
-            tabla.setDefaultRenderer(Object.class, new AgendaRenderer());
-
-            // Totales panel lateral
-            jTable1.setValueAt(totalCitasHoy, 0, 1);
-            jTable1.setValueAt(pendientes, 1, 1);
-            jTable1.setValueAt(confirmadas, 2, 1);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + e.getMessage());
         }
+
+        actualizarConteoDiario(cn, fechaBase);
+
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + ex.getMessage());
+    }
+}
+
+
+
+
+
+
+
+
+
+private void cargarCategorias() {
+    cmbservicio.removeAllItems();
+
+    String sql = "SELECT idServicios, Nombre_servicio FROM servicios";
+
+    try (Connection con = conexion.conectar();
+         PreparedStatement ps = con.prepareStatement(sql);
+         ResultSet rs = ps.executeQuery()) {
+
+        while (rs.next()) {
+            String nombre = rs.getString("Nombre_servicio");
+            cmbservicio.addItem(nombre);
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
+
+private int obtenerIdServicio(String nombreServicio) {
+    String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio = ? LIMIT 1";
+
+    try (PreparedStatement ps = conexion.getConnection().prepareStatement(sql)) {
+        ps.setString(1, nombreServicio);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            return rs.getInt("idServicios");
+        }
+
+    } catch (Exception e) {
+        e.printStackTrace();
     }
 
-    private void cargarCategorias() {
-        try {
-            Connection conn = new ConexionBD().conectar();
-            String sql = "SELECT Nombre_categoria FROM categoria_Servicio";
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ResultSet rs = ps.executeQuery();
+    return -1;
+}
 
-            cmbservicio.removeAllItems(); // Limpia el ComboBox antes de llenarlo
 
-            while (rs.next()) {
-                cmbservicio.addItem(rs.getString("Nombre_categoria"));
-            }
 
-            rs.close();
-            ps.close();
-            conn.close();
+private int obtenerFilaPorHora(String hora) {
+    String h = hora.startsWith("0") ? hora.substring(1) : hora;  // quitar cero inicial
 
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error al cargar categorías: " + e.getMessage());
+    String[] horas = {"9:00", "10:00", "11:00", "12:00", "13:00",
+                      "14:00", "15:00", "16:00", "17:00",
+                      "18:00", "19:00", "20:00"};
+
+    for (int i = 0; i < horas.length; i++) {
+        if (h.startsWith(horas[i])) {
+            return i;
         }
     }
+    return -1;
+}
 
-    private void cmbservicioActionPerformed(java.awt.event.ActionEvent evt) {
-        if (cmbservicio.getSelectedItem() != null) {
-            String categoriaSeleccionada = cmbservicio.getSelectedItem().toString();
-            cargarAgendaPorCategoria(categoriaSeleccionada);
-        }
-    }
 
-    private void cargarAgendaPorCategoria(String categoria) {
 
-        try {
-            Connection conn = new ConexionBD().conectar();
-            String sql = """
-            SELECT c.idCita, u.Nombre AS Cliente, s.Nombre_servicio, c.Fecha, c.Hora, c.Estado
-            FROM cita c
-            JOIN usuarios u ON c.idUsuarios = u.idUsuarios
-            JOIN cita_has_servicios chs ON c.idCita = chs.idCita
-            JOIN servicios s ON chs.idServicios = s.idServicios
-            JOIN categoria_servicio cs ON s.idServicios = cs.idServicios
-            WHERE cs.Nombre_categoria = ?
-            ORDER BY c.Fecha, c.Hora;
-        """;
-
-            PreparedStatement ps = conn.prepareStatement(sql);
-            ps.setString(1, categoria);
-            ResultSet rs = ps.executeQuery();
-
-            DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
-            modelo.setRowCount(0);
-
-            while (rs.next()) {
-                Object[] fila = {
-                    rs.getInt("idCita"),
-                    rs.getString("Cliente"),
-                    rs.getString("Nombre_servicio"),
-                    rs.getDate("Fecha"),
-                    rs.getTime("Hora"),
-                    rs.getString("Estado")
-                };
-                modelo.addRow(fila);
-            }
-
-            rs.close();
-            ps.close();
-            conn.close();
-
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Error al cargar agenda: " + e.getMessage());
-        }
-    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -304,13 +557,18 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         jLabel18 = new javax.swing.JLabel();
         jLabel21 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
-        jTable1 = new javax.swing.JTable();
+        tablaResumen = new javax.swing.JTable();
         jLabel3 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        lblFechaHoy = new javax.swing.JLabel();
+        cmbservicio = new javax.swing.JComboBox<>();
+        btnFiltrarRango = new javax.swing.JButton();
         jScrollPane3 = new javax.swing.JScrollPane();
         tabla = new javax.swing.JTable();
-        jLabel6 = new javax.swing.JLabel();
-        lblfecha = new javax.swing.JLabel();
-        cmbservicio = new javax.swing.JComboBox<>();
+        jButtonSiguiente = new javax.swing.JButton();
+        jButtonAnterior = new javax.swing.JButton();
+        jDateFin = new com.toedter.calendar.JDateChooser();
+        jDateInicio = new com.toedter.calendar.JDateChooser();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenuInicio = new javax.swing.JMenu();
         jMenuCitas = new javax.swing.JMenu();
@@ -321,6 +579,8 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         menuPagoRestante = new javax.swing.JMenuItem();
         jMenuLogin = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu14 = new javax.swing.JMenu();
+        jMenuItem11 = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -485,7 +745,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         jLabel21.setFont(new java.awt.Font("Serif", 3, 18)); // NOI18N
         jLabel21.setText("PANEL DE ADMINISTRACIÓN");
 
-        jTable1.setModel(new javax.swing.table.DefaultTableModel(
+        tablaResumen.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
                 {"Total de Citas agendadas hoy", null},
                 {"Citas pendientes", null},
@@ -503,9 +763,21 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
                 return canEdit [columnIndex];
             }
         });
-        jScrollPane1.setViewportView(jTable1);
+        jScrollPane1.setViewportView(tablaResumen);
 
         jLabel3.setText("Bienvenid@, Recepcionista! Hoy es ");
+
+        lblFechaHoy.setText("jLabel7");
+
+        cmbservicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Maquillaje", "Uñas", "Peinados", " " }));
+
+        btnFiltrarRango.setBackground(new java.awt.Color(246, 177, 246));
+        btnFiltrarRango.setText("Filtrar Rango");
+        btnFiltrarRango.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFiltrarRangoActionPerformed(evt);
+            }
+        });
 
         tabla.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -520,65 +792,104 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         ));
         jScrollPane3.setViewportView(tabla);
 
-        lblfecha.setText("jLabel7");
+        jButtonSiguiente.setBackground(new java.awt.Color(255, 204, 255));
+        jButtonSiguiente.setText("Siguiente");
+        jButtonSiguiente.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSiguienteActionPerformed(evt);
+            }
+        });
 
-        cmbservicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Maquillaje", "Uñas", "Peinados", " " }));
+        jButtonAnterior.setBackground(new java.awt.Color(255, 204, 255));
+        jButtonAnterior.setText("Anterior");
+        jButtonAnterior.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAnteriorActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(16, 16, 16)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 930, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(46, 46, 46))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(29, 29, 29)
-                .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(318, 318, 318)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel21)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(jLabel3)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 887, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(lblfecha, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel6)))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(108, 108, 108))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(47, 47, 47)
+                        .addComponent(jDateInicio, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(jDateFin, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(57, 57, 57)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel21)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(lblFechaHoy, javax.swing.GroupLayout.PREFERRED_SIZE, 94, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel6))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(6, 6, 6)
+                                .addComponent(btnFiltrarRango)))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(223, 223, 223)
+                .addComponent(jButtonAnterior)
+                .addGap(53, 53, 53)
+                .addComponent(jButtonSiguiente)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(28, 28, 28)
-                .addComponent(jLabel21)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                            .addComponent(jLabel3)
-                            .addComponent(jLabel6)
-                            .addComponent(lblfecha))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 39, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)))
+                        .addGap(28, 28, 28)
+                        .addComponent(jLabel21)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                                    .addComponent(jLabel3)
+                                    .addComponent(jLabel6)
+                                    .addComponent(lblFechaHoy))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(btnFiltrarRango))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addGap(0, 31, Short.MAX_VALUE)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jDateFin, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(jDateInicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(64, 64, 64))
+                        .addGap(190, 190, 190))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(15, 15, 15)
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGap(20, 20, 20)))
+                                .addGap(46, 46, 46)
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(28, 28, 28)
+                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 307, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jButtonSiguiente)
+                            .addComponent(jButtonAnterior))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -646,17 +957,42 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenuLogin);
 
+        jMenu14.setText("REPORTES");
+        jMenu14.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenu14MenuSelected(evt);
+            }
+        });
+
+        jMenuItem11.setText("Reportes");
+        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem11ActionPerformed(evt);
+            }
+        });
+        jMenu14.add(jMenuItem11);
+
+        jMenuBar1.add(jMenu14);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 1, Short.MAX_VALUE))
         );
 
         pack();
@@ -701,7 +1037,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
 
     private void menuAgendarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAgendarCitaActionPerformed
         // TODO add your handling code here:
-        NewJAgendarcita agendar = new NewJAgendarcita(this);
+        NewJAgendarcitaREC agendar = new NewJAgendarcitaREC(this);
         agendar.setVisible(true);
         this.setVisible(false);
     }//GEN-LAST:event_menuAgendarCitaActionPerformed
@@ -720,6 +1056,30 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         this.setVisible(false);
 
     }//GEN-LAST:event_menuBuscarCitasActionPerformed
+
+    private void btnFiltrarRangoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiltrarRangoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnFiltrarRangoActionPerformed
+
+    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+        // TODO add your handling code here:
+
+        NewJReportes NewJReportes = new NewJReportes();
+        NewJReportes.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem11ActionPerformed
+
+    private void jMenu14MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu14MenuSelected
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jMenu14MenuSelected
+
+    private void jButtonAnteriorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAnteriorActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButtonAnteriorActionPerformed
+
+    private void jButtonSiguienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSiguienteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButtonSiguienteActionPerformed
 
     /**
      * @param args the command line arguments
@@ -800,9 +1160,14 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
+    private javax.swing.JButton btnFiltrarRango;
     private javax.swing.JComboBox<String> cmbservicio;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
+    private javax.swing.JButton jButtonAnterior;
+    private javax.swing.JButton jButtonSiguiente;
+    private com.toedter.calendar.JDateChooser jDateFin;
+    private com.toedter.calendar.JDateChooser jDateInicio;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel18;
@@ -814,6 +1179,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel6;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
+    private javax.swing.JMenu jMenu14;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
@@ -824,6 +1190,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar4;
     private javax.swing.JMenu jMenuCitas;
     private javax.swing.JMenu jMenuInicio;
+    private javax.swing.JMenuItem jMenuItem11;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenu jMenuLogin;
     private javax.swing.JMenu jMenuPagos;
@@ -833,14 +1200,14 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JTable jTable1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
-    private javax.swing.JLabel lblfecha;
+    private javax.swing.JLabel lblFechaHoy;
     private javax.swing.JMenuItem menuAgendarCita;
     private javax.swing.JMenuItem menuBuscarCitas;
     private javax.swing.JMenuItem menuCitas;
     private javax.swing.JMenuItem menuPagoRestante;
     private javax.swing.JTable tabla;
+    private javax.swing.JTable tablaResumen;
     // End of variables declaration//GEN-END:variables
 }

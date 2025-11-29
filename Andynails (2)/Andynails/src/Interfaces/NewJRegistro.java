@@ -11,6 +11,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import org.mariadb.jdbc.Connection;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -29,10 +33,170 @@ public class NewJRegistro extends javax.swing.JFrame {
      */
     public NewJRegistro() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
         conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        limitarCaracteres();
+    }
 
+    private void limitarCaracteres() {
+        // Limitar txtNombre a 10 caracteres (solo letras)
+        ((AbstractDocument) txtNombre.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 10 && text.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 10
+                        && string.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtPaterno a 10 caracteres (solo letras)
+        ((AbstractDocument) txtPaterno.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 10 && text.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 10
+                        && string.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtMaterno a 10 caracteres (solo letras)
+        ((AbstractDocument) txtMaterno.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 10 && text.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 10
+                        && string.matches("[a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]*")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtTelefono a 10 caracteres (solo números)
+        ((AbstractDocument) txtTelefono.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 10 && text.matches("\\d*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 10
+                        && string.matches("\\d*")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtCorreo a 35 caracteres
+        ((AbstractDocument) txtCorreo.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 35) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 35) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtContraseña a 15 caracteres
+        ((AbstractDocument) txtContraseña.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 15) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 15) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtConfirmarContraseña a 15 caracteres
+        ((AbstractDocument) txtConfirmarContraseña.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+
+                if (newText.length() <= 15) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 15) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
     }
 
     /**
@@ -85,13 +249,15 @@ public class NewJRegistro extends javax.swing.JFrame {
         jLabel19 = new javax.swing.JLabel();
         txtContraseña = new javax.swing.JPasswordField();
         txtConfirmarContraseña = new javax.swing.JPasswordField();
+        btnRegre = new javax.swing.JButton();
         jLabel18 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
+        jMenu12 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem7 = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu4 = new javax.swing.JMenu();
@@ -336,6 +502,14 @@ public class NewJRegistro extends javax.swing.JFrame {
 
         jLabel19.setText("Confirmar contraseña");
 
+        btnRegre.setBackground(new java.awt.Color(255, 204, 255));
+        btnRegre.setText("Regresar");
+        btnRegre.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegreActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
         jPanel6Layout.setHorizontalGroup(
@@ -352,16 +526,6 @@ public class NewJRegistro extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel16)
                 .addGap(22, 22, 22))
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addGap(19, 19, 19)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(txtPaterno, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 74, Short.MAX_VALUE)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(txtCorreo, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(txtMaterno, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap())
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -375,9 +539,6 @@ public class NewJRegistro extends javax.swing.JFrame {
                         .addComponent(txtNombre, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(83, 83, 83))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
-                        .addComponent(btnRegistrar)
-                        .addGap(17, 17, 17))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
                         .addComponent(jLabel17)
                         .addGap(141, 141, 141))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel6Layout.createSequentialGroup()
@@ -386,6 +547,23 @@ public class NewJRegistro extends javax.swing.JFrame {
                             .addComponent(txtContraseña)
                             .addComponent(txtConfirmarContraseña))
                         .addGap(114, 114, 114))))
+            .addGroup(jPanel6Layout.createSequentialGroup()
+                .addGap(19, 19, 19)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addComponent(btnRegre)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnRegistrar)
+                        .addGap(17, 17, 17))
+                    .addGroup(jPanel6Layout.createSequentialGroup()
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(txtPaterno, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 74, Short.MAX_VALUE)
+                        .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(txtCorreo, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(txtMaterno, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 135, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addContainerGap())))
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -420,7 +598,9 @@ public class NewJRegistro extends javax.swing.JFrame {
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(txtConfirmarContraseña, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
-                .addComponent(btnRegistrar)
+                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnRegistrar)
+                    .addComponent(btnRegre))
                 .addContainerGap())
         );
 
@@ -432,24 +612,20 @@ public class NewJRegistro extends javax.swing.JFrame {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap()
+                .addGap(14, 14, 14)
                 .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(39, 39, 39))
+                .addGap(34, 34, 34))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(29, 29, 29)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(31, 31, 31)
-                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 84, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                    .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -465,33 +641,41 @@ public class NewJRegistro extends javax.swing.JFrame {
         });
         jMenuBar1.add(jMenu1);
 
-        jMenu2.setText("CATALÓGO");
+        jMenu12.setText("CATALÓGO");
 
-        jMenuItem1.setText("UÑAS");
+        jMenuItem1.setText("Uñas");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem1ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem1);
+        jMenu12.add(jMenuItem1);
 
-        jMenuItem2.setText("PEINADO");
+        jMenuItem2.setText("Peinados");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem2ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem2);
+        jMenu12.add(jMenuItem2);
 
-        jMenuItem3.setText("MAQUILLAJE");
+        jMenuItem3.setText("Maquillaje");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem3ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem3);
+        jMenu12.add(jMenuItem3);
 
-        jMenuBar1.add(jMenu2);
+        jMenuItem7.setText("Otros");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenu12.add(jMenuItem7);
+
+        jMenuBar1.add(jMenu12);
 
         jMenu3.setText("AGENDAR CITA");
 
@@ -599,7 +783,7 @@ public class NewJRegistro extends javax.swing.JFrame {
     }//GEN-LAST:event_txtNombreActionPerformed
 
     private void btnRegistrarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarActionPerformed
-      String nombre = txtNombre.getText().trim();
+        String nombre = txtNombre.getText().trim();
         String paterno = txtPaterno.getText().trim();
         String materno = txtMaterno.getText().trim();
         String telefono = txtTelefono.getText().trim();
@@ -608,10 +792,15 @@ public class NewJRegistro extends javax.swing.JFrame {
         String confirmarContrasena = new String(txtConfirmarContraseña.getPassword()).trim();
         int tipoUsuario = 2;
 
-        // Validaciones...
         if (nombre.isEmpty() || paterno.isEmpty() || materno.isEmpty()
                 || telefono.isEmpty() || correo.isEmpty() || contrasena.isEmpty() || confirmarContrasena.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Por favor, completa todos los campos.");
+            return;
+        }
+
+        if (nombre.length() > 10 || paterno.length() > 10 || materno.length() > 10
+                || telefono.length() > 10 || correo.length() > 35 || contrasena.length() > 15) {
+            JOptionPane.showMessageDialog(this, "Algún campo excede el límite permitido.");
             return;
         }
 
@@ -629,12 +818,6 @@ public class NewJRegistro extends javax.swing.JFrame {
 
         if (!contrasena.equals(confirmarContrasena)) {
             JOptionPane.showMessageDialog(this, "Las contraseñas no coinciden.");
-            return;
-        }
-
-        if (nombre.length() > 10 || paterno.length() > 10 || materno.length() > 10
-                || telefono.length() > 10 || correo.length() > 50 || contrasena.length() > 100) {
-            JOptionPane.showMessageDialog(this, "Algún campo excede el límite permitido.");
             return;
         }
 
@@ -729,6 +912,10 @@ public class NewJRegistro extends javax.swing.JFrame {
         } catch (NoSuchAlgorithmException e) {
             JOptionPane.showMessageDialog(this, "Error al encriptar la contraseña: " + e.getMessage());
         }
+
+        NewJMiscitasCi NewJMiscitasCi = new NewJMiscitasCi();
+        NewJMiscitasCi.setVisible(true);
+        this.dispose(); // cierra la actual
     }
 
 // Método auxiliar para encriptar con SHA-256
@@ -740,6 +927,7 @@ public class NewJRegistro extends javax.swing.JFrame {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+
     }//GEN-LAST:event_btnRegistrarActionPerformed
 
     private void txtPaternoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPaternoActionPerformed
@@ -761,33 +949,6 @@ public class NewJRegistro extends javax.swing.JFrame {
         Inicio.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenu1MenuSelected
-
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
-        //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
-        NewJCatalogoUñas.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        // TODO add your handling code here:
-        //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
-        NewJCatalogoPeinado.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
-
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        // TODO add your handling code here:
-        //para maquillaje
-        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
-        NewJCatalogoMaq.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
@@ -848,6 +1009,42 @@ public class NewJRegistro extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_txtTelefonoKeyTyped
 
+    private void btnRegreActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegreActionPerformed
+        // TODO add your handling code here:
+        NewJLogin anterior = new NewJLogin();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
+    }//GEN-LAST:event_btnRegreActionPerformed
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -891,6 +1088,7 @@ public class NewJRegistro extends javax.swing.JFrame {
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
     private javax.swing.JButton btnRegistrar;
+    private javax.swing.JButton btnRegre;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
@@ -909,7 +1107,7 @@ public class NewJRegistro extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
-    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenu jMenu12;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
@@ -927,6 +1125,7 @@ public class NewJRegistro extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;

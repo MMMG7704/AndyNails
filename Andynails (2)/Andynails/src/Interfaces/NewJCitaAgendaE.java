@@ -5,6 +5,8 @@
 package Interfaces;
 
 import andynails.ConexionBD;
+import andynails.DisponibilidadManager;
+import andynails.RedesSociales;
 import java.sql.*;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -15,205 +17,129 @@ import java.text.SimpleDateFormat;
 import java.util.Map;
 import java.util.HashMap;
 import java.awt.event.ActionListener;
-import java.util.List;
 import java.util.ArrayList;
-import Interfaces.NewJAgendarcita;
-import andynails.DisponibilidadManager;
-
-
-
+import java.util.List;
 
 /**
  *
  * @author User
  */
-public class NewJCitaAgenda extends javax.swing.JFrame {
-ConexionBD conexion;
- private boolean modoNuevaCita = false;
+public class NewJCitaAgendaE extends javax.swing.JFrame {
 
+    ConexionBD conexion;
+    DisponibilidadManager dispManager;
+    private JFrame ventanaAnterior;
 
-DisponibilidadManager dispManager;
-
-public NewJCitaAgenda() {
-    initComponents();
-    conexion = new ConexionBD();
-    dispManager = new DisponibilidadManager(conexion);
-
-    llenarComboRoles(); // ahora solo llena roles
-
- CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
-    Date fechaSeleccionada = CalCitasAgendadas.getCalendar().getTime();
-    if (fechaSeleccionada != null) {
-        cargarCitasPorFecha(fechaSeleccionada);
+    public NewJCitaAgendaE() {
+        initComponents();
+        inicializarComponentes();
     }
-});
 
-
-    // Cargar día actual
-    cargarCitasPorFecha(new Date());
-     modoNuevaCita = true; 
-}
-
-private JFrame ventanaAnterior;
-
-public NewJCitaAgenda(JFrame anterior) {
-    initComponents();
-    this.ventanaAnterior = anterior;
-
-    conexion = new ConexionBD();
-    dispManager = new DisponibilidadManager(conexion);
-
-    llenarComboRoles(); // llenar roles
-
-CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
-    Date fechaSeleccionada = CalCitasAgendadas.getCalendar().getTime();
-    if (fechaSeleccionada != null) {
-        cargarCitasPorFecha(fechaSeleccionada);
+    public NewJCitaAgendaE(JFrame anterior) {
+        initComponents();
+        this.ventanaAnterior = anterior;
+        inicializarComponentes();
     }
-});
 
+    private void inicializarComponentes() {
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        conexion = new ConexionBD();
+        dispManager = new DisponibilidadManager(conexion);
 
-    cargarCitasPorFecha(new Date()); // cargar día actual
-}
-
-
-private void regresar() {
-    if (ventanaAnterior != null) {
-        ventanaAnterior.setVisible(true);
+        llenarComboRoles();
+        configurarCalendario();
     }
-    this.dispose();
-}
 
-
-
-private void cargarServiciosEnCombo() {
-    comboRoles.removeAllItems();
-    Map<Integer, String> servicios = dispManager.obtenerServicios();
-    comboRoles.addItem("Todos"); // opción para mostrar todas las citas
-    for (String nombre : servicios.values()) {
-        comboRoles.addItem(nombre); // cada servicio disponible
+    private void configurarCalendario() {
+        CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
+            java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+            if (cal != null) {
+                Date fechaSeleccionada = cal.getTime();
+                cargarCitasPorFecha(fechaSeleccionada);
+            }
+        });
     }
-}
 
-private void actualizarTabla() {
-    Date fecha = CalCitasAgendadas.getCalendar().getTime();
-    if (fecha != null) {
-        cargarCitasPorFecha(fecha);
+    private void regresar() {
+        if (ventanaAnterior != null) {
+            ventanaAnterior.setVisible(true);
+        }
+        this.dispose();
     }
-}
 
-private void llenarComboRoles() {
-    comboRoles.removeAllItems();
-    comboRoles.addItem("Todos");
+    private void llenarComboRoles() {
+        comboRoles.removeAllItems();
+        comboRoles.addItem("Todos");
+        comboRoles.addItem("Manicurista");
+        comboRoles.addItem("Estilista");
+        comboRoles.addItem("Maquillista");
+        comboRoles.addItem("Tatuadora");
 
-    String sql = "SELECT Nombre_servicio FROM servicios ORDER BY Nombre_servicio ASC";
+        comboRoles.addActionListener(e -> {
+            java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+            if (cal != null) {
+                Date fecha = cal.getTime();
+                cargarCitasPorFecha(fecha);
+            }
+        });
+    }
 
-    try (Connection con = conexion.conectar();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
+    private void cargarCitasPorFecha(Date fechaSeleccionada) {
+        DefaultTableModel model = (DefaultTableModel) jTablecontenidocitas.getModel();
+        model.setRowCount(0);
 
-        while (rs.next()) {
-            comboRoles.addItem(rs.getString("Nombre_servicio"));
+        if (fechaSeleccionada == null) {
+            return;
         }
 
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
-    }
+        String rolSeleccionado = comboRoles.getSelectedItem() != null ? comboRoles.getSelectedItem().toString() : "Todos";
 
-    comboRoles.addActionListener(e -> {
-        Date fecha = CalCitasAgendadas.getCalendar().getTime();
-        if (fecha != null) {
-            cargarCitasPorFecha(fecha);
-        }
-    });
-}
+        StringBuilder sql = new StringBuilder("""
+            SELECT c.idCita,
+                   CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS Cliente,
+                   u.Telefono, u.Correo,
+                   s.Nombre_servicio AS Servicio,
+                   c.Fecha, c.Hora,
+                   CASE 
+                      WHEN phs.Pago_idPago IS NULL THEN 'Pendiente'
+                      WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
+                      ELSE 'Pendiente'
+                   END AS Estado
+            FROM Cita c
+            INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios
+            INNER JOIN Cita_has_Servicios phs ON c.idCita = phs.idCita
+            INNER JOIN Servicios s ON phs.idServicios = s.idServicios
+            LEFT JOIN Pago p ON phs.Pago_idPago = p.idPago
+            WHERE c.Fecha = ?
+            """);
 
-
-
-
-private void filtrarServiciosPorRol(String rol) {
-    // Guardar listener actual
-    ActionListener[] listeners = comboRoles.getActionListeners();
-
-    comboRoles.removeAllItems(); // solo borra items
-    comboRoles.addItem("Todos"); 
-
-    String sql = "SELECT Nombre_servicio FROM Servicios";
-    if (rol.equals("Manicurista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Manicure%'";
-    } else if (rol.equals("Estilista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Peinado%'";
-    } else if (rol.equals("Maquillista")) {
-        sql += " WHERE Nombre_servicio LIKE '%Maquillaje%'";
-    }
-
-    try (Connection con = conexion.conectar();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
-
-        while (rs.next()) {
-            comboRoles.addItem(rs.getString("Nombre_servicio"));
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
-    }
-
-    // 🔹 Reagregar listener al combo
-    for (ActionListener l : listeners) {
-        comboRoles.addActionListener(l);
-    }
-}
-
-private void cargarCitasPorFecha(Date fechaSeleccionada) {
-    DefaultTableModel model = (DefaultTableModel) jTablecontenidocitas.getModel();
-    model.setRowCount(0);
-
-    if (fechaSeleccionada == null) return;
-
-    String servicioSeleccionado = comboRoles.getSelectedItem() != null 
-            ? comboRoles.getSelectedItem().toString() 
-            : "Todos";
-
-    // ---- CONSULTA BASE ----
-    String sql = """
-        SELECT c.idCita,
-               CONCAT(u.Nombre, ' ', IFNULL(u.Paterno, ''), ' ', IFNULL(u.Materno, '')) AS Cliente,
-               u.Telefono, u.Correo,
-               s.Nombre_servicio AS Servicio,
-               c.Fecha, c.Hora,
-               CASE 
-                    WHEN chs.Pago_idPago IS NULL THEN 'Pendiente'
-                    WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
-                    ELSE 'Pendiente'
-               END AS Estado
-        FROM cita c
-        INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios
-        INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita
-        INNER JOIN servicios s ON chs.idServicios = s.idServicios
-        LEFT JOIN pago p ON chs.Pago_idPago = p.idPago
-        WHERE DATE(c.Fecha) = ?
-    """;
-
-    if (!servicioSeleccionado.equals("Todos")) {
-        sql += " AND s.Nombre_servicio = ?";
-    }
-
-    sql += " ORDER BY c.Hora";
-
-    try (Connection con = conexion.conectar();
-         PreparedStatement ps = con.prepareStatement(sql)) {
-
-        ps.setDate(1, new java.sql.Date(fechaSeleccionada.getTime()));
-
-        if (!servicioSeleccionado.equals("Todos")) {
-            ps.setString(2, servicioSeleccionado);
+        if (!rolSeleccionado.equals("Todos")) {
+            switch (rolSeleccionado) {
+                case "Manicurista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Uñas%'");
+                    break;
+                case "Estilista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Peinado%'");
+                    break;
+                case "Maquillista":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Maquillaje%'");
+                    break;
+                case "Tatuadora":
+                    sql.append(" AND s.Nombre_servicio LIKE '%Tatuajes%'");
+                    break;
+            }
         }
 
-        try (ResultSet rs = ps.executeQuery()) {
+        sql.append(" ORDER BY c.Hora");
+
+        try (Connection con = conexion.conectar(); PreparedStatement ps = con.prepareStatement(sql.toString())) {
+
+            ps.setDate(1, new java.sql.Date(fechaSeleccionada.getTime()));
+
+            ResultSet rs = ps.executeQuery();
+
             while (rs.next()) {
                 model.addRow(new Object[]{
-                    rs.getInt("idCita"),
                     rs.getString("Cliente"),
                     rs.getString("Telefono"),
                     rs.getString("Correo"),
@@ -223,18 +149,57 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
                     rs.getString("Estado")
                 });
             }
+
+            if (model.getRowCount() == 0) {
+                if (fechaSeleccionada != null) {
+                    JOptionPane.showMessageDialog(this, "No hay citas para la fecha seleccionada.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar citas: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar citas: " + e.getMessage());
     }
-}
 
+    private void actualizarTabla() {
+        java.util.Calendar cal = CalCitasAgendadas.getCalendar();
+        if (cal != null) {
+            Date fecha = cal.getTime();
+            cargarCitasPorFecha(fecha);
+        }
+    }
+
+    private String obtenerIdCita(String nombreCliente, String telefono, String fecha, String hora) {
+        String sql = """
+            SELECT c.idCita 
+            FROM Cita c 
+            INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios 
+            WHERE CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) = ? 
+            AND u.Telefono = ? 
+            AND c.Fecha = ? 
+            AND c.Hora = ?
+            """;
+
+        try (Connection con = conexion.conectar(); PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, nombreCliente);
+            ps.setString(2, telefono);
+            ps.setString(3, fecha);
+            ps.setString(4, hora);
+
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("idCita");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al buscar ID de cita: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+        return null;
+    }
 
     /**
      * Creates new form NewJCitaAgenda
      */
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -247,36 +212,38 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
         jCalendar1 = new com.toedter.calendar.JCalendar();
         jPanel1 = new javax.swing.JPanel();
         jPanel4 = new javax.swing.JPanel();
-        jLabel3 = new javax.swing.JLabel();
-        jLabel6 = new javax.swing.JLabel();
-        jLabel7 = new javax.swing.JLabel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         btnEditarCita = new javax.swing.JButton();
+        btnRegistrarCita = new javax.swing.JButton();
         btnEliminarCita = new javax.swing.JButton();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTablecontenidocitas = new javax.swing.JTable();
         comboRoles = new javax.swing.JComboBox<>();
         btnRegresar = new javax.swing.JButton();
         CalCitasAgendadas = new com.toedter.calendar.JCalendar();
-        btnRegistrarCita = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
-        menuBuscarCita = new javax.swing.JMenuItem();
-        menuAgendaCitas = new javax.swing.JMenuItem();
-        menuAgendarCita = new javax.swing.JMenuItem();
-        lognmenu = new javax.swing.JMenu();
+        jMenuItem2 = new javax.swing.JMenuItem();
+        jMenuItem1 = new javax.swing.JMenuItem();
+        jMenuItem3 = new javax.swing.JMenuItem();
+        jMenu6 = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
+        jMenu7 = new javax.swing.JMenu();
+        jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
-        jLabel3.setText("INS");
+        INS.setText("INS");
 
-        jLabel6.setText("FACE");
+        FACE.setText("FACE");
 
-        jLabel7.setText("WPP");
+        WPP.setText("WPP");
 
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
@@ -284,11 +251,11 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGap(115, 115, 115)
-                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(190, 190, 190)
-                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 973, Short.MAX_VALUE)
-                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(79, 79, 79))
         );
         jPanel4Layout.setVerticalGroup(
@@ -296,10 +263,10 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
             .addGroup(jPanel4Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel3)
-                    .addComponent(jLabel7)
-                    .addComponent(jLabel6))
-                .addContainerGap(17, Short.MAX_VALUE))
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
+                .addContainerGap(14, Short.MAX_VALUE))
         );
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
@@ -310,6 +277,14 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
         btnEditarCita.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnEditarCitaActionPerformed(evt);
+            }
+        });
+
+        btnRegistrarCita.setBackground(new java.awt.Color(255, 204, 255));
+        btnRegistrarCita.setText("Registar cita");
+        btnRegistrarCita.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegistrarCitaActionPerformed(evt);
             }
         });
 
@@ -324,32 +299,29 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
 
         jTablecontenidocitas.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null}
             },
             new String [] {
-                "Id Cita", "Nombre del Cliente", "Teléfono", "Correo Electrónico", "Nombre de servicio", "Fecha ", "Hora", "Estado"
+                "Nombre del Cliente", "Teléfono", "Correo Electrónico", "Nombre de servicio", "Fecha ", "Hora", "Estado"
             }
         ));
         jScrollPane1.setViewportView(jTablecontenidocitas);
 
         comboRoles.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        comboRoles.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                comboRolesActionPerformed(evt);
+            }
+        });
 
         btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
         btnRegresar.setText("Regresar");
         btnRegresar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnRegresarActionPerformed(evt);
-            }
-        });
-
-        btnRegistrarCita.setBackground(new java.awt.Color(255, 204, 255));
-        btnRegistrarCita.setText("Registrar cita");
-        btnRegistrarCita.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnRegistrarCitaActionPerformed(evt);
             }
         });
 
@@ -360,27 +332,27 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(408, 408, 408)
-                        .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(315, 315, 315)
-                        .addComponent(jLabel2))
+                        .addGap(28, 28, 28)
+                        .addComponent(btnRegistrarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(93, 93, 93)
+                        .addComponent(btnEditarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(72, 72, 72)
+                        .addComponent(btnEliminarCita))
                     .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(101, 101, 101)
+                        .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 298, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(51, 51, 51)
+                        .addComponent(btnRegresar))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(66, 66, 66)
-                                .addComponent(btnRegistrarCita)
-                                .addGap(60, 60, 60)
-                                .addComponent(btnEditarCita, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(72, 72, 72)
-                                .addComponent(btnEliminarCita))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(45, 45, 45)
-                                .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 401, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 935, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(51, 51, 51)
-                                .addComponent(btnRegresar)))))
+                                .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(216, 216, 216)
+                                .addComponent(jLabel2))
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 935, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -389,23 +361,23 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(22, 22, 22)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel2)
-                    .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(18, 18, 18)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(23, 23, 23)
+                        .addComponent(jLabel2))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addGap(30, 30, 30)
-                        .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap()
+                        .addComponent(comboRoles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(CalCitasAgendadas, javax.swing.GroupLayout.PREFERRED_SIZE, 221, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnRegistrarCita)
                     .addComponent(btnEliminarCita)
                     .addComponent(btnEditarCita)
-                    .addComponent(btnRegresar)
-                    .addComponent(btnRegistrarCita))
+                    .addComponent(btnRegresar))
                 .addGap(18, 18, 18)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -422,45 +394,57 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
         });
         jMenuBar1.add(jMenu4);
 
-        jMenu5.setText("CITAS");
+        jMenu5.setText("CATALÓGO");
 
-        menuBuscarCita.setText("Buscar citas");
-        menuBuscarCita.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem2.setText("UÑAS");
+        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuBuscarCitaActionPerformed(evt);
+                jMenuItem2ActionPerformed(evt);
             }
         });
-        jMenu5.add(menuBuscarCita);
+        jMenu5.add(jMenuItem2);
 
-        menuAgendaCitas.setText("Agenda de citas");
-        menuAgendaCitas.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem1.setText("PEINADO");
+        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuAgendaCitasActionPerformed(evt);
+                jMenuItem1ActionPerformed(evt);
             }
         });
-        jMenu5.add(menuAgendaCitas);
+        jMenu5.add(jMenuItem1);
 
-        menuAgendarCita.setText("Agendar cita");
-        menuAgendarCita.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem3.setText("MAQUILLAJES");
+        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuAgendarCitaActionPerformed(evt);
+                jMenuItem3ActionPerformed(evt);
             }
         });
-        jMenu5.add(menuAgendarCita);
+        jMenu5.add(jMenuItem3);
 
         jMenuBar1.add(jMenu5);
 
-        lognmenu.setText("LOGIN");
+        jMenu6.setText("AGENDAR CITA");
 
-        jMenuItem4.setText("login");
+        jMenuItem4.setText("CANCELAR CITA");
         jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem4ActionPerformed(evt);
             }
         });
-        lognmenu.add(jMenuItem4);
+        jMenu6.add(jMenuItem4);
 
-        jMenuBar1.add(lognmenu);
+        jMenuBar1.add(jMenu6);
+
+        jMenu7.setText("CONTACTO");
+
+        jMenuItem5.setText("Contacto");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
+        jMenu7.add(jMenuItem5);
+
+        jMenuBar1.add(jMenu7);
 
         setJMenuBar(jMenuBar1);
 
@@ -482,47 +466,39 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
 
 
     private void btnEditarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarCitaActionPerformed
-                                         
+        int fila = jTablecontenidocitas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona una cita para editar.");
+            return;
+        }
 
-    int fila = jTablecontenidocitas.getSelectedRow();
-    if (fila == -1) {
-        JOptionPane.showMessageDialog(this, "Selecciona una cita para editar.");
-        return;
-    }
+        Object valId = jTablecontenidocitas.getValueAt(fila, 0);
+        if (valId == null) {
+            JOptionPane.showMessageDialog(this, "Id de cita inválido.");
+            return;
+        }
 
-    Object valId = jTablecontenidocitas.getValueAt(fila, 0);
-    if (valId == null) {
-        JOptionPane.showMessageDialog(this, "Id de cita inválido.");
-        return;
-    }
+        int idCita;
+        try {
+            idCita = Integer.parseInt(valId.toString());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(this, "Id de cita no es numérico.");
+            return;
+        }
 
-    int idCita;
-    try {
-        idCita = Integer.parseInt(valId.toString());
-    } catch (NumberFormatException ex) {
-        JOptionPane.showMessageDialog(this, "Id de cita no es numérico.");
-        return;
-    }
-
-   
-
-    NewJAgendarcitaREC editor = new NewJAgendarcitaREC(idCita);
-editor.setVisible(true);
-this.dispose();
-
+        NewJAgendarcitaREC editor = new NewJAgendarcitaREC(idCita);
+        editor.setVisible(true);
+        this.dispose();
 
     }//GEN-LAST:event_btnEditarCitaActionPerformed
 
     private void btnEliminarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarCitaActionPerformed
-                                                
-
-    int fila = jTablecontenidocitas.getSelectedRow();
+      int fila = jTablecontenidocitas.getSelectedRow();
     if (fila == -1) {
         JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.");
         return;
     }
 
-    // Obtener idCita
     Object valorId = jTablecontenidocitas.getValueAt(fila, 0);
     int idCita;
 
@@ -551,7 +527,6 @@ this.dispose();
             return;
         }
 
-        // 🔹 1. Obtener los pagos de los servicios
         String sqlPagosServicios = "SELECT Pago_idPago FROM cita_has_servicios WHERE idCita = ?";
         List<Integer> pagosServicios = new ArrayList<>();
 
@@ -563,7 +538,6 @@ this.dispose();
             }
         }
 
-        // 🔹 2. Obtener el pago principal de la cita
         Integer pagoPrincipal = null;
         String sqlPagoPrincipal = "SELECT Pago_idPago FROM Cita WHERE idCita = ?";
 
@@ -575,7 +549,6 @@ this.dispose();
             }
         }
 
-        // 🔹 3. Borrar servicios de la cita
         String sqlDeleteServicios = "DELETE FROM cita_has_servicios WHERE idCita = ?";
         try (PreparedStatement ps = con.prepareStatement(sqlDeleteServicios)) {
             ps.setInt(1, idCita);
@@ -599,7 +572,6 @@ this.dispose();
             }
         }
 
-        // 🔹 6. Borrar la cita
         String sqlDeleteCita = "DELETE FROM Cita WHERE idCita = ?";
         try (PreparedStatement ps = con.prepareStatement(sqlDeleteCita)) {
             ps.setInt(1, idCita);
@@ -608,7 +580,6 @@ this.dispose();
 
         JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
 
-        //🔄 Actualizar tabla
         cargarCitasPorFecha(CalCitasAgendadas.getCalendar().getTime());
 
     } catch (SQLException e) {
@@ -620,69 +591,80 @@ this.dispose();
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
         // TODO add your handling code here:
-     //inicio
+        //inicio
         Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);   
+        Inicio.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu4MenuSelected
 
-    private void menuBuscarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuBuscarCitaActionPerformed
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
-    
-     NewJBuscarCita buscar = new NewJBuscarCita(this);
-    buscar.setVisible(true);
-    this.setVisible(false);
-    }//GEN-LAST:event_menuBuscarCitaActionPerformed
+        //para arir uñas
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas.setVisible(true);
+        this.dispose(); // cierra la actual
 
-    private void menuAgendaCitasActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAgendaCitasActionPerformed
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
-       
-       NewJCitaAgenda agenda = new NewJCitaAgenda(this);
-    agenda.setVisible(true);
-    this.setVisible(false);
+        //para abrir peinados
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado.setVisible(true);
+        this.dispose(); // cierra la actual
 
-    }//GEN-LAST:event_menuAgendaCitasActionPerformed
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
 
-    private void menuAgendarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAgendarCitaActionPerformed
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-        NewJAgendarcitaREC agendar = new NewJAgendarcitaREC(this);
-    agendar.setVisible(true);
-    this.setVisible(false);
+        //para maquillaje
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq.setVisible(true);
+        this.dispose(); // cierra la actual
 
-    }//GEN-LAST:event_menuAgendarCitaActionPerformed
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
-        
+        //agendar cancelar
         NewJCancelarC NewJCancelarC = new NewJCancelarC();
         NewJCancelarC.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem4ActionPerformed
 
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+        // TODO add your handling code here:
+        //boton de contacto
+        NewJContacto NewJContacto = new NewJContacto();
+        NewJContacto.setVisible(true);
+        this.dispose(); // cierra la actual
+
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
+
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-                                                
-    // Regresar al panel anterior
-    NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
-    anterior.setVisible(true);
-    this.dispose(); // Cierra la ventana actual
+
+        // Regresar al panel anterior
+        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
 
     }//GEN-LAST:event_btnRegresarActionPerformed
 
     private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarCitaActionPerformed
         // TODO add your handling code here:
-                                                      
-    NewJAgendarcitaREC registrar = new NewJAgendarcitaREC();
+       NewJAgendarcitaREC registrar = new NewJAgendarcitaREC();
     registrar.setVisible(true);
 
-    registrar.limpiarCampos(); // <<--- ESTO LIMPIA TODO AL ABRIR
-
+    registrar.limpiarCampos(); 
     this.dispose();
-
     }//GEN-LAST:event_btnRegistrarCitaActionPerformed
 
+    private void comboRolesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboRolesActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_comboRolesActionPerformed
 
     /**
      * @param args the command line arguments
@@ -701,13 +683,13 @@ this.dispose();
                 }
             }
         } catch (ClassNotFoundException ex) {
-            java.util.logging.Logger.getLogger(NewJCitaAgenda.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJCitaAgendaE.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (InstantiationException ex) {
-            java.util.logging.Logger.getLogger(NewJCitaAgenda.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJCitaAgendaE.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (IllegalAccessException ex) {
-            java.util.logging.Logger.getLogger(NewJCitaAgenda.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJCitaAgendaE.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(NewJCitaAgenda.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+            java.util.logging.Logger.getLogger(NewJCitaAgendaE.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
         //</editor-fold>
@@ -721,13 +703,16 @@ this.dispose();
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
             public void run() {
-                new NewJCitaAgenda().setVisible(true);
+                new NewJCitaAgendaE().setVisible(true);
             }
         });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private com.toedter.calendar.JCalendar CalCitasAgendadas;
+    private javax.swing.JLabel FACE;
+    private javax.swing.JLabel INS;
+    private javax.swing.JLabel WPP;
     private javax.swing.JButton btnEditarCita;
     private javax.swing.JButton btnEliminarCita;
     private javax.swing.JButton btnRegistrarCita;
@@ -735,21 +720,20 @@ this.dispose();
     private javax.swing.JComboBox<String> comboRoles;
     private com.toedter.calendar.JCalendar jCalendar1;
     private javax.swing.JLabel jLabel2;
-    private javax.swing.JLabel jLabel3;
-    private javax.swing.JLabel jLabel6;
-    private javax.swing.JLabel jLabel7;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
+    private javax.swing.JMenu jMenu6;
+    private javax.swing.JMenu jMenu7;
     private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTablecontenidocitas;
-    private javax.swing.JMenu lognmenu;
-    private javax.swing.JMenuItem menuAgendaCitas;
-    private javax.swing.JMenuItem menuAgendarCita;
-    private javax.swing.JMenuItem menuBuscarCita;
     // End of variables declaration//GEN-END:variables
 
 }

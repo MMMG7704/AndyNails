@@ -17,6 +17,10 @@ import andynails.VistaCliente;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.swing.JPanel;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -36,35 +40,36 @@ public class NewJLogin extends javax.swing.JFrame {
      */
     public NewJLogin() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         this.setLocationRelativeTo(null);
         conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-
+        limitarCaracteres();
 
     }
-    
+
     public class Login {
-    public static int idUsuarioActivo = -1;
-}
+
+        public static int idUsuarioActivo = -1;
+    }
 
     public static String encriptarSHA256(String contraseña) {
-    try {
-        MessageDigest md = MessageDigest.getInstance("SHA-256");
-        byte[] hash = md.digest(contraseña.getBytes());
-        StringBuilder sb = new StringBuilder();
-        for (byte b : hash) {
-            sb.append(String.format("%02x", b));
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hash = md.digest(contraseña.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+            return null;
         }
-        return sb.toString();
-    } catch (NoSuchAlgorithmException e) {
-        e.printStackTrace();
-        return null;
     }
-}
 
-   public boolean validarUsuario(String correo, String contraseña) {
+    public boolean validarUsuario(String correo, String contraseña) {
         String sql = "SELECT * FROM usuarios WHERE Correo = ? AND Contraseña = ?";
         try (Connection conn = (Connection) ConexionBD.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
@@ -80,7 +85,49 @@ public class NewJLogin extends javax.swing.JFrame {
         }
     }
 
-   
+    private void limitarCaracteres() {
+        // Limitar txtcorreoE a 35 caracteres
+        ((AbstractDocument) txtcorreoE.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+                if (newText.length() <= 35) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 35) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+
+        // Limitar txtContraseña a 15 caracteres
+        ((AbstractDocument) txtContraseña.getDocument()).setDocumentFilter(new DocumentFilter() {
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+                String newText = currentText.substring(0, offset) + text + currentText.substring(offset + length);
+                if (newText.length() <= 15) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if ((fb.getDocument().getLength() + string.length()) <= 15) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+        });
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -115,16 +162,17 @@ public class NewJLogin extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
+        jMenu12 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
-        jMenu3 = new javax.swing.JMenu();
-        jMenuItem6 = new javax.swing.JMenuItem();
-        jMenu4 = new javax.swing.JMenu();
         jMenuItem7 = new javax.swing.JMenuItem();
+        jMenu3 = new javax.swing.JMenu();
+        jMenuItem9 = new javax.swing.JMenuItem();
+        jMenu4 = new javax.swing.JMenu();
+        jMenuItem10 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
-        jMenuItem8 = new javax.swing.JMenuItem();
+        jMenuItem6 = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jLayeredPane1Layout = new javax.swing.GroupLayout(jLayeredPane1);
         jLayeredPane1.setLayout(jLayeredPane1Layout);
@@ -185,6 +233,12 @@ public class NewJLogin extends javax.swing.JFrame {
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
+            }
+        });
+
+        txtContraseña.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtContraseñaActionPerformed(evt);
             }
         });
 
@@ -293,7 +347,7 @@ public class NewJLogin extends javax.swing.JFrame {
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addContainerGap(15, Short.MAX_VALUE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -301,7 +355,7 @@ public class NewJLogin extends javax.swing.JFrame {
                 .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
-        jMenu1.setText("LOGO");
+        jMenu1.setText("INICIO");
         jMenu1.addMenuListener(new javax.swing.event.MenuListener() {
             public void menuCanceled(javax.swing.event.MenuEvent evt) {
             }
@@ -312,69 +366,76 @@ public class NewJLogin extends javax.swing.JFrame {
             }
         });
         jMenuBar1.add(jMenu1);
-        jMenu1.getAccessibleContext().setAccessibleDescription("");
 
-        jMenu2.setText("CATALÓGO");
+        jMenu12.setText("CATALÓGO");
 
-        jMenuItem1.setText("UÑAS");
+        jMenuItem1.setText("Uñas");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem1ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem1);
+        jMenu12.add(jMenuItem1);
 
-        jMenuItem2.setText("PEINADOS");
+        jMenuItem2.setText("Peinados");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem2ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem2);
+        jMenu12.add(jMenuItem2);
 
-        jMenuItem3.setText("MAQUILLAJES");
+        jMenuItem3.setText("Maquillaje");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem3ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem3);
+        jMenu12.add(jMenuItem3);
 
-        jMenuBar1.add(jMenu2);
-
-        jMenu3.setText("AGENDAR CITA");
-
-        jMenuItem6.setText("Agendar cita");
-        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem6ActionPerformed(evt);
-            }
-        });
-        jMenu3.add(jMenuItem6);
-
-        jMenuBar1.add(jMenu3);
-
-        jMenu4.setText("CONTACTO");
-
-        jMenuItem7.setText("Contacto");
+        jMenuItem7.setText("Otros");
         jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem7ActionPerformed(evt);
             }
         });
-        jMenu4.add(jMenuItem7);
+        jMenu12.add(jMenuItem7);
+
+        jMenuBar1.add(jMenu12);
+
+        jMenu3.setText("AGENDAR CITA");
+
+        jMenuItem9.setText("Agendar Cita");
+        jMenuItem9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem9ActionPerformed(evt);
+            }
+        });
+        jMenu3.add(jMenuItem9);
+
+        jMenuBar1.add(jMenu3);
+
+        jMenu4.setText("CONTACTO");
+
+        jMenuItem10.setText("Contacto");
+        jMenuItem10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem10ActionPerformed(evt);
+            }
+        });
+        jMenu4.add(jMenuItem10);
 
         jMenuBar1.add(jMenu4);
 
         jMenu6.setText("LOGIN");
 
-        jMenuItem8.setText("Login");
-        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem6.setText("Login");
+        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem8ActionPerformed(evt);
+                jMenuItem6ActionPerformed(evt);
             }
         });
-        jMenu6.add(jMenuItem8);
+        jMenu6.add(jMenuItem6);
 
         jMenuBar1.add(jMenu6);
 
@@ -388,72 +449,75 @@ public class NewJLogin extends javax.swing.JFrame {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 257, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void btniniciarsesionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btniniciarsesionActionPerformed
-     String correo = txtcorreoE.getText().trim();
-    String contrasena = new String(txtContraseña.getPassword()).trim();
+        String correo = txtcorreoE.getText().trim();
+        String contrasena = new String(txtContraseña.getPassword()).trim();
 
-    if (correo.isEmpty() || contrasena.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor ingresa correo y contraseña.");
-        return;
-    }
-
-    // Encriptar la contraseña antes de compararla
-    String contrasenaEncriptada = encriptarSHA256(contrasena);
-
-    try {
-        Class.forName("org.mariadb.jdbc.Driver");
-        Connection con = (Connection) DriverManager.getConnection(
-                "jdbc:mariadb://localhost:3307/andynails", "root", "mora");
-
-        String sql = "SELECT u.idUsuarios, u.Nombre, t.Nombre as rol "
-                   + "FROM Usuarios u "
-                   + "JOIN Tipo_Usuario t ON u.Tipo_Usuario_idTipo_Usuario = t.idTipo_Usuario "
-                   + "WHERE u.Correo = ? AND u.Contraseña = ?";
-
-        PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, correo);
-        ps.setString(2, contrasenaEncriptada); // aquí usamos la contraseña encriptada
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            int id = rs.getInt("idUsuarios");
-            String nombreUsuario = rs.getString("Nombre");
-            String rol = rs.getString("rol");
-
-            // Iniciar sesión
-            SesionUsuario.iniciarSesion(id, nombreUsuario);
-
-            // Abrir ventana según rol
-            if (rol.equalsIgnoreCase("admin")) {
-                NewJPanelAdministracion adminWindow = new NewJPanelAdministracion();
-                adminWindow.setVisible(true);
-            } else if (rol.equalsIgnoreCase("recepcionista")) {
-                NewJPanelAdministracionRec recWindow = new NewJPanelAdministracionRec();
-                recWindow.setVisible(true);
-            } else if (rol.equalsIgnoreCase("cliente")) {
-                NewJMiscitasCi cliWindow = new NewJMiscitasCi();
-                cliWindow.setVisible(true);
-            }
-
-            this.dispose(); // cerrar login
-
-        } else {
-            JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos.");
+        if (correo.isEmpty() || contrasena.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor ingresa correo y contraseña.");
+            return;
         }
 
-        rs.close();
-        ps.close();
-        con.close();
+        // Encriptar la contraseña antes de compararla
+        String contrasenaEncriptada = encriptarSHA256(contrasena);
 
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
-    }
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+            Connection con = (Connection) DriverManager.getConnection(
+                    "jdbc:mariadb://localhost:3307/andynails", "root", "mora");
+
+            String sql = "SELECT u.idUsuarios, u.Nombre, t.Nombre as rol "
+                    + "FROM Usuarios u "
+                    + "JOIN Tipo_Usuario t ON u.Tipo_Usuario_idTipo_Usuario = t.idTipo_Usuario "
+                    + "WHERE u.Correo = ? AND u.Contraseña = ?";
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, correo);
+            ps.setString(2, contrasenaEncriptada); // aquí usamos la contraseña encriptada
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("idUsuarios");
+                String nombreUsuario = rs.getString("Nombre");
+                String rol = rs.getString("rol");
+
+                // Iniciar sesión
+                SesionUsuario.iniciarSesion(id, nombreUsuario);
+
+                // Abrir ventana según rol
+                if (rol.equalsIgnoreCase("admin")) {
+                    NewJPanelAdministracion adminWindow = new NewJPanelAdministracion();
+                    adminWindow.setVisible(true);
+                } else if (rol.equalsIgnoreCase("recepcionista")) {
+                    NewJPanelAdministracionRec recWindow = new NewJPanelAdministracionRec();
+                    recWindow.setVisible(true);
+                } else if (rol.equalsIgnoreCase("cliente")) {
+                    NewJMiscitasCi cliWindow = new NewJMiscitasCi();
+                    cliWindow.setVisible(true);
+                }
+
+                this.dispose(); // cerrar login
+
+            } else {
+                JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos.");
+            }
+
+            rs.close();
+            ps.close();
+            con.close();
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        }
 
     }//GEN-LAST:event_btniniciarsesionActionPerformed
 
@@ -470,70 +534,6 @@ public class NewJLogin extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_txtcorreoEActionPerformed
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
-        //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
-        NewJCatalogoUñas.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        // TODO add your handling code here:
-        //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
-        NewJCatalogoPeinado.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
-
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        // TODO add your handling code here:
-        //para maquillaje
-        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
-        NewJCatalogoMaq.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
-
-    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
-        // TODO add your handling code here:
-        //agendar cita
-        NewJAgenC NewJAgenC = new NewJAgenC();
-        NewJAgenC.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem6ActionPerformed
-
-    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
-        // TODO add your handling code here:
-        //boton de contacto
-        NewJContacto NewJContacto = new NewJContacto();
-        NewJContacto.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenuItem7ActionPerformed
-
-    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
-        // TODO add your handling code here:
-        //login
-        NewJLogin NewJLogin = new NewJLogin();
-        NewJLogin.setVisible(true);
-        this.dispose(); // cierra la actual
-
-
-    }//GEN-LAST:event_jMenuItem8ActionPerformed
-
-    private void jMenu1MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu1MenuSelected
-        // TODO add your handling code here:
-        //inicio
-        Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);
-        this.dispose(); // cierra la actual
-
-    }//GEN-LAST:event_jMenu1MenuSelected
-
     private void txtcorreoEKeyTyped(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtcorreoEKeyTyped
         // TODO add your handling code here:
         char c = evt.getKeyChar();
@@ -542,6 +542,71 @@ public class NewJLogin extends javax.swing.JFrame {
             evt.consume(); // Ignora la tecla inválida
         }
     }//GEN-LAST:event_txtcorreoEKeyTyped
+
+    private void txtContraseñaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtContraseñaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtContraseñaActionPerformed
+
+    private void jMenu1MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu1MenuSelected
+        // TODO add your handling code here:
+        //inicio
+        Inicio Inicio = new Inicio();
+        Inicio.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenu1MenuSelected
+
+    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem1ActionPerformed
+
+    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem2ActionPerformed
+
+    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
+        // TODO add your handling code here:
+        //agendar cita
+        NewJAgenC NewJAgenC = new NewJAgenC();
+        NewJAgenC.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem9ActionPerformed
+
+    private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
+        // TODO add your handling code here:
+        //boton de contacto
+        NewJContacto NewJContacto = new NewJContacto();
+        NewJContacto.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem10ActionPerformed
+
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+        // TODO add your handling code here:
+        //login
+        NewJLogin NewJLogin = new NewJLogin();
+        NewJLogin.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -593,20 +658,21 @@ public class NewJLogin extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLayeredPane jLayeredPane1;
     private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenu jMenu12;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuItem jMenuItem1;
+    private javax.swing.JMenuItem jMenuItem10;
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
-    private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItem9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

@@ -2,9 +2,17 @@ package Interfaces;
 
 import andynails.ConexionBD;
 import andynails.RedesSociales;
-import com.toedter.calendar.JDateChooser;
 import javax.swing.JFrame;
-import java.util.Date;
+import javax.swing.table.DefaultTableModel;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.DayOfWeek;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import javax.swing.JOptionPane;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -17,23 +25,491 @@ import java.util.Date;
 public class NewJPanelAdministracion extends javax.swing.JFrame {
 
     ConexionBD conexion;
+    private LocalDate fechaSeleccionada = LocalDate.now();
+    private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private void actualizarEncabezadosSemana(LocalDate fechaBase) {
+        DefaultTableModel modelo = (DefaultTableModel) jTable2.getModel();
+
+        // Obtener lunes de la semana
+        LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+
+        // Formato: dd/MM
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern("dd/MM");
+
+        // Columnas: 0 = Hora, 1 = lunes ... 7 = domingo
+        String[] dias = {"Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+
+        for (int i = 0; i < 8; i++) { // Ahora son 8 columnas
+            if (i == 0) {
+                // La primera columna es "Hora"
+                jTable2.getColumnModel().getColumn(i).setHeaderValue(dias[i]);
+            } else {
+                // Las demás columnas son días con fecha
+                LocalDate dia = lunes.plusDays(i - 1);
+                String nombreColumna = dias[i] + " " + dia.format(formato);
+                jTable2.getColumnModel().getColumn(i).setHeaderValue(nombreColumna);
+            }
+        }
+
+        // Refrescar la tabla para que se vea el cambio
+        jTable2.getTableHeader().repaint();
+    }
 
     /**
      * Creates new form NewJRegistro
      */
     public NewJPanelAdministracion() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
-        conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
+        conexion = new ConexionBD("andynails"); // Cambié a "andynails" que parece ser el correcto
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        //     JDateChooser dateChooser = new JDateChooser();
-        ///   dateChooser.setDateFormatString("yyyy-MM-dd");
-        // dateChooser.setDate(new Date());
-        //this.add(dateChooser); // Agregar al JFrame
-        //dateChooser.setBounds(20, 20, 120, 30); // Posición
+        // === FECHA INICIAL ===
+        fechaSeleccionada = LocalDate.now();
+
+        // === ACTUALIZAR LABEL SUPERIOR DE FECHA ===
+        actualizarLabelFecha();
+
+        // === CONFIGURAR BOTONES DE NAVEGACIÓN ===
+        jButtonAnterior.addActionListener(e -> cambiarSemana(-1));
+        jButtonSiguiente.addActionListener(e -> cambiarSemana(1));
+
+        // === TABLA PRINCIPAL AGENDA SEMANAL ===
+        DefaultTableModel modelo = new DefaultTableModel();
+
+        // Columnas: Hora + Lunes a Domingo (8 columnas en total)
+        String[] columnas = {"Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        for (String columna : columnas) {
+            modelo.addColumn(columna);
+        }
+
+        // Filas con horas
+        String[] horas = {
+            "9:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+            "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
+        };
+
+        // Agregar las horas en la primera columna y dejar las demás vacías
+        for (String hora : horas) {
+            Object[] fila = new Object[8]; // 8 columnas
+            fila[0] = hora; // Primera columna tiene la hora
+            for (int i = 1; i < 8; i++) {
+                fila[i] = ""; // Las demás columnas vacías
+            }
+            modelo.addRow(fila);
+        }
+
+        jTable2.setModel(modelo);
+
+        // === TABLA DE RESUMEN CON NUEVOS INDICADORES ===
+        DefaultTableModel modeloResumen = new DefaultTableModel(
+                new Object[][]{
+                    {"Citas para hoy", 0},
+                    {"Clientes Registrados", 0},
+                    {"Anticipo pendientes", 0},
+                    {"Diseño en catálogo", 0},
+                    {"Horarios bloqueados esta semana", 0}
+                },
+                new String[]{"Concepto", "Cantidad"}
+        );
+        jTable1.setModel(modeloResumen);
+
+        // === CARGAR DATOS INICIALES ===
+        actualizarEncabezadosSemana(fechaSeleccionada);
+        cargarAgendaSemanal(fechaSeleccionada);
+        actualizarResumen();
     }
+
+    private void actualizarLabelFecha() {
+        DateTimeFormatter formato = DateTimeFormatter.ofPattern(
+                "EEEE, dd 'de' MMMM 'de' yyyy", new Locale("es", "ES")
+        );
+        lblFechaHoy.setText("Bienvenid@, Admin! Hoy es " + fechaSeleccionada.format(formato));
+    }
+
+    private void cambiarSemana(int desplazamiento) {
+        fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
+        actualizarLabelFecha();
+        actualizarEncabezadosSemana(fechaSeleccionada);
+        cargarAgendaSemanal(fechaSeleccionada);
+        actualizarResumen();
+    }
+
+    // === MÉTODO PARA CARGAR LA AGENDA DE UNA SEMANA ===
+    private void cargarAgendaSemanal(LocalDate fechaBase) {
+        try (Connection cn = conexion.conectar()) {
+
+            // Determinar lunes y domingo de la semana del filtro
+            LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+            LocalDate domingo = fechaBase.with(DayOfWeek.SUNDAY);
+
+            // Limpiar tabla (manteniendo las horas en la primera columna)
+            DefaultTableModel modelo = (DefaultTableModel) jTable2.getModel();
+            for (int i = 0; i < modelo.getRowCount(); i++) {
+                // La columna 0 (Hora) se mantiene, limpiamos solo las columnas 1-7
+                for (int j = 1; j < modelo.getColumnCount(); j++) {
+                    modelo.setValueAt("", i, j);
+                }
+            }
+
+            String sql = """
+    SELECT 
+        CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
+        s.Nombre_servicio,
+        c.Fecha,
+        c.Hora,
+        c.Estado
+    FROM cita c
+    INNER JOIN usuarios u ON u.idUsuarios = c.idUsuarios
+    INNER JOIN cita_has_servicios chs ON chs.idCita = c.idCita
+    INNER JOIN servicios s ON s.idServicios = chs.idServicios
+    WHERE c.Fecha BETWEEN ? AND ?
+    ORDER BY c.Fecha, c.Hora
+""";
+
+            PreparedStatement ps = cn.prepareStatement(sql);
+            ps.setDate(1, java.sql.Date.valueOf(lunes));
+            ps.setDate(2, java.sql.Date.valueOf(domingo));
+
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                String cliente = rs.getString("NombreCliente");
+                String nombreServicio = rs.getString("Nombre_servicio");
+                LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+                String hora = rs.getString("Hora");
+                String estado = rs.getString("Estado");
+
+                // Ajustar el índice de la columna: 0=Hora, 1=Lunes, 2=Martes, etc.
+                int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1 = Lunes, 7 = Domingo
+                int fila = obtenerFilaPorHora(hora);
+
+                if (fila != -1 && diaSemana >= 1 && diaSemana <= 7) {
+                    String texto = cliente + " - " + nombreServicio;
+
+                    if ("Completada".equalsIgnoreCase(estado)) {
+                        texto += " (✔)";
+                    } else if ("Pendiente".equalsIgnoreCase(estado)) {
+                        texto += " (⏳)";
+                    }
+
+                    // Columna = diaSemana (1=Lunes -> columna 1, 7=Domingo -> columna 7)
+                    modelo.setValueAt(texto, fila, diaSemana);
+                }
+            }
+
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + ex.getMessage());
+        }
+    }
+
+    private void actualizarResumen() {
+        try (Connection cn = conexion.conectar()) {
+            DefaultTableModel modelo = (DefaultTableModel) jTable1.getModel();
+
+            // 1. Citas para hoy
+            String sqlHoy = "SELECT COUNT(*) FROM cita WHERE Fecha = CURDATE()";
+            PreparedStatement psHoy = cn.prepareStatement(sqlHoy);
+            ResultSet rsHoy = psHoy.executeQuery();
+            if (rsHoy.next()) {
+                modelo.setValueAt(rsHoy.getInt(1), 0, 1);
+            }
+
+            // 2. Clientes Registrados
+            String sqlClientes = "SELECT COUNT(*) FROM usuarios WHERE Tipo_Usuario_idTipo_Usuario = 2";
+            PreparedStatement psClientes = cn.prepareStatement(sqlClientes);
+            ResultSet rsClientes = psClientes.executeQuery();
+            if (rsClientes.next()) {
+                modelo.setValueAt(rsClientes.getInt(1), 1, 1);
+            }
+
+            // 3. Anticipo pendientes - ✅ CORREGIDO (Estado_pago en lugar de Estado)
+            String sqlAnticipo = "SELECT COUNT(*) FROM pago WHERE Estado_pago = 'Pendiente'";
+            PreparedStatement psAnticipo = cn.prepareStatement(sqlAnticipo);
+            ResultSet rsAnticipo = psAnticipo.executeQuery();
+            if (rsAnticipo.next()) {
+                modelo.setValueAt(rsAnticipo.getInt(1), 2, 1);
+            }
+
+            // 4. Diseño en catálogo - ️ Necesitamos verificar si existe la columna Categoria
+            // Verificamos primero si existe la columna Categoria
+            String sqlDisenos = "SELECT COUNT(*) FROM servicios";
+            // Si tienes la columna Categoria, usa:
+            // String sqlDisenos = "SELECT COUNT(*) FROM servicios WHERE Categoria = 'Diseño'";
+            PreparedStatement psDisenos = cn.prepareStatement(sqlDisenos);
+            ResultSet rsDisenos = psDisenos.executeQuery();
+            if (rsDisenos.next()) {
+                modelo.setValueAt(rsDisenos.getInt(1), 3, 1);
+            }
+
+            LocalDate lunes = fechaSeleccionada.with(DayOfWeek.MONDAY);
+            LocalDate domingo = fechaSeleccionada.with(DayOfWeek.SUNDAY);
+            String sqlBloqueos = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha BETWEEN ? AND ?";
+            PreparedStatement psBloqueos = cn.prepareStatement(sqlBloqueos);
+            psBloqueos.setDate(1, java.sql.Date.valueOf(lunes));
+            psBloqueos.setDate(2, java.sql.Date.valueOf(domingo));
+            ResultSet rsBloqueos = psBloqueos.executeQuery();
+            if (rsBloqueos.next()) {
+                modelo.setValueAt(rsBloqueos.getInt(1), 4, 1);
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar resumen: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private int obtenerFilaPorHora(String hora) {
+        String h = hora.startsWith("0") ? hora.substring(1) : hora;  // quitar cero inicial
+
+        String[] horas = {"9:00", "10:00", "11:00", "12:00", "13:00",
+            "14:00", "15:00", "16:00", "17:00",
+            "18:00", "19:00", "20:00"};
+
+        for (int i = 0; i < horas.length; i++) {
+            if (h.startsWith(horas[i])) {
+                return i;
+            }
+        }
+        return -1;
+    }
+    
+    private void filtrarPorRango() {
+
+    if (jDateInicio.getDate() == null || jDateFin.getDate() == null) {
+        JOptionPane.showMessageDialog(this, "Seleccione fecha inicio y fecha fin");
+        return;
+    }
+
+    LocalDate inicio = jDateInicio.getDate().toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+    LocalDate fin = jDateFin.getDate().toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate();
+
+    if (inicio.isAfter(fin)) {
+        JOptionPane.showMessageDialog(this, "La fecha inicio no puede ser mayor que la fecha fin");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE NO EXCEDA UNA SEMANA
+    if (fin.isAfter(inicio.plusDays(6))) {
+        JOptionPane.showMessageDialog(this,
+            "El rango excede una semana. Solo puedes seleccionar una semana completa (lunes a domingo).");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE INICIO SEA LUNES
+    if (inicio.getDayOfWeek() != DayOfWeek.MONDAY) {
+        JOptionPane.showMessageDialog(this,
+            "La fecha de inicio debe ser lunes para consultar una semana completa.");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE FIN SEA DOMINGO
+    if (fin.getDayOfWeek() != DayOfWeek.SUNDAY) {
+        JOptionPane.showMessageDialog(this,
+            "La fecha final debe ser domingo para consultar una semana completa.");
+        return;
+    }
+
+    // 🚫 VALIDAR QUE SEA LUNES → DOMINGO (6 días exactos)
+    if (!fin.equals(inicio.plusDays(6))) {
+        JOptionPane.showMessageDialog(this,
+            "Debes seleccionar una semana completa: del lunes al domingo.");
+        return;
+    }
+
+    // ✔️ SI TODO ES CORRECTO, CARGAR AGENDA
+    String servicio = (String) cmbservicio.getSelectedItem();
+
+    if (servicio != null) {
+        cargarAgendaPorRango(servicio, inicio, fin);
+        actualizarEncabezadosSemana(inicio);
+    }
+
+    try (Connection cn = conexion.conectar()) {
+        actualizarConteoDiario(cn, inicio);
+    } catch (Exception ex) {
+        ex.printStackTrace();
+    }
+
+}
+    
+    private void cargarAgendaPorRango(String servicio, LocalDate inicio, LocalDate fin) {
+    try (Connection cn = conexion.conectar()) {
+
+        // Limpiar tabla
+        DefaultTableModel modelo = (DefaultTableModel) jTable2.getModel();
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            for (int j = 1; j < modelo.getColumnCount(); j++) {
+                modelo.setValueAt("", i, j);
+            }
+        }
+
+        // Consulta correcta: unir usuarios para obtener nombre completo
+        String sql = """
+            SELECT 
+                CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
+                s.Nombre_servicio,
+                c.Fecha,
+                c.Hora,
+                c.Estado
+            FROM cita c
+            INNER JOIN usuarios u ON u.idUsuarios = c.idUsuarios
+            INNER JOIN cita_has_servicios chs ON chs.idCita = c.idCita
+            INNER JOIN servicios s ON s.idServicios = chs.idServicios
+            WHERE s.Nombre_servicio = ? AND c.Fecha BETWEEN ? AND ?
+            ORDER BY c.Fecha, c.Hora
+        """;
+
+        PreparedStatement ps = cn.prepareStatement(sql);
+        ps.setString(1, servicio);
+        ps.setDate(2, java.sql.Date.valueOf(inicio));
+        ps.setDate(3, java.sql.Date.valueOf(fin));
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+            String cliente = rs.getString("NombreCliente"); // nombre completo
+            LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+            String hora = rs.getString("Hora");
+            String estado = rs.getString("Estado");
+
+            int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1=Lunes
+            int col = diaSemana; // columna de lunes a domingo
+            int fila = obtenerFilaPorHora(hora);
+
+            if (fila != -1 && col <= 7) {
+                String texto = cliente; // solo nombre del cliente
+                if ("Completada".equalsIgnoreCase(estado)) texto += " (✔)";
+                if ("Pendiente".equalsIgnoreCase(estado)) texto += " (⏳)";
+                modelo.setValueAt(texto, fila, col);
+            }
+        }
+
+        // Actualizar conteo diario solo del primer día del rango
+        actualizarConteoDiario(cn, inicio);
+
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error cargando rango: " + e.getMessage());
+    }
+}
+
+
+private void actualizarConteoDiario(Connection cn, LocalDate fecha) throws SQLException {
+    DefaultTableModel modeloConteo = (DefaultTableModel) jTable1.getModel();
+
+    String sql = """
+        SELECT Estado, COUNT(*) AS cantidad
+        FROM cita
+        WHERE Fecha = ?
+        GROUP BY Estado
+    """;
+
+    PreparedStatement ps = cn.prepareStatement(sql);
+    ps.setDate(1, java.sql.Date.valueOf(fecha));
+    ResultSet rs = ps.executeQuery();
+
+    int total = 0, pendientes = 0, confirmadas = 0;
+    while (rs.next()) {
+        String estado = rs.getString("Estado");
+        int cant = rs.getInt("cantidad");
+        total += cant;
+
+        if ("Pendiente".equalsIgnoreCase(estado)) pendientes += cant;
+        if ("Confirmada".equalsIgnoreCase(estado)) confirmadas += cant;
+    }
+
+    modeloConteo.setValueAt(total, 0, 1);
+    modeloConteo.setValueAt(pendientes, 1, 1);
+    modeloConteo.setValueAt(confirmadas, 2, 1);
+}
+
+
+
+
+// === MÉTODO PARA CARGAR LA AGENDA DE UNA SEMANA ===
+private void cargarAgendaSemanal(String servicio, LocalDate fechaBase) {
+    try (Connection cn = conexion.conectar()) {
+
+        // Determinar lunes y domingo de la semana del filtro
+        LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+        LocalDate domingo = fechaBase.with(DayOfWeek.SUNDAY);
+
+        // Limpiar tabla (desde columna 1 = lunes hasta domingo)
+        DefaultTableModel modelo = (DefaultTableModel) jTable1.getModel();
+        for (int i = 0; i < modelo.getRowCount(); i++) {
+            for (int j = 1; j < modelo.getColumnCount(); j++) {
+                modelo.setValueAt("", i, j);
+            }
+        }
+
+        
+        String sql = """
+    SELECT 
+        CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
+        s.Nombre_servicio,
+        c.Fecha,
+        c.Hora,
+        c.Estado
+    FROM cita c
+    INNER JOIN usuarios u ON u.idUsuarios = c.idUsuarios
+    INNER JOIN cita_has_servicios chs ON chs.idCita = c.idCita
+    INNER JOIN servicios s ON s.idServicios = chs.idServicios
+    WHERE s.Nombre_servicio LIKE ?
+      AND c.Fecha BETWEEN ? AND ?
+    ORDER BY c.Fecha, c.Hora
+""";
+
+PreparedStatement ps = cn.prepareStatement(sql);
+ps.setString(1, "%" + servicio + "%"); // <-- importante: % antes y después
+ps.setDate(2, java.sql.Date.valueOf(lunes));
+ps.setDate(3, java.sql.Date.valueOf(domingo));
+
+        ResultSet rs = ps.executeQuery();
+
+        while (rs.next()) {
+
+            String cliente = rs.getString("NombreCliente");
+            String nombreServicio = rs.getString("Nombre_servicio");
+            LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+            String hora = rs.getString("Hora");
+            String estado = rs.getString("Estado");
+
+            int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1 = Lunes
+            int col = diaSemana; // columna de lunes a domingo
+            int fila = obtenerFilaPorHora(hora);
+
+            if (fila != -1 && col <= 7) {
+
+                String texto = cliente; // SOLO nombre completo
+                // Si quieres: texto = cliente + " - " + nombreServicio;
+
+                if ("Completada".equalsIgnoreCase(estado)) {
+                    texto += " (✔)";
+                } else if ("Pendiente".equalsIgnoreCase(estado)) {
+                    texto += " (⏳)";
+                }
+
+                modelo.setValueAt(texto, fila, col);
+                //actualizarTotales();
+
+            }
+        }
+
+        actualizarConteoDiario(cn, fechaBase);
+
+    } catch (SQLException ex) {
+        ex.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + ex.getMessage());
+    }
+}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -73,12 +549,15 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jLabel21 = new javax.swing.JLabel();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        jTextArea1 = new javax.swing.JTextArea();
-        jLabel3 = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
         jTable2 = new javax.swing.JTable();
-        jCalendar1 = new com.toedter.calendar.JCalendar();
+        cmbservicio = new javax.swing.JComboBox<>();
+        btnFiltrarRango = new javax.swing.JButton();
+        jButtonAnterior = new javax.swing.JButton();
+        jButtonSiguiente = new javax.swing.JButton();
+        lblFechaHoy = new javax.swing.JLabel();
+        jDateInicio = new com.toedter.calendar.JDateChooser();
+        jDateFin = new com.toedter.calendar.JDateChooser();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenu15 = new javax.swing.JMenu();
@@ -89,6 +568,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu12 = new javax.swing.JMenu();
         jMenuItem8 = new javax.swing.JMenuItem();
+        menuPagoRestante = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
@@ -99,6 +579,8 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu4 = new javax.swing.JMenu();
         jMenuItem7 = new javax.swing.JMenuItem();
+        jMenu14 = new javax.swing.JMenu();
+        jMenuItem11 = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -285,51 +767,87 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(jTable1);
 
-        jTextArea1.setBackground(new java.awt.Color(228, 199, 238));
-        jTextArea1.setColumns(20);
-        jTextArea1.setRows(5);
-        jTextArea1.setText("                         Notificaciones:\n🔴 3 anticipos pendientes de revisión\n⚠️ Cita reprogramada por clienta\n⛔ Bloqueo próximo mañana de 12:00 a 2:00 PM");
-        jScrollPane2.setViewportView(jTextArea1);
-
-        jLabel3.setText("Bienvenid@, Admin! Hoy es 00/00/00");
-
         jTable2.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null},
-                {null, null, null, null, null, null, null}
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null}
             },
             new String [] {
-                "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"
+                "Hora", "Lunes", "Martes", "Miercoles", "Jueves", "Viernes", "Sabado", "Domingo"
             }
         ));
         jScrollPane3.setViewportView(jTable2);
+
+        cmbservicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Maquillaje", "Uñas", "Peinados", " " }));
+
+        btnFiltrarRango.setBackground(new java.awt.Color(246, 177, 246));
+        btnFiltrarRango.setText("Filtrar Rango");
+        btnFiltrarRango.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnFiltrarRangoActionPerformed(evt);
+            }
+        });
+
+        jButtonAnterior.setBackground(new java.awt.Color(255, 204, 255));
+        jButtonAnterior.setText("Anterior");
+        jButtonAnterior.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAnteriorActionPerformed(evt);
+            }
+        });
+
+        jButtonSiguiente.setBackground(new java.awt.Color(255, 204, 255));
+        jButtonSiguiente.setText("Siguiente");
+        jButtonSiguiente.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSiguienteActionPerformed(evt);
+            }
+        });
+
+        lblFechaHoy.setText("jLabel7");
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(16, 16, 16)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 327, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap()
+                .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(513, 513, 513)
+                        .addComponent(jLabel21))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(117, 117, 117)
+                        .addComponent(jButtonAnterior)
+                        .addGap(46, 46, 46)
+                        .addComponent(jButtonSiguiente))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(470, 470, 470)
+                        .addComponent(lblFechaHoy, javax.swing.GroupLayout.PREFERRED_SIZE, 353, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(44, 44, 44)
+                        .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 166, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(70, 70, 70)
+                        .addComponent(jDateInicio, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(49, 49, 49)
+                        .addComponent(jDateFin, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(57, 57, 57)
+                        .addComponent(btnFiltrarRango))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(117, 117, 117)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 827, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(12, 12, 12)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addComponent(jCalendar1, javax.swing.GroupLayout.PREFERRED_SIZE, 206, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 62, Short.MAX_VALUE)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(jScrollPane2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 299, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(46, 46, 46))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(513, 513, 513)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel21)
-                    .addComponent(jLabel3))
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 17, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(29, 29, 29)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 422, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(0, 119, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -337,20 +855,29 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
                 .addGap(28, 28, 28)
                 .addComponent(jLabel21)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jLabel3)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 21, Short.MAX_VALUE)
+                .addComponent(lblFechaHoy)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addComponent(jCalendar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGap(41, 41, 41)
-                            .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(53, 53, 53)
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(73, 73, 73)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 84, Short.MAX_VALUE)
+                        .addComponent(jLabel18, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(34, 34, 34)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jDateFin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jDateInicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmbservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnFiltrarRango))
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 313, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(28, 28, 28)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jButtonAnterior)
+                            .addComponent(jButtonSiguiente))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
 
         jMenu1.setText("INICIO ");
@@ -414,6 +941,14 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
             }
         });
         jMenu12.add(jMenuItem8);
+
+        menuPagoRestante.setText("Pago Restante");
+        menuPagoRestante.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                menuPagoRestanteActionPerformed(evt);
+            }
+        });
+        jMenu12.add(menuPagoRestante);
 
         jMenuBar1.add(jMenu12);
 
@@ -490,17 +1025,42 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu4);
 
+        jMenu14.setText("REPORTES");
+        jMenu14.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenu14MenuSelected(evt);
+            }
+        });
+
+        jMenuItem11.setText("Reportes");
+        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem11ActionPerformed(evt);
+            }
+        });
+        jMenu14.add(jMenuItem11);
+
+        jMenuBar1.add(jMenu14);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
         );
 
         pack();
@@ -587,7 +1147,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private void jMenuItem12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem12ActionPerformed
         // TODO add your handling code here:
 
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem12ActionPerformed
@@ -617,6 +1177,37 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void btnFiltrarRangoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnFiltrarRangoActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnFiltrarRangoActionPerformed
+
+    private void jButtonAnteriorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonAnteriorActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButtonAnteriorActionPerformed
+
+    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+        // TODO add your handling code here:
+        
+                 NewJReportes NewJReportes = new NewJReportes();
+        NewJReportes.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem11ActionPerformed
+
+    private void jMenu14MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu14MenuSelected
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jMenu14MenuSelected
+
+    private void menuPagoRestanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuPagoRestanteActionPerformed
+        // TODO add your handling code here:
+        NewJPagoRestante pago = new NewJPagoRestante(this);
+        pago.setVisible(true);
+        this.setVisible(false);
+    }//GEN-LAST:event_menuPagoRestanteActionPerformed
+
+    private void jButtonSiguienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSiguienteActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jButtonSiguienteActionPerformed
 
     /**
      * @param args the command line arguments
@@ -672,22 +1263,27 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
+    private javax.swing.JButton btnFiltrarRango;
+    private javax.swing.JComboBox<String> cmbservicio;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
-    private com.toedter.calendar.JCalendar jCalendar1;
+    private javax.swing.JButton jButtonAnterior;
+    private javax.swing.JButton jButtonSiguiente;
+    private com.toedter.calendar.JDateChooser jDateFin;
+    private com.toedter.calendar.JDateChooser jDateInicio;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel18;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel20;
     private javax.swing.JLabel jLabel21;
-    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
     private javax.swing.JMenu jMenu12;
     private javax.swing.JMenu jMenu13;
+    private javax.swing.JMenu jMenu14;
     private javax.swing.JMenu jMenu15;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
@@ -703,6 +1299,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JMenuBar jMenuBar4;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem10;
+    private javax.swing.JMenuItem jMenuItem11;
     private javax.swing.JMenuItem jMenuItem12;
     private javax.swing.JMenuItem jMenuItem13;
     private javax.swing.JMenuItem jMenuItem2;
@@ -716,13 +1313,13 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel4;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JTable jTable1;
     private javax.swing.JTable jTable2;
-    private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextField2;
     private javax.swing.JMenuItem jregistrarcliente;
+    private javax.swing.JLabel lblFechaHoy;
+    private javax.swing.JMenuItem menuPagoRestante;
     // End of variables declaration//GEN-END:variables
 }

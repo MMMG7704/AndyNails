@@ -636,7 +636,7 @@ private void configurarSeleccionFecha() {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar 
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem4ActionPerformed
@@ -668,7 +668,7 @@ private void configurarSeleccionFecha() {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -709,9 +709,9 @@ private void configurarSeleccionFecha() {
     this.dispose();
 
     // Abre la ventana principal (cambia "Inicio" por el nombre de tu JFrame principal)
-    Inicio inicio = new Inicio();
-    inicio.setVisible(true);
-    inicio.setLocationRelativeTo(null); // Para que aparezca centrado
+    NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+    NewJPanelAdministracion.setVisible(true);
+    NewJPanelAdministracion.setLocationRelativeTo(null); // Para que aparezca centrado
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed

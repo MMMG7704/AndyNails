@@ -302,6 +302,8 @@ private void regresar() {
 
         jPanel3.setBackground(new java.awt.Color(243, 224, 255));
 
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Img/logo.jpg"))); // NOI18N
+
         jLabel11.setFont(new java.awt.Font("Serif", 3, 18)); // NOI18N
         jLabel11.setText("Buscar cita");
 
@@ -659,7 +661,7 @@ private void regresar() {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem4ActionPerformed
@@ -667,7 +669,7 @@ private void regresar() {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -729,7 +731,7 @@ private void regresar() {
     private void jMenuItem13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem13ActionPerformed
         // TODO add your handling code here:
         //agendar
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem13ActionPerformed
@@ -737,7 +739,7 @@ private void regresar() {
     private void jMenuItem14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem14ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem14ActionPerformed

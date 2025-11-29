@@ -81,6 +81,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         btnEditar = new javax.swing.JButton();
         btnEliminar = new javax.swing.JButton();
         jLabel2 = new javax.swing.JLabel();
+        jButton2 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -168,6 +169,15 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("BLOQUEOS EXISTENETES");
+
+        jButton2.setBackground(new java.awt.Color(255, 204, 255));
+        jButton2.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        jButton2.setText("Volver a inicio");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jMenu4.setText("INICIO");
         jMenu4.addMenuListener(new javax.swing.event.MenuListener() {
@@ -333,12 +343,6 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 632, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
-                .addGap(89, 89, 89)
-                .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(btnEliminar)
-                .addGap(147, 147, 147))
-            .addGroup(layout.createSequentialGroup()
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(layout.createSequentialGroup()
                         .addGap(188, 188, 188)
@@ -347,6 +351,14 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
                         .addGap(48, 48, 48)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 519, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(65, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addGap(89, 89, 89)
+                .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jButton2)
+                    .addComponent(btnEliminar))
+                .addGap(119, 119, 119))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -359,7 +371,9 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnEliminar)
                     .addComponent(btnEditar))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 95, Short.MAX_VALUE)
+                .addGap(27, 27, 27)
+                .addComponent(jButton2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 45, Short.MAX_VALUE)
                 .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -401,7 +415,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar 
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem4ActionPerformed
@@ -433,7 +447,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -564,6 +578,17 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     }
     }//GEN-LAST:event_btnEliminarActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        // Cierra la ventana actual
+        this.dispose();
+
+        // Abre la ventana principal (cambia "Inicio" por el nombre de tu JFrame principal)
+        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion.setVisible(true);
+        NewJPanelAdministracion.setLocationRelativeTo(null); // Para que aparezca centrado
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -604,13 +629,11 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel FACE;
-    private javax.swing.JLabel FACE1;
     private javax.swing.JLabel INS;
-    private javax.swing.JLabel INS1;
     private javax.swing.JLabel WPP;
-    private javax.swing.JLabel WPP1;
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnEliminar;
+    private javax.swing.JButton jButton2;
     private com.toedter.calendar.JDayChooser jDayChooser1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu10;
@@ -632,7 +655,6 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
-    private javax.swing.JPanel jPanel5;
     private javax.swing.JPanel jPanel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaBloqueos;

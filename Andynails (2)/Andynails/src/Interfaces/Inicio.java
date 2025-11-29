@@ -31,6 +31,8 @@ public class Inicio extends javax.swing.JFrame {
             this.setVisible(true);
         iniciarCarruseles();
          RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+                 AutoRecordatorio.iniciar();
+
 
 
     }

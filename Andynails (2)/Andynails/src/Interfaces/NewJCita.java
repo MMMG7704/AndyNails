@@ -12,6 +12,7 @@ import javax.swing.JOptionPane;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListModel;
 
 /**
  *
@@ -22,6 +23,11 @@ public class NewJCita extends javax.swing.JFrame {
     ConexionBD conexion;
     private JFrame ventanaAnterior;
     private String idCitaActual;
+    private double totalAcumulado = 0.0;
+    private javax.swing.JList<String> jListServiciosSeleccionados;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JButton btnAgregarServicio;
+    private javax.swing.JButton btnQuitarServicio;
 
     /**
      * Creates new form NewJCitaAgenda
@@ -29,11 +35,48 @@ public class NewJCita extends javax.swing.JFrame {
     public NewJCita() {
         initComponents();
         conexion = new ConexionBD("andynails");
+        inicializarComponentesFaltantes();
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
         cargarComboBoxes();
         configurarCalculos();
         generarNumeroCita();
+    }
+
+    private void inicializarComponentesFaltantes() {
+        // Inicializar JList y componentes relacionados si son null
+        if (jListServiciosSeleccionados == null) {
+            jListServiciosSeleccionados = new javax.swing.JList<>();
+            jScrollPane1 = new javax.swing.JScrollPane();
+            btnAgregarServicio = new javax.swing.JButton();
+            btnQuitarServicio = new javax.swing.JButton();
+
+            // Configurar JList
+            jListServiciosSeleccionados.setModel(new javax.swing.DefaultListModel<>());
+            jScrollPane1.setViewportView(jListServiciosSeleccionados);
+
+            // Configurar botones
+            btnAgregarServicio.setText("Agregar Servicio");
+            btnAgregarServicio.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                    agregarServicio(); 
+                }
+            });
+
+            btnQuitarServicio.setText("Quitar Servicio");
+            btnQuitarServicio.addActionListener(new java.awt.event.ActionListener() {
+                public void actionPerformed(java.awt.event.ActionEvent evt) {
+                 quitarServicio(); 
+                }
+            });
+        }
+    }
+
+    private DefaultListModel<String> getModeloSeguro() {
+        if (jListServiciosSeleccionados == null) {
+            inicializarComponentesFaltantes();
+        }
+        return (DefaultListModel<String>) jListServiciosSeleccionados.getModel();
     }
 
     public NewJCita(JFrame anterior, String idCita) {
@@ -56,12 +99,36 @@ public class NewJCita extends javax.swing.JFrame {
         // Cargar servicios desde la base de datos
         cargarServicios();
 
-        // Configurar fecha actual
-        Calendar cal = Calendar.getInstance();
-        jComboBox2.setSelectedItem(new SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
+        // Configurar fecha actual - FORMA CORRECTA
+        cargarFechasDisponibles();
 
         // Estado por defecto
         txtEstadoservicio.setText("Pendiente");
+
+        // Limpiar lista de servicios
+        DefaultListModel<String> model = getModeloSeguro();
+        model.clear();
+
+        // Reiniciar totales
+        totalAcumulado = 0.0;
+        txtTotalágar.setText("");
+        txtmontoanticipo.setText("");
+        txtmontorestante.setText("");
+        jLabelPrecioservicio.setText("");
+    }
+
+    private void cargarFechasDisponibles() {
+        // Crear array con próximos 7 días
+        String[] fechas = new String[7];
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+        for (int i = 0; i < 7; i++) {
+            fechas[i] = dateFormat.format(cal.getTime());
+            cal.add(Calendar.DATE, 1); // Siguiente día
+        }
+
+        jComboBox2.setModel(new DefaultComboBoxModel<>(fechas));
     }
 
     private void generarNumeroCita() {
@@ -109,11 +176,11 @@ public class NewJCita extends javax.swing.JFrame {
 
             while (rs.next()) {
                 String categoria = rs.getString("Nombre_categoria");
-                double precio = rs.getDouble("Precio");
                 model.addElement(categoria);
             }
 
             jComboBoxCategoria.setModel(model);
+            jLabelPrecioservicio.setText(""); // Limpiar precio
 
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
@@ -133,8 +200,8 @@ public class NewJCita extends javax.swing.JFrame {
 
             if (rs.next()) {
                 double precio = rs.getDouble("Precio");
-                txtPrecioservicio.setSelectedItem(String.valueOf(precio));
-                calcularTotales();
+                jLabelPrecioservicio.setText("$" + precio);
+                // NO actualizar el total aquí, solo cuando se agregue el servicio
             }
 
         } catch (SQLException e) {
@@ -143,40 +210,31 @@ public class NewJCita extends javax.swing.JFrame {
     }
 
     private void configurarCalculos() {
-        // Agregar listeners para cálculos automáticos
-        //txtPrecioservicio.addActionListener(e -> calcularTotales());
         txtmontoanticipo.addActionListener(e -> calcularRestante());
-    }
-
-    private void calcularTotales() {
-        try {
-            String precioStr = txtPrecioservicio.getSelectedItem().toString().replace("$", "").trim();
-            double precio = Double.parseDouble(precioStr);
-            txtTotalágar.setText(String.valueOf(precio));
-            calcularRestante();
-        } catch (NumberFormatException e) {
-            // Ignorar error si no es número
-        }
+        // También calcular cuando se escribe
+        txtmontoanticipo.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                calcularRestante();
+            }
+        });
     }
 
     private void calcularRestante() {
         try {
-            String totalStr = txtTotalágar.getText().trim();
-            if (!totalStr.isEmpty()) {
-                double total = Double.parseDouble(totalStr);
-                double anticipo = txtmontoanticipo.getText().isEmpty() ? 0 : Double.parseDouble(txtmontoanticipo.getText());
-                double restante = total - anticipo;
-                txtmontorestante.setText(String.valueOf(restante));
-            }
+            double total = totalAcumulado;
+            double anticipo = txtmontoanticipo.getText().isEmpty() ? 0 : Double.parseDouble(txtmontoanticipo.getText());
+            double restante = total - anticipo;
+            txtmontorestante.setText(String.valueOf(restante));
         } catch (NumberFormatException e) {
-            // Ignorar error
+            // Si hay error en el formato, poner 0
+            txtmontorestante.setText("0");
         }
     }
 
     private void cargarDatosCita(String idCita) {
         String sql = """
             SELECT c.idCita, CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) as Cliente, 
-                   c.Fecha, c.Hora, s.Nombre_servicio as Servicio, c.Estado
+                   c.Fecha, c.Hora, s.Nombre_servicio as Servicio, c.Estado, c.Total
             FROM Cita c
             INNER JOIN Usuarios u ON c.idUsuarios = u.idUsuarios
             INNER JOIN Cita_has_Servicios cs ON c.idCita = cs.idCita
@@ -196,9 +254,14 @@ public class NewJCita extends javax.swing.JFrame {
                 jComboBoxhora.setSelectedItem(rs.getString("Hora"));
                 jComboBoxservicios.setSelectedItem(rs.getString("Servicio"));
                 txtEstadoservicio.setText(rs.getString("Estado"));
+                txtTotalágar.setText(rs.getString("Total"));
+                totalAcumulado = rs.getDouble("Total");
 
                 // Cargar categorías para este servicio
                 cargarCategoriasPorServicio(rs.getString("Servicio"));
+
+                // Cargar servicios seleccionados
+                cargarServiciosSeleccionados(idCita);
             }
 
         } catch (SQLException e) {
@@ -206,12 +269,41 @@ public class NewJCita extends javax.swing.JFrame {
         }
     }
 
+    private void cargarServiciosSeleccionados(String idCita) {
+        String sql = """
+            SELECT s.Nombre_servicio, cs.Nombre_categoria, cs.Precio
+            FROM Cita_has_Servicios chs
+            INNER JOIN Servicios s ON chs.idServicios = s.idServicios
+            INNER JOIN categoria_Servicio cs ON s.idServicios = cs.idServicios
+            WHERE chs.idCita = ?
+            """;
+
+        try (Connection con = conexion.conectar(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, idCita);
+            ResultSet rs = ps.executeQuery();
+
+            DefaultListModel<String> model = (DefaultListModel<String>) jListServiciosSeleccionados.getModel();
+            model.clear();
+
+            while (rs.next()) {
+                String servicio = rs.getString("Nombre_servicio");
+                String categoria = rs.getString("Nombre_categoria");
+                double precio = rs.getDouble("Precio");
+                String servicioCompleto = servicio + " - " + categoria + " - $" + precio;
+                model.addElement(servicioCompleto);
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar servicios seleccionados: " + e.getMessage());
+        }
+    }
+
     private void guardarCita() {
-        // Validar campos obligatorios
-        if (txtNombreclienta.getText().trim().isEmpty()
-                || jComboBoxservicios.getSelectedIndex() == 0
-                || jComboBoxCategoria.getSelectedIndex() == 0) {
-            JOptionPane.showMessageDialog(this, "Por favor complete todos los campos obligatorios");
+        // Validar campos obligatorios - USAR MÉTODO SEGURO
+        DefaultListModel<String> model = getModeloSeguro();
+
+        if (txtNombreclienta.getText().trim().isEmpty() || model.getSize() == 0) {
+            JOptionPane.showMessageDialog(this, "Por favor complete el nombre del cliente y agregue al menos un servicio");
             return;
         }
 
@@ -220,12 +312,13 @@ public class NewJCita extends javax.swing.JFrame {
 
             if (idCitaActual == null) {
                 // Nueva cita
-                String sql = "INSERT INTO Cita (Fecha, Hora, Estado, idUsuarios) VALUES (?, ?, ?, ?)";
+                String sql = "INSERT INTO Cita (Fecha, Hora, Estado, idUsuarios, Total) VALUES (?, ?, ?, ?, ?)";
                 try (PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
                     ps.setString(1, jComboBox2.getSelectedItem().toString());
                     ps.setString(2, jComboBoxhora.getSelectedItem().toString());
                     ps.setString(3, txtEstadoservicio.getText());
                     ps.setInt(4, 1); // ID de usuario temporal
+                    ps.setDouble(5, totalAcumulado);
 
                     int affectedRows = ps.executeUpdate();
                     if (affectedRows > 0) {
@@ -239,15 +332,15 @@ public class NewJCita extends javax.swing.JFrame {
                 }
             } else {
                 // Actualizar cita existente
-                String sql = "UPDATE Cita SET Fecha = ?, Hora = ?, Estado = ? WHERE idCita = ?";
+                String sql = "UPDATE Cita SET Fecha = ?, Hora = ?, Estado = ?, Total = ? WHERE idCita = ?";
                 try (PreparedStatement ps = con.prepareStatement(sql)) {
                     ps.setString(1, jComboBox2.getSelectedItem().toString());
                     ps.setString(2, jComboBoxhora.getSelectedItem().toString());
                     ps.setString(3, txtEstadoservicio.getText());
-                    ps.setString(4, idCitaActual);
+                    ps.setDouble(4, totalAcumulado);
+                    ps.setString(5, idCitaActual);
                     ps.executeUpdate();
 
-                    // Actualizar servicios
                     actualizarServiciosCita(con);
                 }
             }
@@ -257,22 +350,30 @@ public class NewJCita extends javax.swing.JFrame {
 
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al guardar cita: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
     private void guardarServiciosCita(int idCita, Connection con) throws SQLException {
-        String sqlServicio = "SELECT idServicios FROM Servicios WHERE Nombre_servicio = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlServicio)) {
-            ps.setString(1, jComboBoxservicios.getSelectedItem().toString());
-            ResultSet rs = ps.executeQuery();
+        DefaultListModel<String> model = (DefaultListModel<String>) jListServiciosSeleccionados.getModel();
 
-            if (rs.next()) {
-                int idServicio = rs.getInt("idServicios");
-                String sql = "INSERT INTO Cita_has_Servicios (idCita, idServicios) VALUES (?, ?)";
-                try (PreparedStatement ps2 = con.prepareStatement(sql)) {
-                    ps2.setInt(1, idCita);
-                    ps2.setInt(2, idServicio);
-                    ps2.executeUpdate();
+        for (int i = 0; i < model.getSize(); i++) {
+            String servicioCompleto = model.getElementAt(i);
+            String nombreServicio = servicioCompleto.split(" - ")[0];
+
+            String sqlServicio = "SELECT idServicios FROM Servicios WHERE Nombre_servicio = ?";
+            try (PreparedStatement ps = con.prepareStatement(sqlServicio)) {
+                ps.setString(1, nombreServicio);
+                ResultSet rs = ps.executeQuery();
+
+                if (rs.next()) {
+                    int idServicio = rs.getInt("idServicios");
+                    String sql = "INSERT INTO Cita_has_Servicios (idCita, idServicios) VALUES (?, ?)";
+                    try (PreparedStatement ps2 = con.prepareStatement(sql)) {
+                        ps2.setInt(1, idCita);
+                        ps2.setInt(2, idServicio);
+                        ps2.executeUpdate();
+                    }
                 }
             }
         }
@@ -351,10 +452,15 @@ public class NewJCita extends javax.swing.JFrame {
         txtTotalágar.setText("");
         txtmontoanticipo.setText("");
         txtmontorestante.setText("");
-        txtPrecioservicio.setSelectedIndex(0);
+        jLabelPrecioservicio.setText("");
         jComboBoxservicios.setSelectedIndex(0);
         jComboBoxCategoria.setSelectedIndex(0);
         jComboBoxCategoria.setModel(new DefaultComboBoxModel<>(new String[]{"Seleccionar categoría"}));
+
+        // Limpiar lista de servicios seleccionados
+        DefaultListModel<String> model = (DefaultListModel<String>) jListServiciosSeleccionados.getModel();
+        model.clear();
+        totalAcumulado = 0.0;
 
         Calendar cal = Calendar.getInstance();
         jComboBox2.setSelectedItem(new SimpleDateFormat("yyyy-MM-dd").format(cal.getTime()));
@@ -362,6 +468,73 @@ public class NewJCita extends javax.swing.JFrame {
 
         idCitaActual = null;
         generarNumeroCita(); // Generar nuevo número de cita
+    }
+
+    private void agregarServicio() {
+        if (jComboBoxservicios.getSelectedIndex() == 0 || jComboBoxCategoria.getSelectedIndex() == 0) {
+            JOptionPane.showMessageDialog(this, "Selecciona un servicio y una categoría primero");
+            return;
+        }
+
+        String servicio = jComboBoxservicios.getSelectedItem().toString();
+        String categoria = jComboBoxCategoria.getSelectedItem().toString();
+        String precioText = jLabelPrecioservicio.getText();
+
+        if (precioText.isEmpty() || precioText.equals("$")) {
+            JOptionPane.showMessageDialog(this, "No hay precio disponible para este servicio");
+            return;
+        }
+
+        try {
+            double precio = Double.parseDouble(precioText.replace("$", "").trim());
+            String servicioCompleto = servicio + " - " + categoria + " - $" + precio;
+
+            // Agregar a la lista - USAR MÉTODO SEGURO
+            DefaultListModel<String> model = getModeloSeguro();
+            model.addElement(servicioCompleto);
+
+            // ACTUALIZAR TOTAL AUTOMÁTICAMENTE
+            totalAcumulado += precio;
+            txtTotalágar.setText(String.valueOf(totalAcumulado));
+
+            // CALCULAR MONTO RESTANTE AUTOMÁTICAMENTE
+            calcularRestante();
+
+            // Limpiar para nuevo servicio
+            jComboBoxCategoria.setSelectedIndex(0);
+            jLabelPrecioservicio.setText("");
+
+            JOptionPane.showMessageDialog(this, "Servicio agregado: " + servicio);
+
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Error en el formato del precio");
+        }
+    }
+
+    private void quitarServicio() {
+        int selectedIndex = jListServiciosSeleccionados.getSelectedIndex();
+        if (selectedIndex != -1) {
+            DefaultListModel<String> model = (DefaultListModel<String>) jListServiciosSeleccionados.getModel();
+            String servicioRemovido = model.getElementAt(selectedIndex);
+
+            // Extraer precio del servicio removido
+            String[] partes = servicioRemovido.split("\\$");
+            if (partes.length > 1) {
+                try {
+                    double precioRemovido = Double.parseDouble(partes[1]);
+                    totalAcumulado -= precioRemovido;
+                    txtTotalágar.setText(String.valueOf(totalAcumulado));
+                    calcularRestante();
+                } catch (NumberFormatException e) {
+                    // Ignorar error
+                }
+            }
+
+            model.remove(selectedIndex);
+        } else {
+            JOptionPane.showMessageDialog(this, "Selecciona un servicio de la lista para quitar");
+        }
+
     }
 
     /**
@@ -388,7 +561,6 @@ public class NewJCita extends javax.swing.JFrame {
         jLabel5 = new javax.swing.JLabel();
         jLabel9 = new javax.swing.JLabel();
         txtNombreclienta = new javax.swing.JTextField();
-        txtPrecioservicio = new javax.swing.JComboBox<>();
         jComboBox2 = new javax.swing.JComboBox<>();
         txtNumerodecita = new javax.swing.JTextField();
         jLabel10 = new javax.swing.JLabel();
@@ -405,6 +577,11 @@ public class NewJCita extends javax.swing.JFrame {
         jComboBoxservicios = new javax.swing.JComboBox<>();
         jComboBoxCategoria = new javax.swing.JComboBox<>();
         jLabelCategorias = new javax.swing.JLabel();
+        jLabelPrecioservicio = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
+        btnQuitarservicio = new javax.swing.JButton();
+        btnAgregarservico = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -494,14 +671,6 @@ public class NewJCita extends javax.swing.JFrame {
 
         txtNombreclienta.setText("Nombre Cliente");
 
-        txtPrecioservicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "precio serv", "Item 2", "Item 3", "Item 4" }));
-        txtPrecioservicio.setToolTipText("precio ser");
-        txtPrecioservicio.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                txtPrecioservicioActionPerformed(evt);
-            }
-        });
-
         jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Fecha" }));
         jComboBox2.setToolTipText("Fecha");
         jComboBox2.addActionListener(new java.awt.event.ActionListener() {
@@ -589,6 +758,26 @@ public class NewJCita extends javax.swing.JFrame {
 
         jLabelCategorias.setText("Categoria");
 
+        jLabel6.setText("Confirmada");
+
+        jLabel7.setText("Pendiente");
+
+        btnQuitarservicio.setBackground(new java.awt.Color(255, 204, 255));
+        btnQuitarservicio.setText("Quitar servicio");
+        btnQuitarservicio.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnQuitarservicioActionPerformed(evt);
+            }
+        });
+
+        btnAgregarservico.setBackground(new java.awt.Color(255, 204, 255));
+        btnAgregarservico.setText("Agregar otrp Servicio");
+        btnAgregarservico.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnAgregarservicoActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -596,15 +785,12 @@ public class NewJCita extends javax.swing.JFrame {
             .addComponent(jPanel4, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addComponent(txtNombreclienta, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(45, 45, 45)
-                                .addComponent(jLabel4))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(33, 33, 33)
-                                .addComponent(jLabel1))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(45, 45, 45)
+                        .addComponent(jLabel4))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(33, 33, 33)
+                        .addComponent(jLabel1))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(44, 44, 44)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -622,39 +808,60 @@ public class NewJCita extends javax.swing.JFrame {
                 .addGap(49, 49, 49)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addComponent(txtTotalágar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jComboBox2, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(1, 1, 1)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jComboBoxhora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtNumerodecita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jComboBoxservicios, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jComboBoxCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(txtEstadoservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(0, 0, Short.MAX_VALUE)))
+                        .addGap(60, 60, 60)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 104, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(9, 9, 9)
+                                .addComponent(btnQuitarservicio)))
+                        .addGap(68, 68, 68))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(txtmontorestante, javax.swing.GroupLayout.PREFERRED_SIZE, 174, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                .addComponent(txtmontoanticipo, javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addGap(10, 10, 10)
+                                    .addComponent(jLabelPrecioservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 87, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addComponent(txtTotalágar, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 174, Short.MAX_VALUE)))
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(btnguardar, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btncancelarcita, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btnReagendarcita, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(87, 87, 87))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jComboBox2, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addGap(1, 1, 1)
-                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                            .addComponent(jComboBoxhora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(txtNumerodecita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jComboBoxservicios, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(jComboBoxCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, 120, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(txtEstadoservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addComponent(txtPrecioservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                    .addComponent(txtmontoanticipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addComponent(txtmontorestante, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(0, 1, Short.MAX_VALUE)))
-                        .addGap(302, 302, 302))))
-            .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(261, 261, 261)
-                .addComponent(jLabel2)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(87, 87, 87))))
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(btnRegresar, javax.swing.GroupLayout.PREFERRED_SIZE, 123, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(64, 64, 64))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(261, 261, 261)
+                        .addComponent(jLabel2))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(41, 41, 41)
+                        .addComponent(txtNombreclienta, javax.swing.GroupLayout.PREFERRED_SIZE, 529, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                    .addContainerGap(366, Short.MAX_VALUE)
+                    .addComponent(btnAgregarservico)
+                    .addGap(128, 128, 128)))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -677,25 +884,28 @@ public class NewJCita extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel5)
                     .addComponent(jComboBoxhora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel10)
                     .addComponent(jComboBoxservicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 17, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 19, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jComboBoxCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabelCategorias))
+                    .addComponent(jLabelCategorias)
+                    .addComponent(btnQuitarservicio))
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel9)
-                    .addComponent(txtEstadoservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(txtEstadoservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel6)
+                    .addComponent(jLabel7))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(27, 27, 27)
+                        .addGap(30, 30, 30)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel14)
-                            .addComponent(txtPrecioservicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 29, Short.MAX_VALUE)
+                            .addComponent(jLabelPrecioservicio, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 32, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(txtTotalágar, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -719,6 +929,11 @@ public class NewJCita extends javax.swing.JFrame {
                 .addComponent(btnRegresar)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addGap(274, 274, 274)
+                    .addComponent(btnAgregarservico)
+                    .addContainerGap(400, Short.MAX_VALUE)))
         );
 
         jMenu4.setText("INICIO");
@@ -876,10 +1091,6 @@ public class NewJCita extends javax.swing.JFrame {
         guardarCita();
     }//GEN-LAST:event_btnguardarActionPerformed
 
-    private void txtPrecioservicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrecioservicioActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_txtPrecioservicioActionPerformed
-
     private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jComboBox2ActionPerformed
@@ -918,10 +1129,19 @@ public class NewJCita extends javax.swing.JFrame {
 
     private void jComboBoxserviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxserviciosActionPerformed
         // TODO add your handling code here:
+        if (jComboBoxservicios.getSelectedIndex() > 0) {
+            String servicioSeleccionado = jComboBoxservicios.getSelectedItem().toString();
+            cargarCategoriasPorServicio(servicioSeleccionado);
+        }
     }//GEN-LAST:event_jComboBoxserviciosActionPerformed
 
     private void jComboBoxCategoriaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxCategoriaActionPerformed
         // TODO add your handling code here:
+        if (jComboBoxservicios.getSelectedIndex() > 0 && jComboBoxCategoria.getSelectedIndex() > 0) {
+            String servicio = jComboBoxservicios.getSelectedItem().toString();
+            String categoria = jComboBoxCategoria.getSelectedItem().toString();
+            cargarPrecioPorCategoria(servicio, categoria);
+        }
     }//GEN-LAST:event_jComboBoxCategoriaActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
@@ -934,6 +1154,17 @@ public class NewJCita extends javax.swing.JFrame {
     private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void btnAgregarservicoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarservicoActionPerformed
+        // TODO add your handling code here:
+         agregarServicio();
+    }//GEN-LAST:event_btnAgregarservicoActionPerformed
+
+    private void btnQuitarservicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnQuitarservicioActionPerformed
+        // TODO add your handling code here:
+            quitarServicio();
+
+    }//GEN-LAST:event_btnQuitarservicioActionPerformed
 
     /**
      * @param args the command line arguments
@@ -961,9 +1192,7 @@ public class NewJCita extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(NewJCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
+
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -977,6 +1206,8 @@ public class NewJCita extends javax.swing.JFrame {
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
+    private javax.swing.JButton btnAgregarservico;
+    private javax.swing.JButton btnQuitarservicio;
     private javax.swing.JButton btnReagendarcita;
     private javax.swing.JButton btnRegresar;
     private javax.swing.JButton btncancelarcita;
@@ -995,8 +1226,11 @@ public class NewJCita extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JLabel jLabelCategorias;
+    private javax.swing.JLabel jLabelPrecioservicio;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;
@@ -1015,7 +1249,6 @@ public class NewJCita extends javax.swing.JFrame {
     private javax.swing.JTextField txtEstadoservicio;
     private javax.swing.JTextField txtNombreclienta;
     private javax.swing.JTextField txtNumerodecita;
-    private javax.swing.JComboBox<String> txtPrecioservicio;
     private javax.swing.JTextField txtTotalágar;
     private javax.swing.JTextField txtmontoanticipo;
     private javax.swing.JTextField txtmontorestante;

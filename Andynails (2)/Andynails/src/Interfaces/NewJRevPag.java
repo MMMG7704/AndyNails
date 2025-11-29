@@ -4,6 +4,7 @@
  */
 package Interfaces;
 
+import andynails.ConexionBD;
 import andynails.RedesSociales;
 
 /**
@@ -12,13 +13,227 @@ import andynails.RedesSociales;
  */
 public class NewJRevPag extends javax.swing.JFrame {
 
+    ConexionBD conexion;
+
     /**
      * Creates new form NewJRevPag
      */
     public NewJRevPag() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        conexion = new andynails.ConexionBD("andynails");
 
+        // Primero configurar los ComboBox
+        configurarComboBox();
+        verificarEstructuraTablaPago();
+
+        // Luego cargar los pagos (después de un pequeño delay para asegurar que los ComboBox están listos)
+        javax.swing.Timer timer = new javax.swing.Timer(100, new java.awt.event.ActionListener() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent e) {
+                cargarPagosDesdeBD();
+            }
+        });
+        timer.setRepeats(false);
+        timer.start();
+
+        // Configurar tooltips
+        jButton4.setToolTipText("Ver detalles del pago seleccionado");
+        jButton5.setToolTipText("Registrar nuevo pago");
+        jButton6.setToolTipText("Eliminar pago seleccionado");
+        jComboBox1.setToolTipText("Filtrar por fecha");
+        jComboBox2.setToolTipText("Filtrar por cliente");
+    }
+
+    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {
+        // Contacto
+        NewJContacto NewJContacto = new NewJContacto();
+        NewJContacto.setVisible(true);
+        this.dispose();
+    }
+
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {
+        // Login
+        NewJLogin NewJLogin = new NewJLogin();
+        NewJLogin.setVisible(true);
+        this.dispose();
+    }
+
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {
+        // Cancelar Cita
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
+        NewJCitaAgenda.setVisible(true);
+        this.dispose();
+    }
+
+    private void configurarComboBox() {
+        try {
+            // Configurar ComboBox de fechas
+            jComboBox1.removeAllItems();
+            jComboBox1.addItem("Todas las fechas");
+
+            // Usar fecha_pago en lugar de Fecha_pago
+            String sqlFechas = "SELECT DISTINCT DATE(fecha_pago) as fecha FROM pago ORDER BY fecha DESC";
+            java.sql.PreparedStatement psFechas = conexion.conectar().prepareStatement(sqlFechas);
+            java.sql.ResultSet rsFechas = psFechas.executeQuery();
+
+            while (rsFechas.next()) {
+                String fecha = rsFechas.getString("fecha");
+                if (fecha != null) {
+                    jComboBox1.addItem(fecha);
+                }
+            }
+            rsFechas.close();
+            psFechas.close();
+
+            // Configurar ComboBox de clientes
+            jComboBox2.removeAllItems();
+            jComboBox2.addItem("Todos los clientes");
+
+            String sqlClientes = "SELECT DISTINCT u.idUsuarios, u.Nombre FROM pago p "
+                    + "INNER JOIN usuarios u ON p.idUsuarios = u.idUsuarios "
+                    + "ORDER BY u.Nombre";
+            java.sql.PreparedStatement psClientes = conexion.conectar().prepareStatement(sqlClientes);
+            java.sql.ResultSet rsClientes = psClientes.executeQuery();
+
+            while (rsClientes.next()) {
+                String nombre = rsClientes.getString("Nombre");
+                if (nombre != null) {
+                    jComboBox2.addItem(nombre);
+                }
+            }
+            rsClientes.close();
+            psClientes.close();
+
+            // Establecer selecciones por defecto después de cargar todos los items
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    jComboBox1.setSelectedItem("Todas las fechas");
+                    jComboBox2.setSelectedItem("Todos los clientes");
+                }
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar filtros: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void verificarEstructuraTablaPago() {
+        try {
+            String sql = "DESCRIBE pago";
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            System.out.println("=== ESTRUCTURA TABLA PAGO ===");
+            while (rs.next()) {
+                System.out.println(rs.getString("Field") + " - " + rs.getString("Type"));
+            }
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void cargarPagosDesdeBD() {
+        try {
+            // Verificar que los ComboBox tengan elementos seleccionados
+            String fechaSeleccionada = (jComboBox1.getSelectedItem() != null)
+                    ? jComboBox1.getSelectedItem().toString() : "Todas las fechas";
+            String clienteSeleccionado = (jComboBox2.getSelectedItem() != null)
+                    ? jComboBox2.getSelectedItem().toString() : "Todos los clientes";
+
+            // Versión simplificada sin metodo_pago
+            String sql = "SELECT p.idPago, u.Nombre as Cliente, p.Monto, p.fecha_pago, "
+                    + "p.Estado_pago, p.Comprobante, "
+                    + "GROUP_CONCAT(s.Nombre_servicio SEPARATOR ', ') as Servicios "
+                    + "FROM pago p "
+                    + "INNER JOIN usuarios u ON p.idUsuarios = u.idUsuarios "
+                    + "LEFT JOIN cita_has_servicios chs ON p.idPago = chs.Pago_idPago "
+                    + "LEFT JOIN servicios s ON chs.idServicios = s.idServicios "
+                    + "WHERE 1=1";
+
+            // Agregar filtros si se seleccionaron
+            if (!fechaSeleccionada.equals("Todas las fechas")) {
+                sql += " AND DATE(p.fecha_pago) = ?";
+            }
+            if (!clienteSeleccionado.equals("Todos los clientes")) {
+                sql += " AND u.Nombre = ?";
+            }
+
+            sql += " GROUP BY p.idPago, u.Nombre, p.Monto, p.fecha_pago, p.Estado_pago, p.Comprobante "
+                    + "ORDER BY p.fecha_pago DESC, p.idPago DESC";
+
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+
+            int paramIndex = 1;
+            if (!fechaSeleccionada.equals("Todas las fechas")) {
+                ps.setString(paramIndex++, fechaSeleccionada);
+            }
+            if (!clienteSeleccionado.equals("Todos los clientes")) {
+                ps.setString(paramIndex++, clienteSeleccionado);
+            }
+
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            // Columnas simplificadas
+            model.setColumnIdentifiers(new String[]{
+                "ID Pago",
+                "Cliente",
+                "Monto",
+                "Fecha",
+                "Estado",
+                "Servicios",
+                "Comprobante"
+            });
+
+            while (rs.next()) {
+                String comprobante = rs.getString("Comprobante");
+                String nombreComprobante = "Sin comprobante";
+                if (comprobante != null && !comprobante.trim().isEmpty()) {
+                    // Extraer nombre legible del comprobante
+                    String[] partes = comprobante.split("_");
+                    if (partes.length > 3) {
+                        nombreComprobante = partes[partes.length - 1];
+                        // Limpiar extensión si es muy larga
+                        if (nombreComprobante.length() > 20) {
+                            nombreComprobante = nombreComprobante.substring(0, 17) + "...";
+                        }
+                    } else {
+                        nombreComprobante = comprobante;
+                    }
+                }
+
+                model.addRow(new Object[]{
+                    rs.getInt("idPago"),
+                    rs.getString("Cliente"),
+                    "$" + String.format("%.2f", rs.getDouble("Monto")),
+                    rs.getDate("fecha_pago"),
+                    rs.getString("Estado_pago"),
+                    rs.getString("Servicios"),
+                    nombreComprobante
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar pagos: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     /**
@@ -35,7 +250,6 @@ public class NewJRevPag extends javax.swing.JFrame {
         jLabel1 = new javax.swing.JLabel();
         jComboBox1 = new javax.swing.JComboBox<>();
         jLabel2 = new javax.swing.JLabel();
-        jTextField1 = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
         jButton4 = new javax.swing.JButton();
@@ -45,6 +259,7 @@ public class NewJRevPag extends javax.swing.JFrame {
         INS = new javax.swing.JLabel();
         FACE = new javax.swing.JLabel();
         WPP = new javax.swing.JLabel();
+        jComboBox2 = new javax.swing.JComboBox<>();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenu4 = new javax.swing.JMenu();
@@ -67,15 +282,13 @@ public class NewJRevPag extends javax.swing.JFrame {
 
         jComboBox1.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Fecha" }));
-
-        jLabel2.setText("Nombre");
-
-        jTextField1.setText("Nombre cliente");
-        jTextField1.addActionListener(new java.awt.event.ActionListener() {
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField1ActionPerformed(evt);
+                jComboBox1ActionPerformed(evt);
             }
         });
+
+        jLabel2.setText("Nombre");
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -100,9 +313,19 @@ public class NewJRevPag extends javax.swing.JFrame {
 
         jButton5.setBackground(new java.awt.Color(255, 204, 255));
         jButton5.setText("Registrar");
+        jButton5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton5ActionPerformed(evt);
+            }
+        });
 
         jButton6.setBackground(new java.awt.Color(255, 204, 255));
         jButton6.setText("Eliminar");
+        jButton6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton6ActionPerformed(evt);
+            }
+        });
 
         jPanel5.setBackground(new java.awt.Color(204, 0, 204));
 
@@ -136,6 +359,14 @@ public class NewJRevPag extends javax.swing.JFrame {
                 .addContainerGap(25, Short.MAX_VALUE))
         );
 
+        jComboBox2.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        jComboBox2.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Nombre cliente" }));
+        jComboBox2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox2ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -154,7 +385,7 @@ public class NewJRevPag extends javax.swing.JFrame {
                         .addGap(54, 54, 54)
                         .addComponent(jLabel2)
                         .addGap(18, 18, 18)
-                        .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 181, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGap(33, 33, 33)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 566, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -186,7 +417,7 @@ public class NewJRevPag extends javax.swing.JFrame {
                             .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(jLabel1)
                             .addComponent(jLabel2)
-                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jComboBox2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(24, 24, 24)
                         .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 233, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)))
@@ -261,34 +492,226 @@ public class NewJRevPag extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField1ActionPerformed
-
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // TODO add your handling code here:
+        // Botón "Ver" - Mostrar detalles del pago seleccionado
+        int selectedRow = jTable1.getSelectedRow();
+        if (selectedRow == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Por favor, selecciona un pago para ver los detalles",
+                    "Selección requerida",
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            int idPago = Integer.parseInt(jTable1.getValueAt(selectedRow, 0).toString());
+
+            // Consulta para obtener todos los detalles del pago
+            String sql = "SELECT p.*, u.Nombre as Cliente, u.Telefono, "
+                    + "GROUP_CONCAT(DISTINCT s.Nombre_servicio SEPARATOR ', ') as Servicios, "
+                    + "GROUP_CONCAT(DISTINCT c.Fecha) as Fechas_Cita "
+                    + "FROM pago p "
+                    + "INNER JOIN usuarios u ON p.idUsuarios = u.idUsuarios "
+                    + "LEFT JOIN cita_has_servicios chs ON p.idPago = chs.Pago_idPago "
+                    + "LEFT JOIN servicios s ON chs.idServicios = s.idServicios "
+                    + "LEFT JOIN cita c ON chs.idCita = c.idCita "
+                    + "WHERE p.idPago = ? "
+                    + "GROUP BY p.idPago";
+
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            ps.setInt(1, idPago);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String mensaje = "📋 DETALLES COMPLETOS DEL PAGO\n\n"
+                        + "🔹 ID Pago: " + rs.getInt("idPago") + "\n"
+                        + "👤 Cliente: " + rs.getString("Cliente") + "\n"
+                        + "📞 Teléfono: " + (rs.getString("Telefono") != null ? rs.getString("Telefono") : "N/A") + "\n"
+                        + "💰 Monto: $" + String.format("%.2f", rs.getDouble("Monto")) + "\n"
+                        + "📅 Fecha Pago: " + rs.getDate("fecha_pago") + "\n"
+                        + "📊 Estado: " + rs.getString("Estado_pago") + "\n"
+                        + "🛍️ Servicios: " + (rs.getString("Servicios") != null ? rs.getString("Servicios") : "N/A") + "\n"
+                        + "📅 Fechas Cita: " + (rs.getString("Fechas_Cita") != null ? rs.getString("Fechas_Cita") : "N/A") + "\n"
+                        + "📎 Comprobante: " + (rs.getString("Comprobante") != null ? rs.getString("Comprobante") : "N/A") + "\n"
+                        + "🏦 Banco: " + (rs.getString("Banco") != null ? rs.getString("Banco") : "N/A") + "\n"
+                        + "📝 Concepto: " + (rs.getString("Concepto") != null ? rs.getString("Concepto") : "N/A");
+
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        mensaje,
+                        "Detalles Completos del Pago - ID: " + idPago,
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "No se encontraron detalles para el pago seleccionado",
+                        "Error",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al mostrar detalles: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+
     }//GEN-LAST:event_jButton4ActionPerformed
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
-          NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
-           NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-          NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        // TODO add your handling code here:
+        if (jComboBox1.getSelectedItem() != null) {
+            cargarPagosDesdeBD();
+        }
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void jComboBox2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox2ActionPerformed
+        // TODO add your handling code here:
+        if (jComboBox2.getSelectedItem() != null) {
+            cargarPagosDesdeBD();
+        }
+    }//GEN-LAST:event_jComboBox2ActionPerformed
+
+    private void jButton5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton5ActionPerformed
+        // TODO add your handling code here:
+        // Botón "Registrar" - Cambiar estado del pago
+        int selectedRow = jTable1.getSelectedRow();
+        if (selectedRow == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Por favor, selecciona un pago para cambiar su estado",
+                    "Selección requerida",
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            int idPago = Integer.parseInt(jTable1.getValueAt(selectedRow, 0).toString());
+            String cliente = jTable1.getValueAt(selectedRow, 1).toString();
+            String monto = jTable1.getValueAt(selectedRow, 2).toString();
+            String estadoActual = jTable1.getValueAt(selectedRow, 4).toString();
+
+            // Opciones de estado
+            String[] opciones = {"Completado", "Pendiente", "Cancelado", "Reembolsado"};
+            String nuevoEstado = (String) javax.swing.JOptionPane.showInputDialog(this,
+                    "Cambiar estado del pago:\n\n"
+                    + "Cliente: " + cliente + "\n"
+                    + "Monto: " + monto + "\n"
+                    + "Estado actual: " + estadoActual + "\n\n"
+                    + "Selecciona el nuevo estado:",
+                    "Cambiar Estado de Pago",
+                    javax.swing.JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opciones,
+                    estadoActual);
+
+            if (nuevoEstado != null && !nuevoEstado.equals(estadoActual)) {
+                // Actualizar estado en la base de datos
+                String sql = "UPDATE pago SET Estado_pago = ? WHERE idPago = ?";
+                java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+                ps.setString(1, nuevoEstado);
+                ps.setInt(2, idPago);
+                int filasAfectadas = ps.executeUpdate();
+                ps.close();
+
+                if (filasAfectadas > 0) {
+                    javax.swing.JOptionPane.showMessageDialog(this,
+                            "✅ Estado del pago actualizado exitosamente:\n"
+                            + "De '" + estadoActual + "' a '" + nuevoEstado + "'",
+                            "Estado Actualizado",
+                            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+                    // Recargar la tabla
+                    cargarPagosDesdeBD();
+                }
+            }
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cambiar estado: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+
+    }//GEN-LAST:event_jButton5ActionPerformed
+
+    private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
+        // TODO add your handling code here:
+        int selectedRow = jTable1.getSelectedRow();
+        if (selectedRow == -1) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Por favor, selecciona un pago para eliminar",
+                    "Selección requerida",
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        try {
+            int idPago = Integer.parseInt(jTable1.getValueAt(selectedRow, 0).toString());
+            String cliente = jTable1.getValueAt(selectedRow, 1).toString();
+            String monto = jTable1.getValueAt(selectedRow, 2).toString();
+
+            int confirmacion = javax.swing.JOptionPane.showConfirmDialog(this,
+                    "¿Estás seguro de que quieres eliminar este pago?\n\n"
+                    + "Cliente: " + cliente + "\n"
+                    + "Monto: " + monto + "\n"
+                    + "ID: " + idPago,
+                    "Confirmar Eliminación",
+                    javax.swing.JOptionPane.YES_NO_OPTION);
+
+            if (confirmacion == javax.swing.JOptionPane.YES_OPTION) {
+                // Eliminar de la base de datos
+                String sql = "DELETE FROM pago WHERE idPago = ?";
+                java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+                ps.setInt(1, idPago);
+                int filasAfectadas = ps.executeUpdate();
+                ps.close();
+
+                if (filasAfectadas > 0) {
+                    javax.swing.JOptionPane.showMessageDialog(this,
+                            "Pago eliminado exitosamente",
+                            "Eliminación Exitosa",
+                            javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+                    // Recargar la tabla
+                    cargarPagosDesdeBD();
+                } else {
+                    javax.swing.JOptionPane.showMessageDialog(this,
+                            "No se pudo eliminar el pago",
+                            "Error",
+                            javax.swing.JOptionPane.ERROR_MESSAGE);
+                }
+            }
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al eliminar pago: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+    }//GEN-LAST:event_jButton6ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -333,6 +756,7 @@ public class NewJRevPag extends javax.swing.JFrame {
     private javax.swing.JButton jButton5;
     private javax.swing.JButton jButton6;
     private javax.swing.JComboBox<String> jComboBox1;
+    private javax.swing.JComboBox<String> jComboBox2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
@@ -352,6 +776,5 @@ public class NewJRevPag extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextField jTextField1;
     // End of variables declaration//GEN-END:variables
 }

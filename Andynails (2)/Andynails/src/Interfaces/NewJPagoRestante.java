@@ -571,7 +571,7 @@ public NewJPagoRestante(JFrame anterior) {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem4ActionPerformed
@@ -579,7 +579,7 @@ public NewJPagoRestante(JFrame anterior) {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -641,7 +641,7 @@ public NewJPagoRestante(JFrame anterior) {
     private void jMenuItem13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem13ActionPerformed
         // TODO add your handling code here:
         //agendar
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem13ActionPerformed
@@ -649,7 +649,7 @@ public NewJPagoRestante(JFrame anterior) {
     private void jMenuItem14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem14ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem14ActionPerformed
@@ -681,7 +681,7 @@ public NewJPagoRestante(JFrame anterior) {
         // TODO add your handling code here:
                                           
     // Regresar al panel anterior
-    NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
+    NewJPanelAdministracion anterior = new NewJPanelAdministracion();
     anterior.setVisible(true);
     this.dispose(); // Cierra la ventana actual
 

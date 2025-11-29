@@ -6,20 +6,20 @@ import java.util.Properties;
 
 public class RecordatorioEmail_1 {
 
-    public static void enviarRecordatorio(String destinatario, String fechaCita, String horaCita) {
-        String remitente = "andyynaiils@gmail.com";
-        String contrasena = "igqvixarljjfjmtq";
+    public static void enviarRecordatorio(String destinatario, String nombre, String fechaCita, String horaCita) {
+        String remitente = "andyynaiils@gmail.com";  // tu correo
+        String contrasena = "fgmnwehujgaicgfs"; // la de 16 caracteres
         String asunto = "Recordatorio de tu cita - Andy Nails";
-        String cuerpo = "Hola 💅,\n\nTe recordamos que tienes una cita el " + fechaCita +
-                        " a las " + horaCita + ".\n\n¡Te esperamos!\n\nAtte: Andy Nails 💖";
+        String cuerpo = "Hola " + nombre + " 💅,\n\n"
+                + "Te recordamos que tienes una cita el " + fechaCita
+                + " a las " + horaCita + ".\n\n¡Te esperamos!\n\nAtte: Andy Nails 💖";
 
         Properties props = new Properties();
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", "smtp.gmail.com");
         props.put("mail.smtp.port", "587");
-        props.put("mail.smtp.ssl.trust", "smtp.gmail.com"); 
-
+        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
 
         Session session = Session.getInstance(props, new Authenticator() {
             @Override
@@ -36,7 +36,7 @@ public class RecordatorioEmail_1 {
             message.setText(cuerpo);
 
             Transport.send(message);
-            System.out.println("Recordatorio enviado a " + destinatario);
+            System.out.println("✅ Recordatorio enviado a " + destinatario);
         } catch (MessagingException e) {
             System.out.println("❌ Error al enviar el correo: " + e.getMessage());
             e.printStackTrace();

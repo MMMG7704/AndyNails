@@ -3,7 +3,6 @@ package Interfaces;
 import java.awt.*;
 import java.awt.event.*;
 import andynails.ConexionBD;
-import andynails.RedesSociales;
 import java.awt.Color;
 import java.awt.Image;
 import javax.swing.ImageIcon;
@@ -61,12 +60,11 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         initComponents();
         setLocationRelativeTo(null);
         cargarCategoriasDesdeBD();
-        iniciarCarrusel(); 
-                        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-
+        iniciarCarrusel();
 
     }
-      public void deshabilitarSeleccion() {
+
+    public void deshabilitarSeleccion() {
         // Deshabilitar botones específicos de UÑAS
         if (jButton3 != null) {
             jButton3.setEnabled(false);
@@ -78,9 +76,8 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             jButton4.setEnabled(false);
         }
 
-       
     }
-      
+
     private boolean puedeSeleccionar() {
         if (!andynails.SesionUsuario.sesionActiva()) {
             javax.swing.JOptionPane.showMessageDialog(this,
@@ -96,105 +93,110 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     }
 
     private void cargarCategoriasDesdeBD() {
-    try (Connection con = ConexionBD.getConnection();
-         PreparedStatement ps = con.prepareStatement(
-            "SELECT Imagen_Archivo, Nombre_categoria, Descripcion, Precio " +
-            "FROM categoria_servicio WHERE idServicios = 1")) {
+        try (Connection con = ConexionBD.getConnection(); PreparedStatement ps = con.prepareStatement(
+                "SELECT Imagen_Archivo, Nombre_categoria, Descripcion, Precio "
+                + "FROM categoria_servicio WHERE idServicios = 1")) {
 
-        ResultSet rs = ps.executeQuery();
+            ResultSet rs = ps.executeQuery();
 
-        francesasList.clear();
-        ballerinaList.clear();
-        cuadradasList.clear();
+            francesasList.clear();
+            ballerinaList.clear();
+            cuadradasList.clear();
 
-        while (rs.next()) {
-            String rutaImagen = rs.getString("Imagen_Archivo");
-            String nombre = rs.getString("Nombre_categoria");
-            String descripcion = rs.getString("Descripcion");
-            String precio = rs.getString("Precio");
+            while (rs.next()) {
+                String rutaImagen = rs.getString("Imagen_Archivo");
+                String nombre = rs.getString("Nombre_categoria");
+                String descripcion = rs.getString("Descripcion");
+                String precio = rs.getString("Precio");
 
-            ImageIcon icon = null;
-            if (rutaImagen != null && !rutaImagen.isEmpty()) {
-                File archivo = new File(rutaImagen);
-                if (archivo.exists()) {
-                    Image img = new ImageIcon(rutaImagen)
-                            .getImage()
-                            .getScaledInstance(208, 214, Image.SCALE_SMOOTH);
-                    icon = new ImageIcon(img);
+                ImageIcon icon = null;
+                if (rutaImagen != null && !rutaImagen.isEmpty()) {
+                    File archivo = new File(rutaImagen);
+                    if (archivo.exists()) {
+                        Image img = new ImageIcon(rutaImagen)
+                                .getImage()
+                                .getScaledInstance(208, 214, Image.SCALE_SMOOTH);
+                        icon = new ImageIcon(img);
+                    }
+                }
+
+                CategoriaServicio c = new CategoriaServicio();
+                c.imagen = icon;
+                c.descripcion = descripcion;
+                c.precio = precio;
+                c.nombre = nombre;
+
+                switch (nombre.toLowerCase().trim()) {
+                    case "francesa":
+                    case "francesas":
+                    case "uñas francesas":
+                        francesasList.add(c);
+                        break;
+                    case "ballerina":
+                    case "uñas ballerina":
+                        ballerinaList.add(c);
+                        break;
+                    case "cuadrada":
+                    case "cuadradas":
+                    case "uñas cuadradas":
+                        cuadradasList.add(c);
+                        break;
                 }
             }
 
-            CategoriaServicio c = new CategoriaServicio();
-            c.imagen = icon;
-            c.descripcion = descripcion;
-            c.precio = precio;
-            c.nombre = nombre;
-
-            switch (nombre.toLowerCase().trim()) {
-                case "francesa":
-                case "francesas":
-                case "uñas francesas":
-                    francesasList.add(c);
-                    break;
-                case "ballerina":
-                case "uñas ballerina":
-                    ballerinaList.add(c);
-                    break;
-                case "cuadrada":
-                case "cuadradas":
-                case "uñas cuadradas":
-                    cuadradasList.add(c);
-                    break;
+            // Mostrar la primera imagen de cada categoría
+            if (!francesasList.isEmpty()) {
+                mostrarCategoria(francesasList.get(0), lblImg1, lblDesc1, txtPrecio1);
             }
+            if (!ballerinaList.isEmpty()) {
+                mostrarCategoria(ballerinaList.get(0), lblImg2, lblDesc2, txtPrecio2);
+            }
+            if (!cuadradasList.isEmpty()) {
+                mostrarCategoria(cuadradasList.get(0), lblImg3, lblDesc3, txtPrecio3);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
         }
-
-        // Mostrar la primera imagen de cada categoría
-        if (!francesasList.isEmpty()) mostrarCategoria(francesasList.get(0), lblImg1, lblDesc1, txtPrecio1);
-        if (!ballerinaList.isEmpty()) mostrarCategoria(ballerinaList.get(0), lblImg2, lblDesc2, txtPrecio2);
-        if (!cuadradasList.isEmpty()) mostrarCategoria(cuadradasList.get(0), lblImg3, lblDesc3, txtPrecio3);
-
-    } catch (Exception e) {
-        e.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
     }
-}
 
     private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
-    if (c.imagen != null) lblImg.setIcon(c.imagen);
-    lblDesc.setText(c.descripcion);
-    lblPrecio.setText("$" + c.precio);
-}
-
+        if (c.imagen != null) {
+            lblImg.setIcon(c.imagen);
+        }
+        lblDesc.setText(c.descripcion);
+        lblPrecio.setText("$" + c.precio);
+    }
 
     private void iniciarCarrusel() {
-    // Carrusel Francesas
-    Timer tFrancesa = new Timer(4000, e -> {
-        if (!francesasList.isEmpty()) {
-            indiceFrancesa = (indiceFrancesa + 1) % francesasList.size();
-            mostrarCategoria(francesasList.get(indiceFrancesa), lblImg1, lblDesc1, txtPrecio1);
-        }
-    });
-    tFrancesa.start();
+        // Carrusel Francesas
+        Timer tFrancesa = new Timer(4000, e -> {
+            if (!francesasList.isEmpty()) {
+                indiceFrancesa = (indiceFrancesa + 1) % francesasList.size();
+                mostrarCategoria(francesasList.get(indiceFrancesa), lblImg1, lblDesc1, txtPrecio1);
+            }
+        });
+        tFrancesa.start();
 
-    // Carrusel Ballerina
-    Timer tBallerina = new Timer(4000, e -> {
-        if (!ballerinaList.isEmpty()) {
-            indiceBallerina = (indiceBallerina + 1) % ballerinaList.size();
-            mostrarCategoria(ballerinaList.get(indiceBallerina), lblImg2, lblDesc2, txtPrecio2);
-        }
-    });
-    tBallerina.start();
+        // Carrusel Ballerina
+        Timer tBallerina = new Timer(4000, e -> {
+            if (!ballerinaList.isEmpty()) {
+                indiceBallerina = (indiceBallerina + 1) % ballerinaList.size();
+                mostrarCategoria(ballerinaList.get(indiceBallerina), lblImg2, lblDesc2, txtPrecio2);
+            }
+        });
+        tBallerina.start();
 
-    // Carrusel Cuadradas
-    Timer tCuadrada = new Timer(4000, e -> {
-        if (!cuadradasList.isEmpty()) {
-            indiceCuadrada = (indiceCuadrada + 1) % cuadradasList.size();
-            mostrarCategoria(cuadradasList.get(indiceCuadrada), lblImg3, lblDesc3, txtPrecio3);
-        }
-    });
-    tCuadrada.start();
-}
-
+        // Carrusel Cuadradas
+        Timer tCuadrada = new Timer(4000, e -> {
+            if (!cuadradasList.isEmpty()) {
+                indiceCuadrada = (indiceCuadrada + 1) % cuadradasList.size();
+                mostrarCategoria(cuadradasList.get(indiceCuadrada), lblImg3, lblDesc3, txtPrecio3);
+            }
+        });
+        tCuadrada.start();
+    }
 
     private void abrirVentanaCita(JLabel lblDesc, JLabel lblPrecio, JLabel lblImg) {
         String descripcion = lblDesc.getText();
@@ -206,6 +208,24 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         this.dispose();
     }
 
+    
+    // En el método donde se selecciona "Francesas Blancas"
+private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {                                                 
+    System.out.println("=== SELECCIONANDO FRANCESAS BLANCAS ===");
+    
+    ImageIcon imagen = new ImageIcon(getClass().getResource("/Img/francesas.jpg"));
+    String descripcion = "Francesas Blancas";
+    String precio = "$350";
+    
+    System.out.println("DEBUG - Creando servicio:");
+    System.out.println("Descripción: " + descripcion);
+    System.out.println("Precio: " + precio);
+    
+    // Abrir ventana de agendamiento
+    NewJAgenC agendar = new NewJAgenC(imagen, descripcion, precio);
+    agendar.setVisible(true);
+    this.dispose();
+} 
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -221,9 +241,9 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         jLabel9 = new javax.swing.JLabel();
         jPanel1 = new javax.swing.JPanel();
         jPanel3 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
-        WPP = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jLabel7 = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
         labelCategoria1 = new java.awt.Label();
         labelCategoria3 = new java.awt.Label();
@@ -246,15 +266,16 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         txtPrecio3 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
-        jMenu2 = new javax.swing.JMenu();
+        jMenu7 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem7 = new javax.swing.JMenuItem();
         jMenu3 = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu4 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu7 = new javax.swing.JMenu();
+        jMenu8 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
 
         jMenu5.setText("File");
@@ -271,11 +292,11 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
         jPanel3.setBackground(new java.awt.Color(204, 0, 204));
 
-        INS.setText("INS");
+        jLabel3.setText("INS");
 
-        FACE.setText("FACE");
+        jLabel6.setText("FACE");
 
-        WPP.setText("WPP");
+        jLabel7.setText("WPP");
 
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
@@ -283,11 +304,11 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(345, 345, 345)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(167, 167, 167)
-                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(118, 118, 118)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -295,9 +316,9 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(14, 14, 14)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
-                    .addComponent(WPP)
-                    .addComponent(FACE))
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel7)
+                    .addComponent(jLabel6))
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
@@ -333,7 +354,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         });
 
         jButton3.setBackground(new java.awt.Color(255, 204, 255));
-        jButton3.setText("Seleccioanr");
+        jButton3.setText("Seleccionar");
         jButton3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton3ActionPerformed(evt);
@@ -506,37 +527,45 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         });
         jMenuBar1.add(jMenu1);
 
-        jMenu2.setText("CATALÓGO");
+        jMenu7.setText("CATALÓGO");
 
-        jMenuItem1.setText("UÑAS");
+        jMenuItem1.setText("Uñas");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem1ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem1);
+        jMenu7.add(jMenuItem1);
 
-        jMenuItem2.setText("PEINADOS");
+        jMenuItem2.setText("Peinados");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem2ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem2);
+        jMenu7.add(jMenuItem2);
 
-        jMenuItem3.setText("MAQUILLAJE");
+        jMenuItem3.setText("Maquillaje");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem3ActionPerformed(evt);
             }
         });
-        jMenu2.add(jMenuItem3);
+        jMenu7.add(jMenuItem3);
 
-        jMenuBar1.add(jMenu2);
+        jMenuItem7.setText("Otros");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenu7.add(jMenuItem7);
 
-        jMenu3.setText("AGENDAR CITA");
+        jMenuBar1.add(jMenu7);
 
-        jMenuItem4.setText("Cancelar cita");
+        jMenu3.setText("MIS CITAS");
+
+        jMenuItem4.setText("Mis citas");
         jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem4ActionPerformed(evt);
@@ -546,7 +575,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu3);
 
-        jMenu4.setText("CONTACTO");
+        jMenu4.setText("CONTATCO");
 
         jMenuItem5.setText("Contacto");
         jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
@@ -558,7 +587,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu4);
 
-        jMenu7.setText("LOGIN");
+        jMenu8.setText("LOGIN");
 
         jMenuItem6.setText("Login");
         jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
@@ -566,9 +595,9 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
                 jMenuItem6ActionPerformed(evt);
             }
         });
-        jMenu7.add(jMenuItem6);
+        jMenu8.add(jMenuItem6);
 
-        jMenuBar1.add(jMenu7);
+        jMenuBar1.add(jMenu8);
 
         setJMenuBar(jMenuBar1);
 
@@ -622,38 +651,39 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
-        //para arir uñas
         NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
-
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
         // TODO add your handling code here:
-        //para abrir peinados
         NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
-
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-        //para maquillaje
         NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
-
     }//GEN-LAST:event_jMenuItem3ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar cancelar
-        NewJCancelarC NewJCancelarC = new NewJCancelarC();
-        NewJCancelarC.setVisible(true);
+        NewJMiscitasCi cliWindow = new NewJMiscitasCi();
+        cliWindow.setVisible(true);
         this.dispose(); // cierra la actual
-
     }//GEN-LAST:event_jMenuItem4ActionPerformed
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
@@ -662,8 +692,6 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         NewJContacto NewJContacto = new NewJContacto();
         NewJContacto.setVisible(true);
         this.dispose(); // cierra la actual
-
-
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
@@ -672,8 +700,6 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         NewJLogin NewJLogin = new NewJLogin();
         NewJLogin.setVisible(true);
         this.dispose(); // cierra la actual
-
-
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     /**
@@ -709,14 +735,6 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         //</editor-fold>
         //</editor-fold>
         //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -727,21 +745,21 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel FACE;
-    private javax.swing.JLabel INS;
-    private javax.swing.JLabel WPP;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
     private javax.swing.JButton jButton4;
     private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu1;
-    private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
+    private javax.swing.JMenu jMenu8;
     private javax.swing.JMenuBar jMenuBar1;
     private javax.swing.JMenuBar jMenuBar2;
     private javax.swing.JMenuItem jMenuItem1;
@@ -750,6 +768,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;

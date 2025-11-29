@@ -38,11 +38,13 @@ public class NewJPagoit extends javax.swing.JFrame {
      */
     public NewJPagoit() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         debugServiciosEnBD();
+        debugServiciosEnSesion(); // 
+
         actualizarInterfazConMonto();
 
     }
@@ -73,10 +75,19 @@ public class NewJPagoit extends javax.swing.JFrame {
         }
         return nombre.replaceAll("\\s+", "_");
     }
-    
+
+    private void debugServiciosEnSesion() {
+        java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+        System.out.println("=== SERVICIOS EN SESIÓN ===");
+        for (Object[] servicio : servicios) {
+            System.out.println("Servicio: " + servicio[1]);
+        }
+        System.out.println("===========================");
+    }
+
     private void debugServiciosEnBD() {
-    System.out.println("=== DEBUG SERVICIOS EN BD ===");
-    String sql = """
+        System.out.println("=== DEBUG SERVICIOS EN BD ===");
+        String sql = """
         SELECT 
             s.idServicios,
             s.Nombre_servicio as Servicio,
@@ -86,26 +97,23 @@ public class NewJPagoit extends javax.swing.JFrame {
         LEFT JOIN categoria_servicio cs ON s.idServicios = cs.idServicios
         ORDER BY s.idServicios
         """;
-    
-    try (java.sql.Connection conn = ConexionBD.getConnection();
-         java.sql.PreparedStatement ps = conn.prepareStatement(sql);
-         java.sql.ResultSet rs = ps.executeQuery()) {
-        
-        while (rs.next()) {
-            int idServicio = rs.getInt("idServicios");
-            String servicio = rs.getString("Servicio");
-            int idCategoria = rs.getInt("idCategoria_Servicio");
-            String categoria = rs.getString("Categoria");
-            
-            System.out.println("Servicio ID: " + idServicio + " | '" + servicio + 
-                             "' | Categoría ID: " + idCategoria + " | '" + categoria + "'");
-        }
-    } catch (Exception e) {
-        e.printStackTrace();
-    }
-    System.out.println("=============================");
-}
 
+        try (java.sql.Connection conn = ConexionBD.getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql); java.sql.ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int idServicio = rs.getInt("idServicios");
+                String servicio = rs.getString("Servicio");
+                int idCategoria = rs.getInt("idCategoria_Servicio");
+                String categoria = rs.getString("Categoria");
+
+                System.out.println("Servicio ID: " + idServicio + " | '" + servicio
+                        + "' | Categoría ID: " + idCategoria + " | '" + categoria + "'");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("=============================");
+    }
 
     private void guardarComprobanteEnBD(String nombreArchivo) {
         String sql = "UPDATE Pago SET Comprobante = ?, fecha_pago = NOW() WHERE idUsuarios = ?";
@@ -139,6 +147,16 @@ public class NewJPagoit extends javax.swing.JFrame {
         String fecha = SesionUsuario.getFechaCita();
         String hora = SesionUsuario.getHoraCita();
         java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+
+        System.out.println("=== DEBUG INSERTAR CITA ===");
+        System.out.println("Fecha: " + fecha + ", Hora: " + hora);
+        System.out.println("Servicios a insertar:");
+
+        for (Object[] servicio : servicios) {
+            String descripcion = (String) servicio[1];
+            System.out.println(" - Descripción: " + descripcion);
+        }
+        System.out.println("===========================");
 
         if (fecha == null || hora == null || servicios.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Error: No hay datos de cita guardados.");
@@ -238,62 +256,53 @@ public class NewJPagoit extends javax.swing.JFrame {
 
 // Método auxiliar para obtener ID de servicio - CORREGIDO
     private int obtenerIdServicioPorDescripcion(String descripcion) {
-        java.sql.Connection conn = null;
-        java.sql.PreparedStatement ps = null;
-        java.sql.ResultSet rs = null;
+        System.out.println("Buscando ID para: " + descripcion);
 
-        try {
-            conn = ConexionBD.getConnection();
+        // Mapeo directo de descripciones a IDs de categorías generales
+        java.util.Map<String, Integer> mapeoServicios = new java.util.HashMap<>();
 
-            // PRIMERO buscar en la tabla servicios
-            String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio LIKE ? OR Descripcion LIKE ?";
-            ps = conn.prepareStatement(sql);
-            ps.setString(1, "%" + descripcion + "%");
-            ps.setString(2, "%" + descripcion + "%");
-            rs = ps.executeQuery();
+        // Mapear descripciones específicas a categorías generales
+        mapeoServicios.put("uñas", 1);
+        mapeoServicios.put("francesa", 1);
+        mapeoServicios.put("ballerina", 1);
+        mapeoServicios.put("cuadradas", 1);
+        mapeoServicios.put("manicure", 1);
+        mapeoServicios.put("uña", 1);
 
-            if (rs.next()) {
-                return rs.getInt("idServicios");
-            }
+        mapeoServicios.put("maquillaje", 2);
+        mapeoServicios.put("makeup", 2);
+        mapeoServicios.put("maquillajes", 2);
 
-            // SI no encuentra, buscar en categoria_servicio
-            rs.close();
-            ps.close();
+        mapeoServicios.put("peinado", 3);
+        mapeoServicios.put("peinados", 3);
+        mapeoServicios.put("cabello", 3);
+        mapeoServicios.put("hair", 3);
 
-            String sqlCategoria = "SELECT idServicios FROM categoria_servicio WHERE Nombre_categoria LIKE ?";
-            ps = conn.prepareStatement(sqlCategoria);
-            ps.setString(1, "%" + descripcion + "%");
-            rs = ps.executeQuery();
+        mapeoServicios.put("tatuaje", 4);
+        mapeoServicios.put("tatuajes", 4);
+        mapeoServicios.put("tattoo", 4);
 
-            if (rs.next()) {
-                return rs.getInt("idServicios");
-            }
+        mapeoServicios.put("otros", 13);
+        mapeoServicios.put("otro", 13);
+        mapeoServicios.put("otras", 13);
 
-        } catch (Exception e) {
-            System.out.println("ERROR en obtenerIdServicioPorDescripcion: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            // Cerrar recursos
-            try {
-                if (rs != null) {
-                    rs.close();
-                }
-                if (ps != null) {
-                    ps.close();
-                }
-                if (conn != null) {
-                    conn.close();
-                }
-            } catch (SQLException e) {
-                e.printStackTrace();
+        // Buscar por coincidencia en el texto
+        String descripcionLower = descripcion.toLowerCase();
+
+        for (String clave : mapeoServicios.keySet()) {
+            if (descripcionLower.contains(clave.toLowerCase())) {
+                int idEncontrado = mapeoServicios.get(clave);
+                System.out.println("Encontrado: '" + descripcion + "' -> Categoría ID: " + idEncontrado);
+                return idEncontrado;
             }
         }
 
-        // Si no encuentra, usar búsqueda alternativa
-        return buscarServicioAlternativo(descripcion);
+        // Si no encuentra, usar categoría "otros" por defecto
+        System.out.println("No se encontró categoría específica para: " + descripcion + ". Usando categoría 'otros' (ID 13)");
+        return 13;
     }
-
 // Método de búsqueda alternativa
+
     private int buscarServicioAlternativo(String descripcion) {
         java.util.Map<String, Integer> mapeoServicios = new java.util.HashMap<>();
 
@@ -656,6 +665,8 @@ public class NewJPagoit extends javax.swing.JFrame {
 
                     //  AHORA INSERTAR LA CITA Y SERVICIOS DESPUÉS DEL PAGO
                     insertarCitaYServicios(idPago);
+                    SesionUsuario.limpiarDatosCita();
+
 
                     // Cerrar esta ventana
                     NewJMiscitasCi cliWindow = new NewJMiscitasCi();

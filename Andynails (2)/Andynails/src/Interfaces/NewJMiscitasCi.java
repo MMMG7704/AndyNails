@@ -74,8 +74,8 @@ private void cargarCitasCliente() {
             c.Fecha, 
             c.Hora, 
             c.Estado,
-            GROUP_CONCAT(s.Nombre_servicio SEPARATOR ', ') as Servicios,
-            SUM(cs.Monto_anticipo) as Precio_Total
+            GROUP_CONCAT(DISTINCT s.Nombre_servicio SEPARATOR ', ') as Servicios,
+            COALESCE(SUM(DISTINCT cs.Monto_anticipo), 0) as Precio_Total
         FROM cita c
         LEFT JOIN cita_has_servicios cs ON c.idCita = cs.idCita
         LEFT JOIN servicios s ON cs.idServicios = s.idServicios
@@ -94,6 +94,8 @@ private void cargarCitasCliente() {
         ps.setInt(1, idUsuario);
         rs = ps.executeQuery();
 
+        System.out.println("=== DEBUG CARGANDO CITAS ===");
+        
         while (rs.next()) {
             String fecha = rs.getString("Fecha");
             String hora = rs.getString("Hora");
@@ -101,21 +103,20 @@ private void cargarCitasCliente() {
             String servicios = rs.getString("Servicios");
             double precio = rs.getDouble("Precio_Total");
             
-            // Si no hay servicios, mostrar mensaje
+            System.out.println("Cita: " + fecha + " " + hora + 
+                             " - Servicios: " + servicios + 
+                             " - Precio: " + precio);
+            
             if (servicios == null) {
                 servicios = "Sin servicios asignados";
             }
             
-            // Formatear precio
             String precioStr = String.format("$%.2f", precio);
             
-            // Agregar fila a la tabla
             model.addRow(new Object[]{fecha, hora, servicios, estado, precioStr});
         }
 
-        if (model.getRowCount() == 0) {
-            System.out.println("DEBUG: No se encontraron citas para el usuario: " + idUsuario);
-        }
+        System.out.println("Total de citas cargadas: " + model.getRowCount());
 
     } catch (Exception e) {
         e.printStackTrace();
@@ -132,6 +133,57 @@ private void cargarCitasCliente() {
     }
 }
 
+
+private void debugEstructuraTablas() {
+    System.out.println("=== DEBUG ESTRUCTURA DE TABLAS ===");
+    
+    String sqlCitas = "SELECT idCita, Fecha, Hora, Estado, idUsuarios FROM cita WHERE idUsuarios = ?";
+    String sqlCitaServicios = "SELECT idCita, idServicios, Monto_anticipo FROM cita_has_servicios WHERE idCita IN (SELECT idCita FROM cita WHERE idUsuarios = ?)";
+    
+    Connection conn = null;
+    PreparedStatement ps = null;
+    ResultSet rs = null;
+    
+    try {
+        conn = conexion.getConexion();
+        
+        // Debug de citas
+        System.out.println("--- CITAS ---");
+        ps = conn.prepareStatement(sqlCitas);
+        ps.setInt(1, SesionUsuario.getIdUsuario());
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            System.out.println("Cita ID: " + rs.getInt("idCita") + 
+                             " - Fecha: " + rs.getString("Fecha") + 
+                             " - Hora: " + rs.getString("Hora") +
+                             " - Estado: " + rs.getString("Estado"));
+        }
+        rs.close();
+        ps.close();
+        
+        // Debug de servicios por cita
+        System.out.println("--- SERVICIOS POR CITA ---");
+        ps = conn.prepareStatement(sqlCitaServicios);
+        ps.setInt(1, SesionUsuario.getIdUsuario());
+        rs = ps.executeQuery();
+        while (rs.next()) {
+            System.out.println("Cita ID: " + rs.getInt("idCita") + 
+                             " - Servicio ID: " + rs.getInt("idServicios") +
+                             " - Monto: " + rs.getDouble("Monto_anticipo"));
+        }
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+    } finally {
+        try {
+            if (rs != null) rs.close();
+            if (ps != null) ps.close();
+            if (conn != null) conn.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -160,7 +212,9 @@ private void cargarCitasCliente() {
         jMenuItem2 = new javax.swing.JMenuItem();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem3 = new javax.swing.JMenuItem();
+        jMenuItem7 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
+        jMenuItem6 = new javax.swing.JMenuItem();
         jMenu8 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
 
@@ -298,7 +352,7 @@ private void cargarCitasCliente() {
 
         jMenu5.setText("AGENDAR CITA");
 
-        jMenuItem2.setText("UÑAS");
+        jMenuItem2.setText("Uñas");
         jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem2ActionPerformed(evt);
@@ -306,7 +360,7 @@ private void cargarCitasCliente() {
         });
         jMenu5.add(jMenuItem2);
 
-        jMenuItem1.setText("PEINADO");
+        jMenuItem1.setText("Peinado");
         jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem1ActionPerformed(evt);
@@ -314,7 +368,7 @@ private void cargarCitasCliente() {
         });
         jMenu5.add(jMenuItem1);
 
-        jMenuItem3.setText("MAQUILLAJES");
+        jMenuItem3.setText("Maquillaje");
         jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItem3ActionPerformed(evt);
@@ -322,9 +376,26 @@ private void cargarCitasCliente() {
         });
         jMenu5.add(jMenuItem3);
 
+        jMenuItem7.setText("Otros");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem7ActionPerformed(evt);
+            }
+        });
+        jMenu5.add(jMenuItem7);
+
         jMenuBar1.add(jMenu5);
 
         jMenu7.setText("CONTACTO");
+
+        jMenuItem6.setText("Contacto");
+        jMenuItem6.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem6ActionPerformed(evt);
+            }
+        });
+        jMenu7.add(jMenuItem6);
+
         jMenuBar1.add(jMenu7);
 
         jMenu8.setText("MIS CITAS");
@@ -400,6 +471,22 @@ private void cargarCitasCliente() {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
+    private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
+        // TODO add your handling code here:
+                NewJContacto NewJContacto = new NewJContacto();
+
+                NewJContacto.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem6ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -452,6 +539,8 @@ private void cargarCitasCliente() {
     private javax.swing.JMenuItem jMenuItem2;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;

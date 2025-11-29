@@ -4,7 +4,9 @@
  */
 package Interfaces;
 
+import andynails.ConexionBD;
 import andynails.RedesSociales;
+import javax.swing.JFrame;
 
 /**
  *
@@ -12,13 +14,288 @@ import andynails.RedesSociales;
  */
 public class NewJReportes extends javax.swing.JFrame {
 
+    ConexionBD conexion;
+
     /**
      * Creates new form NewJReportes
      */
     public NewJReportes() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        conexion = new ConexionBD("andynails");
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+        // Configurar ComboBox de fechas con opciones predefinidas
+        configurarComboBoxFechas();
+
+        // Configurar tooltips
+        btnEstadisticos.setToolTipText("Generar reportes estadísticos y gráficos");
+        btnPagos.setToolTipText("Reportes de estado de pagos e ingresos");
+        btnServicios.setToolTipText("Catálogo y información de servicios");
+        jButton3.setToolTipText("Cargar datos en la tabla antes de exportar");
+        jButton1.setToolTipText("Exportar a PDF los datos mostrados");
+        jComboBox1.setToolTipText("Seleccione el tipo específico de reporte");
+        comboxRangoinicio.setToolTipText("Seleccione fecha inicial");
+        comboxRangofin.setToolTipText("Seleccione fecha final");
+    }
+
+    private void configurarComboBoxFechas() {
+        // Limpiar los ComboBox
+        comboxRangoinicio.removeAllItems();
+        comboxRangofin.removeAllItems();
+
+        // Agregar opciones predefinidas de fechas
+        String[] opcionesFechas = {
+            "Última semana",
+            "Último mes",
+            "Últimos 3 meses",
+            "Últimos 6 meses",
+            "Este año",
+            "Año pasado",
+            "Todo el historial"
+        };
+
+        for (String opcion : opcionesFechas) {
+            comboxRangoinicio.addItem(opcion);
+            comboxRangofin.addItem(opcion);
+        }
+
+        // Seleccionar opciones por defecto
+        comboxRangoinicio.setSelectedItem("Último mes");
+        comboxRangofin.setSelectedItem("Todo el historial");
+    }
+
+    private void cargarServiciosDesdeBD() {
+        try {
+            String sql = "SELECT idServicios, Nombre_servicio, Descripcion, Precio FROM servicios";
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            // Actualizar nombres de columnas para servicios
+            model.setColumnIdentifiers(new String[]{"ID", "Nombre del Servicio", "Descripción", "Precio"});
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("idServicios"),
+                    rs.getString("Nombre_servicio"),
+                    rs.getString("Descripcion"),
+                    "$" + rs.getDouble("Precio")
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar servicios: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cargarPagosDesdeBD() {
+        try {
+            // Primero, verifiquemos qué columnas tiene realmente tu tabla pago
+            String sql = "SELECT p.idPago, u.Nombre as Cliente, p.Monto, p.Fecha_pago "
+                    + "FROM pago p "
+                    + "INNER JOIN usuarios u ON p.idUsuarios = u.idUsuarios "
+                    + "ORDER BY p.Fecha_pago DESC";
+
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            // Actualizar nombres de columnas para pagos (sin Estado)
+            model.setColumnIdentifiers(new String[]{"ID Pago", "Cliente", "Monto", "Fecha"});
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("idPago"),
+                    rs.getString("Cliente"),
+                    "$" + rs.getDouble("Monto"),
+                    rs.getDate("Fecha_pago")
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar pagos: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cargarServiciosMasSolicitados() {
+        try {
+            String sql = "SELECT s.Nombre_servicio, COUNT(chs.idServicios) as Total_Citas, "
+                    + "SUM(s.Precio) as Ingreso_Total "
+                    + "FROM cita_has_servicios chs "
+                    + "INNER JOIN servicios s ON chs.idServicios = s.idServicios "
+                    + "GROUP BY s.Nombre_servicio "
+                    + "ORDER BY Total_Citas DESC";
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            // Actualizar nombres de columnas para estadísticas
+            model.setColumnIdentifiers(new String[]{"Servicio", "Total Citas", "Ingreso Total"});
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("Nombre_servicio"),
+                    rs.getInt("Total_Citas"),
+                    "$" + rs.getDouble("Ingreso_Total")
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar servicios más solicitados: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cargarClientesFrecuentes() {
+        try {
+            String sql = "SELECT u.Nombre, u.Telefono, COUNT(c.idCita) as Total_Citas "
+                    + "FROM cita c "
+                    + "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
+                    + "GROUP BY u.idUsuarios, u.Nombre, u.Telefono "
+                    + "ORDER BY Total_Citas DESC "
+                    + "LIMIT 10";
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+
+            // Actualizar nombres de columnas para clientes frecuentes
+            model.setColumnIdentifiers(new String[]{"Cliente", "Teléfono", "Total Citas"});
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("Nombre"),
+                    rs.getString("Telefono"),
+                    rs.getInt("Total_Citas")
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar clientes frecuentes: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cargarCitasPorFecha() {
+        try {
+            String fechaInicio = obtenerFechaDesdeOpcion(comboxRangoinicio.getSelectedItem().toString());
+            String fechaFin = obtenerFechaDesdeOpcion(comboxRangofin.getSelectedItem().toString());
+
+            String sql = "SELECT c.idCita, u.Nombre as Cliente, s.Nombre_servicio as Servicio, "
+                    + "c.Fecha, c.Hora, c.Estado "
+                    + "FROM cita c "
+                    + "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
+                    + "INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita "
+                    + "INNER JOIN servicios s ON chs.idServicios = s.idServicios "
+                    + "WHERE c.Fecha BETWEEN ? AND ? "
+                    + "ORDER BY c.Fecha, c.Hora";
+
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            ps.setString(1, fechaInicio);
+            ps.setString(2, fechaFin);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+            model.setColumnIdentifiers(new String[]{"ID Cita", "Cliente", "Servicio", "Fecha", "Hora", "Estado"});
+
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getInt("idCita"),
+                    rs.getString("Cliente"),
+                    rs.getString("Servicio"),
+                    rs.getDate("Fecha"),
+                    rs.getTime("Hora"),
+                    rs.getString("Estado")
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Error al cargar citas: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String obtenerFechaDesdeOpcion(String opcion) {
+        java.time.LocalDate hoy = java.time.LocalDate.now();
+
+        switch (opcion) {
+            case "Última semana":
+                return hoy.minusWeeks(1).toString();
+            case "Último mes":
+                return hoy.minusMonths(1).toString();
+            case "Últimos 3 meses":
+                return hoy.minusMonths(3).toString();
+            case "Últimos 6 meses":
+                return hoy.minusMonths(6).toString();
+            case "Este año":
+                return java.time.LocalDate.of(hoy.getYear(), 1, 1).toString();
+            case "Año pasado":
+                return java.time.LocalDate.of(hoy.getYear() - 1, 1, 1).toString();
+            case "Todo el historial":
+                return "2000-01-01";
+            default:
+                return hoy.toString();
+        }
+    }
+
+    private void verificarEstructuraTablas() {
+        try {
+            // Verificar estructura de la tabla pago
+            String sql = "DESCRIBE pago";
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            System.out.println("=== ESTRUCTURA TABLA PAGO ===");
+            while (rs.next()) {
+                System.out.println(rs.getString("Field") + " - " + rs.getString("Type"));
+            }
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -34,20 +311,21 @@ public class NewJReportes extends javax.swing.JFrame {
         jPanel4 = new javax.swing.JPanel();
         jLabel9 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        jButton1 = new javax.swing.JButton();
         jButton2 = new javax.swing.JButton();
         jComboBox1 = new javax.swing.JComboBox<>();
-        jTextField1 = new javax.swing.JTextField();
-        jTextField2 = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         jTable1 = new javax.swing.JTable();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
-        jPanel11 = new javax.swing.JPanel();
-        jLabel12 = new javax.swing.JLabel();
-        jPanel8 = new javax.swing.JPanel();
-        jLabel11 = new javax.swing.JLabel();
-        jPanel13 = new javax.swing.JPanel();
-        jLabel16 = new javax.swing.JLabel();
+        jButton1 = new javax.swing.JButton();
+        jButton3 = new javax.swing.JButton();
+        comboxRangoinicio = new javax.swing.JComboBox<>();
+        comboxRangofin = new javax.swing.JComboBox<>();
+        jPanel10 = new javax.swing.JPanel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
+        btnEstadisticos = new javax.swing.JButton();
+        btnPagos = new javax.swing.JButton();
+        btnServicios = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -68,6 +346,11 @@ public class NewJReportes extends javax.swing.JFrame {
         jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setBackground(new java.awt.Color(243, 224, 255));
+
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
+
+        jPanel4.setBackground(new java.awt.Color(243, 224, 255));
 
         jLabel9.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
         jLabel9.setText("Tipo de servicio:");
@@ -75,25 +358,20 @@ public class NewJReportes extends javax.swing.JFrame {
         jLabel10.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
         jLabel10.setText("Rango de fechas:");
 
-        jButton1.setBackground(new java.awt.Color(255, 204, 255));
-        jButton1.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jButton1.setText("Exportar");
-        jButton1.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jButton1ActionPerformed(evt);
-            }
-        });
-
         jButton2.setBackground(new java.awt.Color(255, 204, 255));
         jButton2.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
         jButton2.setText("Volver a inicio");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
 
         jComboBox1.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
         jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-
-        jTextField2.addActionListener(new java.awt.event.ActionListener() {
+        jComboBox1.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextField2ActionPerformed(evt);
+                jComboBox1ActionPerformed(evt);
             }
         });
 
@@ -114,142 +392,169 @@ public class NewJReportes extends javax.swing.JFrame {
         ));
         jScrollPane1.setViewportView(jTable1);
 
+        jButton1.setBackground(new java.awt.Color(255, 204, 255));
+        jButton1.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        jButton1.setText("Exportar");
+        jButton1.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton1ActionPerformed(evt);
+            }
+        });
+
+        jButton3.setBackground(new java.awt.Color(255, 204, 255));
+        jButton3.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
+        jButton3.setText("Generar ");
+        jButton3.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton3ActionPerformed(evt);
+            }
+        });
+
+        comboxRangoinicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
+        comboxRangofin.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+
         javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
         jPanel4.setLayout(jPanel4Layout);
         jPanel4Layout.setHorizontalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(27, 27, 27)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jButton1)
-                    .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGroup(jPanel4Layout.createSequentialGroup()
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addComponent(jLabel9)
-                                .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.TRAILING))
-                            .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(jPanel4Layout.createSequentialGroup()
-                                    .addGap(12, 12, 12)
-                                    .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGroup(jPanel4Layout.createSequentialGroup()
-                                    .addGap(18, 18, 18)
-                                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                    .addGap(18, 18, 18)
-                                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))))
-                .addGap(18, 18, 18)
-                .addComponent(jButton2)
-                .addContainerGap(35, Short.MAX_VALUE))
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel4Layout.createSequentialGroup()
+                                .addGap(20, 20, 20)
+                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addComponent(jLabel9)
+                                    .addComponent(jLabel10))
+                                .addGap(7, 7, 7)
+                                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel4Layout.createSequentialGroup()
+                                        .addGap(12, 12, 12)
+                                        .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, 339, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 145, Short.MAX_VALUE))
+                                    .addGroup(jPanel4Layout.createSequentialGroup()
+                                        .addComponent(comboxRangoinicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(36, 36, 36)
+                                        .addComponent(comboxRangofin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel4Layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(jButton3)
+                                .addGap(29, 29, 29)
+                                .addComponent(jButton1)
+                                .addGap(31, 31, 31)))
+                        .addComponent(jButton2))
+                    .addGroup(jPanel4Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 610, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(17, 17, 17))
         );
         jPanel4Layout.setVerticalGroup(
             jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(45, 45, 45)
+                .addGap(50, 50, 50)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel9)
                     .addComponent(jComboBox1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(21, 21, 21)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel10)
-                    .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(comboxRangoinicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(comboxRangofin, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel10))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 220, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton2)
                     .addComponent(jButton1)
-                    .addComponent(jButton2))
+                    .addComponent(jButton3))
+                .addContainerGap(16, Short.MAX_VALUE))
+        );
+
+        jPanel10.setBackground(new java.awt.Color(204, 0, 204));
+
+        INS.setText("INS");
+
+        FACE.setText("FACE");
+
+        WPP.setText("WPP");
+
+        javax.swing.GroupLayout jPanel10Layout = new javax.swing.GroupLayout(jPanel10);
+        jPanel10.setLayout(jPanel10Layout);
+        jPanel10Layout.setHorizontalGroup(
+            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel10Layout.createSequentialGroup()
+                .addGap(442, 442, 442)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(50, 50, 50)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(49, 49, 49)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
+        jPanel10Layout.setVerticalGroup(
+            jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel10Layout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addGroup(jPanel10Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
+
+        btnEstadisticos.setText("Estadisticos");
+        btnEstadisticos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEstadisticosActionPerformed(evt);
+            }
+        });
+
+        btnPagos.setText("Pagos");
+        btnPagos.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnPagosActionPerformed(evt);
+            }
+        });
+
+        btnServicios.setText("Servicios");
+        btnServicios.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnServiciosActionPerformed(evt);
+            }
+        });
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel10, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(28, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(34, 34, 34))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                    .addContainerGap(286, Short.MAX_VALUE)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 100, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(287, Short.MAX_VALUE)))
+                .addGap(92, 92, 92))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(23, 23, 23)
+                .addComponent(btnEstadisticos)
+                .addGap(30, 30, 30)
+                .addComponent(btnPagos)
+                .addGap(56, 56, 56)
+                .addComponent(btnServicios)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(34, Short.MAX_VALUE)
-                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(123, 123, 123))
-            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                    .addContainerGap(234, Short.MAX_VALUE)
-                    .addComponent(jTabbedPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 25, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addContainerGap(160, Short.MAX_VALUE)))
-        );
-
-        jPanel11.setBackground(new java.awt.Color(153, 153, 153));
-
-        jLabel12.setText("Servicios");
-
-        javax.swing.GroupLayout jPanel11Layout = new javax.swing.GroupLayout(jPanel11);
-        jPanel11.setLayout(jPanel11Layout);
-        jPanel11Layout.setHorizontalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel11Layout.createSequentialGroup()
-                .addGap(21, 21, 21)
-                .addComponent(jLabel12)
-                .addContainerGap(28, Short.MAX_VALUE))
-        );
-        jPanel11Layout.setVerticalGroup(
-            jPanel11Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel11Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel12)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        jPanel8.setBackground(new java.awt.Color(153, 153, 153));
-
-        jLabel11.setText("Pagos");
-
-        javax.swing.GroupLayout jPanel8Layout = new javax.swing.GroupLayout(jPanel8);
-        jPanel8.setLayout(jPanel8Layout);
-        jPanel8Layout.setHorizontalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel8Layout.createSequentialGroup()
                 .addContainerGap(33, Short.MAX_VALUE)
-                .addComponent(jLabel11)
-                .addGap(29, 29, 29))
-        );
-        jPanel8Layout.setVerticalGroup(
-            jPanel8Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel8Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel11)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-        );
-
-        jPanel13.setBackground(new java.awt.Color(204, 204, 204));
-
-        jLabel16.setText("Estadisticos");
-
-        javax.swing.GroupLayout jPanel13Layout = new javax.swing.GroupLayout(jPanel13);
-        jPanel13.setLayout(jPanel13Layout);
-        jPanel13Layout.setHorizontalGroup(
-            jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel13Layout.createSequentialGroup()
-                .addGap(35, 35, 35)
-                .addComponent(jLabel16)
-                .addContainerGap(39, Short.MAX_VALUE))
-        );
-        jPanel13Layout.setVerticalGroup(
-            jPanel13Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel13Layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jLabel16)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnEstadisticos)
+                    .addComponent(btnPagos)
+                    .addComponent(btnServicios))
+                .addGap(18, 18, 18)
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(39, 39, 39)
+                .addComponent(jPanel10, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jMenu4.setText("INICIO");
@@ -407,38 +712,65 @@ public class NewJReportes extends javax.swing.JFrame {
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, 640, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel13, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(7, 7, 7)
-                .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
-                .addComponent(jPanel11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 18, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel11, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                        .addComponent(jPanel8, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(jPanel13, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextField2ActionPerformed
-
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
+        // Determinar qué tipo de reporte generar
+        String tipoReporte = jComboBox1.getSelectedItem().toString();
+
+        try {
+            // Verificar qué tipo de reporte se quiere generar basado en el comboBox
+            if (tipoReporte.contains("Servicios") || tipoReporte.equals("Todos los servicios")
+                    || tipoReporte.equals("Servicios activos") || tipoReporte.equals("Precios de servicios")) {
+
+                String ruta = "Reporte_Servicios_AndyNails.pdf";
+                andynails.ReporteServicios.generarPDF(ruta);
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        " Reporte de servicios generado exitosamente:\n" + ruta,
+                        "Reporte Generado",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+            } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")) {
+
+                andynails.ReporteEstadistico.generarPDF();
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        " Reporte estadístico generado exitosamente",
+                        "Reporte Generado",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+            } else if (tipoReporte.contains("Pagos")) {
+
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        " Generando reporte de pagos...\n(Pendiente de implementar)",
+                        "Reporte en Desarrollo",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        " Por favor, selecciona un tipo de reporte específico",
+                        "Selección Requerida",
+                        javax.swing.JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    " Error al generar el reporte: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
@@ -476,7 +808,7 @@ public class NewJReportes extends javax.swing.JFrame {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem4ActionPerformed
@@ -484,7 +816,7 @@ public class NewJReportes extends javax.swing.JFrame {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
-        NewJCitaAgenda NewJCitaAgenda = new NewJCitaAgenda();
+        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
         NewJCitaAgenda.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -535,6 +867,104 @@ public class NewJReportes extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem5ActionPerformed
 
+    private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_jComboBox1ActionPerformed
+
+    private void btnEstadisticosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEstadisticosActionPerformed
+        // TODO add your handling code here:
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
+                new String[]{
+                    "Servicios más solicitados",
+                    "Ingresos por mes",
+                    "Clientes frecuentes",
+                    "Horarios populares"
+                }
+        ));
+
+        // Actualizar etiquetas para estadísticas
+        jLabel9.setText("Tipo de estadística:");
+        jLabel10.setText("Rango de fechas:");
+    }//GEN-LAST:event_btnEstadisticosActionPerformed
+
+    private void btnPagosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPagosActionPerformed
+        // TODO add your handling code here:
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
+                new String[]{
+                    "Pagos pendientes",
+                    "Pagos completados",
+                    "Historial de pagos",
+                    "Métodos de pago más usados"
+                }
+        ));
+
+        jLabel9.setText("Tipo de pago:");
+        jLabel10.setText("Rango de fechas:");
+    }//GEN-LAST:event_btnPagosActionPerformed
+
+    private void btnServiciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnServiciosActionPerformed
+        // TODO add your handling code here:
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
+                new String[]{
+                    "Todos los servicios",
+                    "Servicios activos",
+                    "Servicios por categoría",
+                    "Precios de servicios"
+                }
+        ));
+
+        jLabel9.setText("Tipo de servicio:");
+        jLabel10.setText("Rango de fechas:");
+    }//GEN-LAST:event_btnServiciosActionPerformed
+
+    private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
+        // TODO add your handling code here:
+        String tipoSeleccionado = jComboBox1.getSelectedItem().toString();
+        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+        model.setRowCount(0); // Limpiar tabla
+
+        try {
+            if (tipoSeleccionado.contains("Servicios") || tipoSeleccionado.equals("Todos los servicios")) {
+                cargarServiciosDesdeBD();
+            } else if (tipoSeleccionado.contains("Pagos") || tipoSeleccionado.equals("Pagos completados")) {
+                cargarPagosDesdeBD();
+            } else if (tipoSeleccionado.contains("más solicitados")) {
+                cargarServiciosMasSolicitados();
+            } else if (tipoSeleccionado.contains("Clientes frecuentes")) {
+                cargarClientesFrecuentes();
+            } else if (tipoSeleccionado.contains("Citas por fecha")) {
+                cargarCitasPorFecha();
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        "Selecciona un tipo de reporte válido",
+                        "Información",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            }
+
+            // Mostrar mensaje de éxito
+            if (model.getRowCount() > 0) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                        +model.getRowCount() + " registros cargados desde la base de datos",
+                        "Datos Cargados",
+                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
+            }
+
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    " Error al cargar datos: " + e.getMessage(),
+                    "Error",
+                    javax.swing.JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
+
+    }//GEN-LAST:event_jButton3ActionPerformed
+
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jButton2ActionPerformed
     /**
      * @param args the command line arguments
      */
@@ -572,20 +1002,18 @@ public class NewJReportes extends javax.swing.JFrame {
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JLabel FACE;
-    private javax.swing.JLabel FACE1;
     private javax.swing.JLabel INS;
-    private javax.swing.JLabel INS1;
     private javax.swing.JLabel WPP;
-    private javax.swing.JLabel WPP1;
+    private javax.swing.JButton btnEstadisticos;
+    private javax.swing.JButton btnPagos;
+    private javax.swing.JButton btnServicios;
+    private javax.swing.JComboBox<String> comboxRangofin;
+    private javax.swing.JComboBox<String> comboxRangoinicio;
     private javax.swing.JButton jButton1;
     private javax.swing.JButton jButton2;
     private javax.swing.JButton jButton3;
-    private javax.swing.JButton jButton4;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel11;
-    private javax.swing.JLabel jLabel12;
-    private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
@@ -606,26 +1034,9 @@ public class NewJReportes extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel11;
-    private javax.swing.JPanel jPanel13;
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
+    private javax.swing.JPanel jPanel10;
     private javax.swing.JPanel jPanel4;
-    private javax.swing.JPanel jPanel5;
-    private javax.swing.JPanel jPanel6;
-    private javax.swing.JPanel jPanel7;
-    private javax.swing.JPanel jPanel8;
-    private javax.swing.JPanel jPanel9;
     private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JTable jTable1;
-    private javax.swing.JTextField jTextField1;
-    private javax.swing.JTextField jTextField2;
-    private java.awt.Label labelCategoria1;
-    private java.awt.Label labelCategoria2;
-    private java.awt.Label labelCategoria3;
-    private java.awt.Label labelCategoria4;
-    private java.awt.Label labelCategoria5;
-    private java.awt.Label labelCategoria6;
     // End of variables declaration//GEN-END:variables
 }
