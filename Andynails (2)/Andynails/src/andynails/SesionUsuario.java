@@ -24,6 +24,7 @@ public class SesionUsuario {
         System.out.println("Sesión iniciada - ID: " + id + ", Nombre: " + nombre);
     }
 
+    
     public static int getIdUsuario() {
         return idUsuario;
     }
@@ -87,11 +88,16 @@ public class SesionUsuario {
     
     // Limpiar datos de la cita después de usarlos
     public static void limpiarDatosCita() {
-        fechaCita = null;
-        horaCita = null;
-        montoTotalCita = 0;
-        idPagoActual = 0;
+         fechaCita = null;
+    horaCita = null;
+    montoTotalCita = 0.0;
+    if (serviciosCita != null) {
         serviciosCita.clear();
+    } else {
+        serviciosCita = new java.util.ArrayList<>();
     }
-}
+    System.out.println("DEBUG - Datos de cita limpiados en SesionUsuario");
+    }
+
+    }
 
