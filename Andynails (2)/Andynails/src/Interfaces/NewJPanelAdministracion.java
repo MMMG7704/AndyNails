@@ -25,6 +25,8 @@ import javax.swing.JOptionPane;
 public class NewJPanelAdministracion extends javax.swing.JFrame {
 
     ConexionBD conexion;
+    private javax.swing.JMenuItem jMenuItemCerrarSesion;
+
     private LocalDate fechaSeleccionada = LocalDate.now();
     private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -56,84 +58,100 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jTable2.getTableHeader().repaint();
     }
 
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
     /**
      * Creates new form NewJRegistro
      */
-public NewJPanelAdministracion() {
-    initComponents();
-    RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+    public NewJPanelAdministracion() {
+        initComponents();
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
-    conexion = new ConexionBD("andynails");
-    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        conexion = new ConexionBD("andynails");
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-    // === FECHA INICIAL ===
-    fechaSeleccionada = LocalDate.now();
+        // === FECHA INICIAL ===
+        fechaSeleccionada = LocalDate.now();
 
-    // === ACTUALIZAR LABEL SUPERIOR DE FECHA ===
-    actualizarLabelFecha();
-    
-    // === CONFIGURAR jDateInicio CON LA FECHA ACTUAL ===
-    jDateInicio.setDate(java.sql.Date.valueOf(fechaSeleccionada));
+        // === ACTUALIZAR LABEL SUPERIOR DE FECHA ===
+        actualizarLabelFecha();
 
-    // === LISTENER PARA CAMBIOS EN jDateInicio ===
-    jDateInicio.addPropertyChangeListener("date", evt -> {
-        if (evt.getNewValue() != null) {
-            filtrarPorRango();
+        // === CONFIGURAR jDateInicio CON LA FECHA ACTUAL ===
+        jDateInicio.setDate(java.sql.Date.valueOf(fechaSeleccionada));
+
+        // === LISTENER PARA CAMBIOS EN jDateInicio ===
+        jDateInicio.addPropertyChangeListener("date", evt -> {
+            if (evt.getNewValue() != null) {
+                filtrarPorRango();
+            }
+        });
+
+        // === CONFIGURAR BOTONES DE NAVEGACIÓN ===
+        jButtonAnterior.addActionListener(e -> cambiarSemana(-1));
+        jButtonSiguiente.addActionListener(e -> cambiarSemana(1));
+
+        // === TABLA PRINCIPAL AGENDA SEMANAL ===
+        DefaultTableModel modelo = new DefaultTableModel();
+
+        // Columnas: Hora + Lunes a Domingo (8 columnas en total)
+        String[] columnas = {"Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
+        for (String columna : columnas) {
+            modelo.addColumn(columna);
         }
-    });
 
-    // === CONFIGURAR BOTONES DE NAVEGACIÓN ===
-    jButtonAnterior.addActionListener(e -> cambiarSemana(-1));
-    jButtonSiguiente.addActionListener(e -> cambiarSemana(1));
+        // Filas con horas
+        String[] horas = {
+            "9:00", "10:00", "11:00", "12:00", "13:00", "14:00",
+            "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
+        };
 
-    // === TABLA PRINCIPAL AGENDA SEMANAL ===
-    DefaultTableModel modelo = new DefaultTableModel();
+        // Agregar las horas en la primera columna y dejar las demás vacías
+        for (String hora : horas) {
+            Object[] fila = new Object[8]; // 8 columnas
+            fila[0] = hora; // Primera columna tiene la hora
+            for (int i = 1; i < 8; i++) {
+                fila[i] = ""; // Las demás columnas vacías
+            }
+            modelo.addRow(fila);
+        }
 
-    // Columnas: Hora + Lunes a Domingo (8 columnas en total)
-    String[] columnas = {"Hora", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"};
-    for (String columna : columnas) {
-        modelo.addColumn(columna);
+        jTable2.setModel(modelo);
+
+        // === TABLA DE RESUMEN CON NUEVOS INDICADORES ===
+        DefaultTableModel modeloResumen = new DefaultTableModel(
+                new Object[][]{
+                    {"Citas para hoy", 0},
+                    {"Clientes Registrados", 0},
+                    {"Anticipo pendientes", 0},
+                    {"Diseño en catálogo", 0},
+                    {"Horarios bloqueados esta semana", 0}
+                },
+                new String[]{"Concepto", "Cantidad"}
+        );
+        jTable1.setModel(modeloResumen);
+
+        // === CARGAR SERVICIOS EN EL COMBOBOX ===
+        cargarServiciosEnCombo();
+
+        // === CARGAR DATOS INICIALES ===
+        actualizarEncabezadosSemana(fechaSeleccionada);
+        cargarAgendaSemanal(fechaSeleccionada);
+        actualizarResumen();
     }
 
-    // Filas con horas
-    String[] horas = {
-        "9:00", "10:00", "11:00", "12:00", "13:00", "14:00",
-        "15:00", "16:00", "17:00", "18:00", "19:00", "20:00"
-    };
 
-    // Agregar las horas en la primera columna y dejar las demás vacías
-    for (String hora : horas) {
-        Object[] fila = new Object[8]; // 8 columnas
-        fila[0] = hora; // Primera columna tiene la hora
-        for (int i = 1; i < 8; i++) {
-            fila[i] = ""; // Las demás columnas vacías
-        }
-        modelo.addRow(fila);
-    }
-
-    jTable2.setModel(modelo);
-
-    // === TABLA DE RESUMEN CON NUEVOS INDICADORES ===
-    DefaultTableModel modeloResumen = new DefaultTableModel(
-            new Object[][]{
-                {"Citas para hoy", 0},
-                {"Clientes Registrados", 0},
-                {"Anticipo pendientes", 0},
-                {"Diseño en catálogo", 0},
-                {"Horarios bloqueados esta semana", 0}
-            },
-            new String[]{"Concepto", "Cantidad"}
-    );
-    jTable1.setModel(modeloResumen);
-
-    // === CARGAR SERVICIOS EN EL COMBOBOX ===
-    cargarServiciosEnCombo();
-
-    // === CARGAR DATOS INICIALES ===
-    actualizarEncabezadosSemana(fechaSeleccionada);
-    cargarAgendaSemanal(fechaSeleccionada);
-    actualizarResumen();
-}
     private void actualizarLabelFecha() {
         DateTimeFormatter formato = DateTimeFormatter.ofPattern(
                 "EEEE, dd 'de' MMMM 'de' yyyy", new Locale("es", "ES")
@@ -141,35 +159,36 @@ public NewJPanelAdministracion() {
         lblFechaHoy.setText("Bienvenid@, Admin! Hoy es " + fechaSeleccionada.format(formato));
     }
 
-  private void cambiarSemana(int desplazamiento) {
-    fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
-    actualizarLabelFecha();
-    actualizarEncabezadosSemana(fechaSeleccionada);
-    cargarAgendaSemanal(fechaSeleccionada);  // Esto ahora usará el servicio seleccionado
-    actualizarResumen();
-}
+    private void cambiarSemana(int desplazamiento) {
+        fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
+        actualizarLabelFecha();
+        actualizarEncabezadosSemana(fechaSeleccionada);
+        cargarAgendaSemanal(fechaSeleccionada);  // Esto ahora usará el servicio seleccionado
+        actualizarResumen();
+    }
 // === MÉTODO PARA CARGAR LA AGENDA DE UNA SEMANA ===
-private void cargarAgendaSemanal(LocalDate fechaBase) {
-    try (Connection cn = conexion.conectar()) {
 
-        // Determinar lunes y domingo de la semana del filtro
-        LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
-        LocalDate domingo = fechaBase.with(DayOfWeek.SUNDAY);
+    private void cargarAgendaSemanal(LocalDate fechaBase) {
+        try (Connection cn = conexion.conectar()) {
 
-        // Limpiar tabla (manteniendo las horas en la primera columna)
-        DefaultTableModel modelo = (DefaultTableModel) jTable2.getModel();
-        for (int i = 0; i < modelo.getRowCount(); i++) {
-            // La columna 0 (Hora) se mantiene, limpiamos solo las columnas 1-7
-            for (int j = 1; j < modelo.getColumnCount(); j++) {
-                modelo.setValueAt("", i, j);
+            // Determinar lunes y domingo de la semana del filtro
+            LocalDate lunes = fechaBase.with(DayOfWeek.MONDAY);
+            LocalDate domingo = fechaBase.with(DayOfWeek.SUNDAY);
+
+            // Limpiar tabla (manteniendo las horas en la primera columna)
+            DefaultTableModel modelo = (DefaultTableModel) jTable2.getModel();
+            for (int i = 0; i < modelo.getRowCount(); i++) {
+                // La columna 0 (Hora) se mantiene, limpiamos solo las columnas 1-7
+                for (int j = 1; j < modelo.getColumnCount(); j++) {
+                    modelo.setValueAt("", i, j);
+                }
             }
-        }
 
-        // Obtener servicio seleccionado
-        String servicioSeleccionado = (String) cmbservicio.getSelectedItem();
-        
-        // Construir la consulta SQL dinámicamente
-        String sql = """
+            // Obtener servicio seleccionado
+            String servicioSeleccionado = (String) cmbservicio.getSelectedItem();
+
+            // Construir la consulta SQL dinámicamente
+            String sql = """
     SELECT 
         CONCAT(u.Nombre, ' ', u.Paterno, ' ', u.Materno) AS NombreCliente,
         s.Nombre_servicio,
@@ -183,55 +202,56 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
     WHERE c.Fecha BETWEEN ? AND ?
 """;
 
-        // Si no es "Todos", agregar filtro por servicio
-        if (servicioSeleccionado != null && !servicioSeleccionado.equals("Todos")) {
-            sql += " AND s.Nombre_servicio = ?";
-        }
-
-        sql += " ORDER BY c.Fecha, c.Hora";
-
-        try (PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setDate(1, java.sql.Date.valueOf(lunes));
-            ps.setDate(2, java.sql.Date.valueOf(domingo));
-
-            // Si no es "Todos", establecer el parámetro del servicio
+            // Si no es "Todos", agregar filtro por servicio
             if (servicioSeleccionado != null && !servicioSeleccionado.equals("Todos")) {
-                ps.setString(3, servicioSeleccionado);
+                sql += " AND s.Nombre_servicio = ?";
             }
 
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    String cliente = rs.getString("NombreCliente");
-                    String nombreServicio = rs.getString("Nombre_servicio");
-                    LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
-                    String hora = rs.getString("Hora");
-                    String estado = rs.getString("Estado");
+            sql += " ORDER BY c.Fecha, c.Hora";
 
-                    // Ajustar el índice de la columna: 0=Hora, 1=Lunes, 2=Martes, etc.
-                    int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1 = Lunes, 7 = Domingo
-                    int fila = obtenerFilaPorHora(hora);
+            try (PreparedStatement ps = cn.prepareStatement(sql)) {
+                ps.setDate(1, java.sql.Date.valueOf(lunes));
+                ps.setDate(2, java.sql.Date.valueOf(domingo));
 
-                    if (fila != -1 && diaSemana >= 1 && diaSemana <= 7) {
-                        String texto = cliente + " - " + nombreServicio;
+                // Si no es "Todos", establecer el parámetro del servicio
+                if (servicioSeleccionado != null && !servicioSeleccionado.equals("Todos")) {
+                    ps.setString(3, servicioSeleccionado);
+                }
 
-                        if ("Completada".equalsIgnoreCase(estado)) {
-                            texto += " (✔)";
-                        } else if ("Pendiente".equalsIgnoreCase(estado)) {
-                            texto += " (⏳)";
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String cliente = rs.getString("NombreCliente");
+                        String nombreServicio = rs.getString("Nombre_servicio");
+                        LocalDate fechaCita = rs.getDate("Fecha").toLocalDate();
+                        String hora = rs.getString("Hora");
+                        String estado = rs.getString("Estado");
+
+                        // Ajustar el índice de la columna: 0=Hora, 1=Lunes, 2=Martes, etc.
+                        int diaSemana = fechaCita.getDayOfWeek().getValue(); // 1 = Lunes, 7 = Domingo
+                        int fila = obtenerFilaPorHora(hora);
+
+                        if (fila != -1 && diaSemana >= 1 && diaSemana <= 7) {
+                            String texto = cliente + " - " + nombreServicio;
+
+                            if ("Completada".equalsIgnoreCase(estado)) {
+                                texto += " (✔)";
+                            } else if ("Pendiente".equalsIgnoreCase(estado)) {
+                                texto += " (⏳)";
+                            }
+
+                            // Columna = diaSemana (1=Lunes -> columna 1, 7=Domingo -> columna 7)
+                            modelo.setValueAt(texto, fila, diaSemana);
                         }
-
-                        // Columna = diaSemana (1=Lunes -> columna 1, 7=Domingo -> columna 7)
-                        modelo.setValueAt(texto, fila, diaSemana);
                     }
                 }
             }
-        }
 
-    } catch (SQLException ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + ex.getMessage());
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar agenda: " + ex.getMessage());
+        }
     }
-}
+
     private void actualizarResumen() {
         try (Connection cn = conexion.conectar()) {
             DefaultTableModel modelo = (DefaultTableModel) jTable1.getModel();
@@ -270,8 +290,7 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
 
     // Método auxiliar para actualizar contadores
     private void actualizarContador(Connection cn, DefaultTableModel modelo, int fila, String sql) throws SQLException {
-        try (PreparedStatement ps = cn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+        try (PreparedStatement ps = cn.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
             if (rs.next()) {
                 modelo.setValueAt(rs.getInt(1), fila, 1);
             }
@@ -293,29 +312,29 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
         return -1;
     }
 
-   private void filtrarPorRango() {
-    // Validar que la fecha no sea null
-    if (jDateInicio.getDate() == null) {
-        jDateInicio.setDate(java.sql.Date.valueOf(LocalDate.now()));
+    private void filtrarPorRango() {
+        // Validar que la fecha no sea null
+        if (jDateInicio.getDate() == null) {
+            jDateInicio.setDate(java.sql.Date.valueOf(LocalDate.now()));
+        }
+
+        LocalDate inicio = jDateInicio.getDate().toInstant()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate();
+
+        // Asegurar que empiece en lunes
+        inicio = obtenerLunesDeSemana(inicio);
+        LocalDate fin = inicio.with(DayOfWeek.SUNDAY);
+
+        jDateInicio.setDate(java.sql.Date.valueOf(inicio));
+        jDateFin.setDate(java.sql.Date.valueOf(fin));
+
+        // Simplemente cargar la agenda semanal con el servicio seleccionado
+        cargarAgendaSemanal(inicio);
+
+        actualizarEncabezadosSemana(inicio);
+        actualizarResumen();
     }
-    
-    LocalDate inicio = jDateInicio.getDate().toInstant()
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDate();
-
-    // Asegurar que empiece en lunes
-    inicio = obtenerLunesDeSemana(inicio);
-    LocalDate fin = inicio.with(DayOfWeek.SUNDAY);
-    
-    jDateInicio.setDate(java.sql.Date.valueOf(inicio));
-    jDateFin.setDate(java.sql.Date.valueOf(fin));
-
-    // Simplemente cargar la agenda semanal con el servicio seleccionado
-    cargarAgendaSemanal(inicio);
-
-    actualizarEncabezadosSemana(inicio);
-    actualizarResumen();
-}
 
     private void cargarAgendaPorRango(String servicio, LocalDate inicio, LocalDate fin) {
         try (Connection cn = conexion.conectar()) {
@@ -348,7 +367,7 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
                 ps.setString(1, servicio);
                 ps.setDate(2, java.sql.Date.valueOf(inicio));
                 ps.setDate(3, java.sql.Date.valueOf(fin));
-                
+
                 try (ResultSet rs = ps.executeQuery()) {
                     while (rs.next()) {
                         String cliente = rs.getString("NombreCliente"); // nombre completo
@@ -417,41 +436,38 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
     private LocalDate obtenerLunesDeSemana(LocalDate fecha) {
         return fecha.with(DayOfWeek.MONDAY);
     }
-    
-    
+
     private void cargarServiciosEnCombo() {
-    cmbservicio.removeAllItems();
-    
-    // Agregar opción para mostrar todos los servicios
-    cmbservicio.addItem("Todos");
-    
-    String sql = "SELECT Nombre_servicio FROM servicios ORDER BY Nombre_servicio ASC";
+        cmbservicio.removeAllItems();
 
-    try (Connection con = conexion.conectar(); 
-         PreparedStatement ps = con.prepareStatement(sql); 
-         ResultSet rs = ps.executeQuery()) {
+        // Agregar opción para mostrar todos los servicios
+        cmbservicio.addItem("Todos");
 
-        while (rs.next()) {
-            String nombre = rs.getString("Nombre_servicio");
-            cmbservicio.addItem(nombre);
+        String sql = "SELECT Nombre_servicio FROM servicios ORDER BY Nombre_servicio ASC";
+
+        try (Connection con = conexion.conectar(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                String nombre = rs.getString("Nombre_servicio");
+                cmbservicio.addItem(nombre);
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
+            // Opciones por defecto en caso de error
+            cmbservicio.addItem("Maquillaje");
+            cmbservicio.addItem("Uñas");
+            cmbservicio.addItem("Peinados");
         }
 
-    } catch (Exception e) {
-        e.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
-        // Opciones por defecto en caso de error
-        cmbservicio.addItem("Maquillaje");
-        cmbservicio.addItem("Uñas");
-        cmbservicio.addItem("Peinados");
+        // Agregar listener para filtrar automáticamente cuando cambie el servicio
+        cmbservicio.addActionListener(e -> {
+            if (jDateInicio.getDate() != null) {
+                filtrarPorRango();
+            }
+        });
     }
-    
-    // Agregar listener para filtrar automáticamente cuando cambie el servicio
-    cmbservicio.addActionListener(e -> {
-        if (jDateInicio.getDate() != null) {
-            filtrarPorRango();
-        }
-    });
-}
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -523,6 +539,8 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
         jMenuItem11 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu17 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -993,6 +1011,18 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
 
         jMenuBar1.add(jMenu6);
 
+        jMenu17.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu17.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu17);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -1163,6 +1193,11 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
         // TODO add your handling code here:
     }//GEN-LAST:event_cmbservicioActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1188,7 +1223,7 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
         } catch (javax.swing.UnsupportedLookAndFeelException ex) {
             java.util.logging.Logger.getLogger(NewJPanelAdministracion.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-     
+
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -1224,6 +1259,7 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
     private javax.swing.JMenu jMenu13;
     private javax.swing.JMenu jMenu14;
     private javax.swing.JMenu jMenu15;
+    private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
@@ -1247,6 +1283,7 @@ private void cargarAgendaSemanal(LocalDate fechaBase) {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;

@@ -38,7 +38,7 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private LocalDate fechaSeleccionada = LocalDate.now();
     private com.toedter.calendar.JDateChooser dateChooser;
     private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
+private javax.swing.JMenuItem jMenuItemCerrarSesion;
     private void actualizarEncabezadosSemana(LocalDate fechaBase) {
         DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
 
@@ -138,6 +138,20 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         actualizarTotales();
 
         btnFiltrarRango.addActionListener(e -> filtrarPorRango());
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     private void actualizarTotales() {
@@ -303,20 +317,21 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         }
     }
 
-private void cambiarSemana(int desplazamiento) {
-    fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
-    
-    dateChooser.setDate(java.util.Date.from(fechaSeleccionada.atStartOfDay()
-            .atZone(java.time.ZoneId.systemDefault())
-            .toInstant()));
-    
-    actualizarLabelFecha();
-    String servicio = (String) cmbservicio.getSelectedItem();
-    if (servicio != null) {
-        cargarAgendaSemanal(servicio, fechaSeleccionada);
-        actualizarEncabezadosSemana(fechaSeleccionada);
+    private void cambiarSemana(int desplazamiento) {
+        fechaSeleccionada = fechaSeleccionada.plusWeeks(desplazamiento);
+
+        dateChooser.setDate(java.util.Date.from(fechaSeleccionada.atStartOfDay()
+                .atZone(java.time.ZoneId.systemDefault())
+                .toInstant()));
+
+        actualizarLabelFecha();
+        String servicio = (String) cmbservicio.getSelectedItem();
+        if (servicio != null) {
+            cargarAgendaSemanal(servicio, fechaSeleccionada);
+            actualizarEncabezadosSemana(fechaSeleccionada);
+        }
     }
-}
+
     private void actualizarLabelFecha() {
         DateTimeFormatter formato = DateTimeFormatter.ofPattern(
                 "EEEE, dd 'de' MMMM 'de' yyyy", new Locale("es", "ES")
@@ -561,6 +576,8 @@ private void cambiarSemana(int desplazamiento) {
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu14 = new javax.swing.JMenu();
         jMenuItem11 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -966,6 +983,18 @@ private void cambiarSemana(int desplazamiento) {
 
         jMenuBar1.add(jMenu14);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -1078,6 +1107,11 @@ private void cambiarSemana(int desplazamiento) {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem8ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -1177,6 +1211,7 @@ private void cambiarSemana(int desplazamiento) {
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
     private javax.swing.JMenu jMenu14;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
@@ -1190,6 +1225,7 @@ private void cambiarSemana(int desplazamiento) {
     private javax.swing.JMenuItem jMenuItem11;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JMenu jMenuLogin;
     private javax.swing.JMenu jMenuPagos;
     private javax.swing.JPanel jPanel1;

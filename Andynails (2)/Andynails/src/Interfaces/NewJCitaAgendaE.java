@@ -67,6 +67,20 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
         this.dispose();
     }
 
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
     private void llenarComboRoles() {
         comboRoles.removeAllItems();
         comboRoles.addItem("Todos");
@@ -236,6 +250,8 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
         jMenuItem7 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -464,6 +480,18 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -511,99 +539,99 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
     }//GEN-LAST:event_btnEditarCitaActionPerformed
 
     private void btnEliminarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarCitaActionPerformed
-      int fila = jTablecontenidocitas.getSelectedRow();
-    if (fila == -1) {
-        JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.");
-        return;
-    }
-
-    Object valorId = jTablecontenidocitas.getValueAt(fila, 0);
-    int idCita;
-
-    try {
-        idCita = Integer.parseInt(valorId.toString());
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error al leer el ID de la cita.");
-        return;
-    }
-
-    int confirm = JOptionPane.showConfirmDialog(
-            this,
-            "¿Deseas eliminar esta cita?",
-            "Confirmar eliminación",
-            JOptionPane.YES_NO_OPTION
-    );
-
-    if (confirm != JOptionPane.YES_OPTION) {
-        return;
-    }
-
-    try (Connection con = conexion.conectar()) {
-
-        if (con == null) {
-            JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+        int fila = jTablecontenidocitas.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.");
             return;
         }
 
-        String sqlPagosServicios = "SELECT Pago_idPago FROM cita_has_servicios WHERE idCita = ?";
-        List<Integer> pagosServicios = new ArrayList<>();
+        Object valorId = jTablecontenidocitas.getValueAt(fila, 0);
+        int idCita;
 
-        try (PreparedStatement ps = con.prepareStatement(sqlPagosServicios)) {
-            ps.setInt(1, idCita);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                pagosServicios.add(rs.getInt("Pago_idPago"));
+        try {
+            idCita = Integer.parseInt(valorId.toString());
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al leer el ID de la cita.");
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(
+                this,
+                "¿Deseas eliminar esta cita?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (confirm != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try (Connection con = conexion.conectar()) {
+
+            if (con == null) {
+                JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+                return;
             }
-        }
 
-        Integer pagoPrincipal = null;
-        String sqlPagoPrincipal = "SELECT Pago_idPago FROM Cita WHERE idCita = ?";
+            String sqlPagosServicios = "SELECT Pago_idPago FROM cita_has_servicios WHERE idCita = ?";
+            List<Integer> pagosServicios = new ArrayList<>();
 
-        try (PreparedStatement ps = con.prepareStatement(sqlPagoPrincipal)) {
-            ps.setInt(1, idCita);
-            ResultSet rs = ps.executeQuery();
-            if (rs.next()) {
-                pagoPrincipal = rs.getInt("Pago_idPago");
+            try (PreparedStatement ps = con.prepareStatement(sqlPagosServicios)) {
+                ps.setInt(1, idCita);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    pagosServicios.add(rs.getInt("Pago_idPago"));
+                }
             }
-        }
 
-        String sqlDeleteServicios = "DELETE FROM cita_has_servicios WHERE idCita = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlDeleteServicios)) {
-            ps.setInt(1, idCita);
-            ps.executeUpdate();
-        }
+            Integer pagoPrincipal = null;
+            String sqlPagoPrincipal = "SELECT Pago_idPago FROM Cita WHERE idCita = ?";
 
-        // 
-        String sqlDeletePago = "DELETE FROM pago WHERE idPago = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
-            for (Integer idPago : pagosServicios) {
-                ps.setInt(1, idPago);
+            try (PreparedStatement ps = con.prepareStatement(sqlPagoPrincipal)) {
+                ps.setInt(1, idCita);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next()) {
+                    pagoPrincipal = rs.getInt("Pago_idPago");
+                }
+            }
+
+            String sqlDeleteServicios = "DELETE FROM cita_has_servicios WHERE idCita = ?";
+            try (PreparedStatement ps = con.prepareStatement(sqlDeleteServicios)) {
+                ps.setInt(1, idCita);
                 ps.executeUpdate();
             }
-        }
 
-        // 
-        if (pagoPrincipal != null) {
+            // 
+            String sqlDeletePago = "DELETE FROM pago WHERE idPago = ?";
             try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
-                ps.setInt(1, pagoPrincipal);
+                for (Integer idPago : pagosServicios) {
+                    ps.setInt(1, idPago);
+                    ps.executeUpdate();
+                }
+            }
+
+            // 
+            if (pagoPrincipal != null) {
+                try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
+                    ps.setInt(1, pagoPrincipal);
+                    ps.executeUpdate();
+                }
+            }
+
+            String sqlDeleteCita = "DELETE FROM Cita WHERE idCita = ?";
+            try (PreparedStatement ps = con.prepareStatement(sqlDeleteCita)) {
+                ps.setInt(1, idCita);
                 ps.executeUpdate();
             }
+
+            JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
+
+            cargarCitasPorFecha(CalCitasAgendadas.getCalendar().getTime());
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    " Error al eliminar cita: " + e.getMessage());
         }
-
-        String sqlDeleteCita = "DELETE FROM Cita WHERE idCita = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlDeleteCita)) {
-            ps.setInt(1, idCita);
-            ps.executeUpdate();
-        }
-
-        JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
-
-        cargarCitasPorFecha(CalCitasAgendadas.getCalendar().getTime());
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this,
-                " Error al eliminar cita: " + e.getMessage());
-    }
 
     }//GEN-LAST:event_btnEliminarCitaActionPerformed
 
@@ -646,11 +674,11 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
 
     private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarCitaActionPerformed
         // TODO add your handling code here:
-       NewJAgendarcitaREC registrar = new NewJAgendarcitaREC();
-    registrar.setVisible(true);
+        NewJAgendarcitaREC registrar = new NewJAgendarcitaREC();
+        registrar.setVisible(true);
 
-    registrar.limpiarCampos(); 
-    this.dispose();
+        registrar.limpiarCampos();
+        this.dispose();
     }//GEN-LAST:event_btnRegistrarCitaActionPerformed
 
     private void comboRolesActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_comboRolesActionPerformed
@@ -692,6 +720,11 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
         NewJAgendarcita.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -748,6 +781,7 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
     private com.toedter.calendar.JCalendar jCalendar1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu10;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
@@ -759,6 +793,7 @@ public class NewJCitaAgendaE extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;

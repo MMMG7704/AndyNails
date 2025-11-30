@@ -25,12 +25,26 @@ public class NewJPagoRestante extends javax.swing.JFrame {
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
     }
-private JFrame ventanaAnterior;
+    private JFrame ventanaAnterior;
 
-public NewJPagoRestante(JFrame anterior) {
-    initComponents();
-    this.ventanaAnterior = anterior;
-}
+    public NewJPagoRestante(JFrame anterior) {
+        initComponents();
+        this.ventanaAnterior = anterior;
+    }
+// Para cerrar sesión en cualquier interfaz
+
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -105,6 +119,8 @@ public NewJPagoRestante(JFrame anterior) {
         jMenuItem17 = new javax.swing.JMenuItem();
         jMenu26 = new javax.swing.JMenu();
         jMenuItem18 = new javax.swing.JMenuItem();
+        jMenu20 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -516,6 +532,18 @@ public NewJPagoRestante(JFrame anterior) {
 
         jMenuBar5.add(jMenu26);
 
+        jMenu20.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu20.add(jMenuItemCerrarSecion);
+
+        jMenuBar5.add(jMenu20);
+
         setJMenuBar(jMenuBar5);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -679,13 +707,18 @@ public NewJPagoRestante(JFrame anterior) {
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-                                          
-    // Regresar al panel anterior
-    NewJPanelAdministracion anterior = new NewJPanelAdministracion();
-    anterior.setVisible(true);
-    this.dispose(); // Cierra la ventana actual
+
+        // Regresar al panel anterior
+        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
 
     }//GEN-LAST:event_btnRegresarActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -778,6 +811,7 @@ public NewJPagoRestante(JFrame anterior) {
     private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu19;
+    private javax.swing.JMenu jMenu20;
     private javax.swing.JMenu jMenu21;
     private javax.swing.JMenu jMenu22;
     private javax.swing.JMenu jMenu25;
@@ -804,6 +838,7 @@ public NewJPagoRestante(JFrame anterior) {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

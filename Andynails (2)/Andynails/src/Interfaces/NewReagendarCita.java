@@ -20,37 +20,34 @@ import org.mariadb.jdbc.Connection;
  * @author User
  */
 public class NewReagendarCita extends javax.swing.JFrame {
-ConexionBD conexion;
-private JFrame ventanaAnterior;
 
-private com.toedter.calendar.JDateChooser jDateChooser1;
+    ConexionBD conexion;
+    private JFrame ventanaAnterior;
 
-
-
+    private com.toedter.calendar.JDateChooser jDateChooser1;
 
     /**
      * Creates new form NewJCitaAgenda
      */
-     public NewReagendarCita(JFrame ventanaAnterior) {
+    public NewReagendarCita(JFrame ventanaAnterior) {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         conexion = new ConexionBD("andinails");
         this.ventanaAnterior = ventanaAnterior;
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
     }
 
-     public void setDatosCita(String nombreCliente, String numeroCita, String servicio) {
-    txtNombreclienta.setText(nombreCliente);
-    txtNumerodecita.setText(numeroCita);
-    txtNombreservicio.setText(servicio);
-}
+    public void setDatosCita(String nombreCliente, String numeroCita, String servicio) {
+        txtNombreclienta.setText(nombreCliente);
+        txtNumerodecita.setText(numeroCita);
+        txtNombreservicio.setText(servicio);
+    }
 
-     
-      // Establece los datos de la cita para mostrar
-     public void setDatosCita(String nombreCliente, String numeroCita, String servicio,
-                             String estadoServicio, String precio, String totalPagar,
-                             String anticipo, String restante) {
+    // Establece los datos de la cita para mostrar
+    public void setDatosCita(String nombreCliente, String numeroCita, String servicio,
+            String estadoServicio, String precio, String totalPagar,
+            String anticipo, String restante) {
         txtNombreclienta.setText(nombreCliente);
         txtNumerodecita.setText(numeroCita);
         txtNombreservicio.setText(servicio);
@@ -61,6 +58,19 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
         txtmontorestante.setText(restante);
     }
 
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -111,6 +121,8 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -461,6 +473,18 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -481,9 +505,9 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
         // TODO add your handling code here:
-     //inicio
+        //inicio
         Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);   
+        Inicio.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu4MenuSelected
@@ -517,7 +541,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
-         //agendar cancelar
+        //agendar cancelar
         NewJCancelarC NewJCancelarC = new NewJCancelarC();
         NewJCancelarC.setVisible(true);
         this.dispose(); // cierra la actual
@@ -535,53 +559,53 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
 
     private void btncancelarcitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarcitaActionPerformed
         // TODO add your handling code here:
-                btnReagendarcitaActionPerformed(evt); // También actualiza la fecha y hora
+        btnReagendarcitaActionPerformed(evt); // También actualiza la fecha y hora
 
     }//GEN-LAST:event_btncancelarcitaActionPerformed
 
     private void btnReagendarcitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnReagendarcitaActionPerformed
-    try (Connection conn = (Connection) conexion.conectar()) {
-        String sql = "UPDATE Citas SET Fecha=?, Hora=?, Servicio=?, Estado=?, Precio=?, Total=?, Anticipo=?, Restante=? WHERE NumeroCita=?";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = (Connection) conexion.conectar()) {
+            String sql = "UPDATE Citas SET Fecha=?, Hora=?, Servicio=?, Estado=?, Precio=?, Total=?, Anticipo=?, Restante=? WHERE NumeroCita=?";
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            // Fecha desde JCalendar
-            Date fechaUtil = jDateChooser1.getDate();
- // obtiene java.util.Date directamente
-            java.sql.Date fechaSQL = new java.sql.Date(fechaUtil.getTime());
+                // Fecha desde JCalendar
+                Date fechaUtil = jDateChooser1.getDate();
+                // obtiene java.util.Date directamente
+                java.sql.Date fechaSQL = new java.sql.Date(fechaUtil.getTime());
 
-            // Hora desde JComboBox
-            String horaStr = jComboBoxhora.getSelectedItem().toString(); // formato "HH:mm"
-            LocalTime horaLocal = LocalTime.parse(horaStr);
-            Time horaSQL = Time.valueOf(horaLocal);
+                // Hora desde JComboBox
+                String horaStr = jComboBoxhora.getSelectedItem().toString(); // formato "HH:mm"
+                LocalTime horaLocal = LocalTime.parse(horaStr);
+                Time horaSQL = Time.valueOf(horaLocal);
 
-            // Datos del formulario
-            ps.setDate(1, fechaSQL);
-            ps.setTime(2, horaSQL);
-            ps.setString(3, txtNombreservicio.getText());
-            ps.setString(4, txtEstadoservicio.getText());
-            ps.setDouble(5, Double.parseDouble(txtPrecioservicio.getSelectedItem().toString()));
-            ps.setDouble(6, Double.parseDouble(txtTotapagar.getText()));
-            ps.setDouble(7, Double.parseDouble(txtmontoanticipo.getText()));
-            ps.setDouble(8, Double.parseDouble(txtmontorestante.getText()));
-            ps.setString(9, txtNumerodecita.getText());
+                // Datos del formulario
+                ps.setDate(1, fechaSQL);
+                ps.setTime(2, horaSQL);
+                ps.setString(3, txtNombreservicio.getText());
+                ps.setString(4, txtEstadoservicio.getText());
+                ps.setDouble(5, Double.parseDouble(txtPrecioservicio.getSelectedItem().toString()));
+                ps.setDouble(6, Double.parseDouble(txtTotapagar.getText()));
+                ps.setDouble(7, Double.parseDouble(txtmontoanticipo.getText()));
+                ps.setDouble(8, Double.parseDouble(txtmontorestante.getText()));
+                ps.setString(9, txtNumerodecita.getText());
 
-            int filas = ps.executeUpdate();
-            if (filas > 0) {
-                JOptionPane.showMessageDialog(this, "Cita guardada correctamente");
-            } else {
-                JOptionPane.showMessageDialog(this, "No se encontró la cita");
+                int filas = ps.executeUpdate();
+                if (filas > 0) {
+                    JOptionPane.showMessageDialog(this, "Cita guardada correctamente");
+                } else {
+                    JOptionPane.showMessageDialog(this, "No se encontró la cita");
+                }
             }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al guardar la cita: " + ex.getMessage());
         }
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al guardar la cita: " + ex.getMessage());
-    }
 
     }//GEN-LAST:event_btnReagendarcitaActionPerformed
 
     private void btnguardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnguardarActionPerformed
         // TODO add your handling code here:
-   btnReagendarcitaActionPerformed(evt);
+        btnReagendarcitaActionPerformed(evt);
     }//GEN-LAST:event_btnguardarActionPerformed
 
     private void txtPrecioservicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtPrecioservicioActionPerformed
@@ -625,31 +649,36 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
 
     }//GEN-LAST:event_btnRegresarActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
     public static void main(String args[]) {
-           /* Set the Nimbus look and feel */
-    //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
-    try {
-        for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-            if ("Nimbus".equals(info.getName())) {
-                javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                break;
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
             }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(NewReagendarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
-    } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-        java.util.logging.Logger.getLogger(NewReagendarCita.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-    }
-    //</editor-fold>
-    //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
 
-    /* Create and display the form */
-    java.awt.EventQueue.invokeLater(new Runnable() {
-        public void run() {
-            new NewReagendarCita(null).setVisible(true);
-        }
-    });
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new NewReagendarCita(null).setVisible(true);
+            }
+        });
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -673,6 +702,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel9;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -683,6 +713,7 @@ private com.toedter.calendar.JDateChooser jDateChooser1;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JTextField txtEstadoservicio;

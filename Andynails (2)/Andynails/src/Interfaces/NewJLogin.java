@@ -46,9 +46,11 @@ public class NewJLogin extends javax.swing.JFrame {
         conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         limitarCaracteres();
+        
 
     }
 
+   
     public class Login {
 
         public static int idUsuarioActivo = -1;
@@ -68,6 +70,8 @@ public class NewJLogin extends javax.swing.JFrame {
             return null;
         }
     }
+    
+    
 
     public boolean validarUsuario(String correo, String contraseña) {
         String sql = "SELECT * FROM usuarios WHERE Correo = ? AND Contraseña = ?";
@@ -459,65 +463,64 @@ public class NewJLogin extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btniniciarsesionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btniniciarsesionActionPerformed
-        String correo = txtcorreoE.getText().trim();
-        String contrasena = new String(txtContraseña.getPassword()).trim();
+    String correo = txtcorreoE.getText().trim();
+    String contrasena = new String(txtContraseña.getPassword()).trim();
 
-        if (correo.isEmpty() || contrasena.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Por favor ingresa correo y contraseña.");
-            return;
-        }
+    if (correo.isEmpty() || contrasena.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Por favor ingresa correo y contraseña.");
+        return;
+    }
 
-        // Encriptar la contraseña antes de compararla
-        String contrasenaEncriptada = encriptarSHA256(contrasena);
+    String contrasenaEncriptada = encriptarSHA256(contrasena);
 
-        try {
-            Class.forName("org.mariadb.jdbc.Driver");
-            Connection con = (Connection) DriverManager.getConnection(
-                    "jdbc:mariadb://localhost:3307/andynails", "root", "mora");
+    try {
+        Class.forName("org.mariadb.jdbc.Driver");
+        Connection con = (Connection) DriverManager.getConnection(
+                "jdbc:mariadb://localhost:3307/andynails", "root", "mora");
 
-            String sql = "SELECT u.idUsuarios, u.Nombre, t.Nombre as rol "
-                    + "FROM Usuarios u "
-                    + "JOIN Tipo_Usuario t ON u.Tipo_Usuario_idTipo_Usuario = t.idTipo_Usuario "
-                    + "WHERE u.Correo = ? AND u.Contraseña = ?";
+        String sql = "SELECT u.idUsuarios, u.Nombre, t.Nombre as rol "
+                + "FROM Usuarios u "
+                + "JOIN Tipo_Usuario t ON u.Tipo_Usuario_idTipo_Usuario = t.idTipo_Usuario "
+                + "WHERE u.Correo = ? AND u.Contraseña = ?";
 
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, correo);
-            ps.setString(2, contrasenaEncriptada); // aquí usamos la contraseña encriptada
-            ResultSet rs = ps.executeQuery();
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setString(1, correo);
+        ps.setString(2, contrasenaEncriptada);
+        ResultSet rs = ps.executeQuery();
 
-            if (rs.next()) {
-                int id = rs.getInt("idUsuarios");
-                String nombreUsuario = rs.getString("Nombre");
-                String rol = rs.getString("rol");
+        if (rs.next()) {
+            int id = rs.getInt("idUsuarios");
+            String nombreUsuario = rs.getString("Nombre");
+            String rol = rs.getString("rol");
 
-                // Iniciar sesión
-                SesionUsuario.iniciarSesion(id, nombreUsuario);
+            // 🔹 USAR SessionManager QUE A SU VEZ USA TU SesionUsuario
+            andynails.SessionManager.iniciarSesion(id, nombreUsuario, rol);
 
-                // Abrir ventana según rol
-                if (rol.equalsIgnoreCase("admin")) {
-                    NewJPanelAdministracion adminWindow = new NewJPanelAdministracion();
-                    adminWindow.setVisible(true);
-                } else if (rol.equalsIgnoreCase("recepcionista")) {
-                    NewJPanelAdministracionRec recWindow = new NewJPanelAdministracionRec();
-                    recWindow.setVisible(true);
-                } else if (rol.equalsIgnoreCase("cliente")) {
-                    NewJMiscitasCi cliWindow = new NewJMiscitasCi();
-                    cliWindow.setVisible(true);
-                }
-
-                this.dispose(); // cerrar login
-
-            } else {
-                JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos.");
+            // Abrir ventana según rol
+            if (rol.equalsIgnoreCase("admin")) {
+                NewJPanelAdministracion adminWindow = new NewJPanelAdministracion();
+                adminWindow.setVisible(true);
+            } else if (rol.equalsIgnoreCase("recepcionista")) {
+                NewJPanelAdministracionRec recWindow = new NewJPanelAdministracionRec();
+                recWindow.setVisible(true);
+            } else if (rol.equalsIgnoreCase("cliente")) {
+                NewJMiscitasCi cliWindow = new NewJMiscitasCi();
+                cliWindow.setVisible(true);
             }
 
-            rs.close();
-            ps.close();
-            con.close();
+            this.dispose(); // cerrar login
 
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+        } else {
+            JOptionPane.showMessageDialog(this, "Correo o contraseña incorrectos.");
         }
+
+        rs.close();
+        ps.close();
+        con.close();
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+    }
 
     }//GEN-LAST:event_btniniciarsesionActionPerformed
 

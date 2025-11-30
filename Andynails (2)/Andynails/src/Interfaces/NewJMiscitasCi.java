@@ -26,7 +26,7 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
      */
     public NewJMiscitasCi() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
         conexion = new ConexionBD("andynails");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -39,8 +39,7 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
 
     }
 
-    
-        private void cargarDatosCliente() {
+    private void cargarDatosCliente() {
         try {
             String nombreUsuario = SesionUsuario.getNombreUsuario();
             if (nombreUsuario != null && !nombreUsuario.isEmpty()) {
@@ -53,23 +52,36 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
             jLabelNomcl.setText("Cliente");
         }
     }
-        
-        
-private void cargarCitasCliente() {
-    DefaultTableModel model = (DefaultTableModel) jTableCitascl.getModel();
-    model.setRowCount(0); // Limpiar tabla existente
 
-    String[] columnNames = {"Fecha", "Hora", "Servicios", "Estado", "Precio"};
-    model.setColumnIdentifiers(columnNames);
-
-    int idUsuario = SesionUsuario.getIdUsuario();
-    
-    if (idUsuario == 0) {
-        System.out.println("DEBUG: No hay usuario logueado");
-        return;
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
     }
 
-    String sql = """
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
+    private void cargarCitasCliente() {
+        DefaultTableModel model = (DefaultTableModel) jTableCitascl.getModel();
+        model.setRowCount(0); // Limpiar tabla existente
+
+        String[] columnNames = {"Fecha", "Hora", "Servicios", "Estado", "Precio"};
+        model.setColumnIdentifiers(columnNames);
+
+        int idUsuario = SesionUsuario.getIdUsuario();
+
+        if (idUsuario == 0) {
+            System.out.println("DEBUG: No hay usuario logueado");
+            return;
+        }
+
+        String sql = """
         SELECT 
             c.Fecha, 
             c.Hora, 
@@ -84,106 +96,118 @@ private void cargarCitasCliente() {
         ORDER BY c.Fecha DESC, c.Hora DESC
         """;
 
-    Connection conn = null;
-    PreparedStatement ps = null;
-    ResultSet rs = null;
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
 
-    try {
-        conn = conexion.getConexion();
-        ps = conn.prepareStatement(sql);
-        ps.setInt(1, idUsuario);
-        rs = ps.executeQuery();
+        try {
+            conn = conexion.getConexion();
+            ps = conn.prepareStatement(sql);
+            ps.setInt(1, idUsuario);
+            rs = ps.executeQuery();
 
-        System.out.println("=== DEBUG CARGANDO CITAS ===");
-        
-        while (rs.next()) {
-            String fecha = rs.getString("Fecha");
-            String hora = rs.getString("Hora");
-            String estado = rs.getString("Estado");
-            String servicios = rs.getString("Servicios");
-            double precio = rs.getDouble("Precio_Total");
-            
-            System.out.println("Cita: " + fecha + " " + hora + 
-                             " - Servicios: " + servicios + 
-                             " - Precio: " + precio);
-            
-            if (servicios == null) {
-                servicios = "Sin servicios asignados";
+            System.out.println("=== DEBUG CARGANDO CITAS ===");
+
+            while (rs.next()) {
+                String fecha = rs.getString("Fecha");
+                String hora = rs.getString("Hora");
+                String estado = rs.getString("Estado");
+                String servicios = rs.getString("Servicios");
+                double precio = rs.getDouble("Precio_Total");
+
+                System.out.println("Cita: " + fecha + " " + hora
+                        + " - Servicios: " + servicios
+                        + " - Precio: " + precio);
+
+                if (servicios == null) {
+                    servicios = "Sin servicios asignados";
+                }
+
+                String precioStr = String.format("$%.2f", precio);
+
+                model.addRow(new Object[]{fecha, hora, servicios, estado, precioStr});
             }
-            
-            String precioStr = String.format("$%.2f", precio);
-            
-            model.addRow(new Object[]{fecha, hora, servicios, estado, precioStr});
-        }
 
-        System.out.println("Total de citas cargadas: " + model.getRowCount());
+            System.out.println("Total de citas cargadas: " + model.getRowCount());
 
-    } catch (Exception e) {
-        e.printStackTrace();
-        System.out.println("ERROR al cargar citas: " + e.getMessage());
-    } finally {
-        // Cerrar recursos en el finally
-        try {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            if (conn != null) conn.close();
         } catch (Exception e) {
             e.printStackTrace();
+            System.out.println("ERROR al cargar citas: " + e.getMessage());
+        } finally {
+            // Cerrar recursos en el finally
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (ps != null) {
+                    ps.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
-}
 
+    private void debugEstructuraTablas() {
+        System.out.println("=== DEBUG ESTRUCTURA DE TABLAS ===");
 
-private void debugEstructuraTablas() {
-    System.out.println("=== DEBUG ESTRUCTURA DE TABLAS ===");
-    
-    String sqlCitas = "SELECT idCita, Fecha, Hora, Estado, idUsuarios FROM cita WHERE idUsuarios = ?";
-    String sqlCitaServicios = "SELECT idCita, idServicios, Monto_anticipo FROM cita_has_servicios WHERE idCita IN (SELECT idCita FROM cita WHERE idUsuarios = ?)";
-    
-    Connection conn = null;
-    PreparedStatement ps = null;
-    ResultSet rs = null;
-    
-    try {
-        conn = conexion.getConexion();
-        
-        // Debug de citas
-        System.out.println("--- CITAS ---");
-        ps = conn.prepareStatement(sqlCitas);
-        ps.setInt(1, SesionUsuario.getIdUsuario());
-        rs = ps.executeQuery();
-        while (rs.next()) {
-            System.out.println("Cita ID: " + rs.getInt("idCita") + 
-                             " - Fecha: " + rs.getString("Fecha") + 
-                             " - Hora: " + rs.getString("Hora") +
-                             " - Estado: " + rs.getString("Estado"));
-        }
-        rs.close();
-        ps.close();
-        
-        // Debug de servicios por cita
-        System.out.println("--- SERVICIOS POR CITA ---");
-        ps = conn.prepareStatement(sqlCitaServicios);
-        ps.setInt(1, SesionUsuario.getIdUsuario());
-        rs = ps.executeQuery();
-        while (rs.next()) {
-            System.out.println("Cita ID: " + rs.getInt("idCita") + 
-                             " - Servicio ID: " + rs.getInt("idServicios") +
-                             " - Monto: " + rs.getDouble("Monto_anticipo"));
-        }
-        
-    } catch (Exception e) {
-        e.printStackTrace();
-    } finally {
+        String sqlCitas = "SELECT idCita, Fecha, Hora, Estado, idUsuarios FROM cita WHERE idUsuarios = ?";
+        String sqlCitaServicios = "SELECT idCita, idServicios, Monto_anticipo FROM cita_has_servicios WHERE idCita IN (SELECT idCita FROM cita WHERE idUsuarios = ?)";
+
+        Connection conn = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
         try {
-            if (rs != null) rs.close();
-            if (ps != null) ps.close();
-            if (conn != null) conn.close();
+            conn = conexion.getConexion();
+
+            // Debug de citas
+            System.out.println("--- CITAS ---");
+            ps = conn.prepareStatement(sqlCitas);
+            ps.setInt(1, SesionUsuario.getIdUsuario());
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                System.out.println("Cita ID: " + rs.getInt("idCita")
+                        + " - Fecha: " + rs.getString("Fecha")
+                        + " - Hora: " + rs.getString("Hora")
+                        + " - Estado: " + rs.getString("Estado"));
+            }
+            rs.close();
+            ps.close();
+
+            // Debug de servicios por cita
+            System.out.println("--- SERVICIOS POR CITA ---");
+            ps = conn.prepareStatement(sqlCitaServicios);
+            ps.setInt(1, SesionUsuario.getIdUsuario());
+            rs = ps.executeQuery();
+            while (rs.next()) {
+                System.out.println("Cita ID: " + rs.getInt("idCita")
+                        + " - Servicio ID: " + rs.getInt("idServicios")
+                        + " - Monto: " + rs.getDouble("Monto_anticipo"));
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (ps != null) {
+                    ps.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
-}
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -217,6 +241,8 @@ private void debugEstructuraTablas() {
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu8 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -410,6 +436,18 @@ private void debugEstructuraTablas() {
 
         jMenuBar1.add(jMenu8);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -473,9 +511,9 @@ private void debugEstructuraTablas() {
 
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
-                NewJContacto NewJContacto = new NewJContacto();
+        NewJContacto NewJContacto = new NewJContacto();
 
-                NewJContacto.setVisible(true);
+        NewJContacto.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
@@ -486,6 +524,11 @@ private void debugEstructuraTablas() {
         catalogo.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem7ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -530,6 +573,7 @@ private void debugEstructuraTablas() {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabelNomcl;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;
@@ -541,6 +585,7 @@ private void debugEstructuraTablas() {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JScrollPane jScrollPane1;
