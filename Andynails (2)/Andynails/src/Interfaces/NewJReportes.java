@@ -6,6 +6,12 @@ package Interfaces;
 
 import andynails.ConexionBD;
 import andynails.RedesSociales;
+import andynails.ReporteEstadistico;
+import andynails.ReportePagos;
+import andynails.ReporteServicios;
+import andynails.SessionManager;
+import java.util.HashMap;
+import java.util.Map;
 import javax.swing.JFrame;
 
 /**
@@ -98,27 +104,25 @@ public class NewJReportes extends javax.swing.JFrame {
         }
     }
 
-    // Para cerrar sesión en cualquier interfaz
-    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
-        andynails.SessionManager.cerrarSesion(this);
-    }
 
-// Para obtener datos del usuario
+    // Para obtener datos del usuario
     private void mostrarInfoUsuario() {
-        String usuario = andynails.SessionManager.getUsuarioLogueado();
-        String tipo = andynails.SessionManager.getTipoUsuario();
-        int id = andynails.SessionManager.getIdUsuario();
+        String usuario = SessionManager.getUsuarioLogueado();
+        String tipo = SessionManager.getTipoUsuario();
+        int id = SessionManager.getIdUsuario();
 
         System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     private void cargarPagosDesdeBD() {
         try {
-            // Primero, verifiquemos qué columnas tiene realmente tu tabla pago
-            String sql = "SELECT p.idPago, u.Nombre as Cliente, p.Monto, p.Fecha_pago "
-                    + "FROM pago p "
-                    + "INNER JOIN usuarios u ON p.idUsuarios = u.idUsuarios "
-                    + "ORDER BY p.Fecha_pago DESC";
+            //  CONSULTA CORREGIDA - Verificar la estructura real de tu tabla pago
+            String sql = "SELECT p.idPago, p.Monto, p.Fecha_pago, p.Estado_pago, " +
+                        "u.Nombre as Cliente " +
+                        "FROM pago p " +
+                        "LEFT JOIN cita c ON p.idPago = c.Pago_idPago " +
+                        "LEFT JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
+                        "ORDER BY p.Fecha_pago DESC";
 
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
@@ -126,15 +130,16 @@ public class NewJReportes extends javax.swing.JFrame {
             javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
-            // Actualizar nombres de columnas para pagos (sin Estado)
-            model.setColumnIdentifiers(new String[]{"ID Pago", "Cliente", "Monto", "Fecha"});
+            // Actualizar nombres de columnas para pagos
+            model.setColumnIdentifiers(new String[]{"ID Pago", "Cliente", "Monto", "Fecha", "Estado"});
 
             while (rs.next()) {
                 model.addRow(new Object[]{
                     rs.getInt("idPago"),
-                    rs.getString("Cliente"),
+                    rs.getString("Cliente") != null ? rs.getString("Cliente") : "N/A",
                     "$" + rs.getDouble("Monto"),
-                    rs.getDate("Fecha_pago")
+                    rs.getDate("Fecha_pago"),
+                    rs.getString("Estado_pago")
                 });
             }
 
@@ -152,12 +157,12 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void cargarServiciosMasSolicitados() {
         try {
-            String sql = "SELECT s.Nombre_servicio, COUNT(chs.idServicios) as Total_Citas, "
-                    + "SUM(s.Precio) as Ingreso_Total "
-                    + "FROM cita_has_servicios chs "
-                    + "INNER JOIN servicios s ON chs.idServicios = s.idServicios "
-                    + "GROUP BY s.Nombre_servicio "
-                    + "ORDER BY Total_Citas DESC";
+            String sql = "SELECT s.Nombre_servicio, COUNT(chs.idServicios) as Total_Citas, " +
+                    "SUM(s.Precio) as Ingreso_Total " +
+                    "FROM cita_has_servicios chs " +
+                    "INNER JOIN servicios s ON chs.idServicios = s.idServicios " +
+                    "GROUP BY s.Nombre_servicio " +
+                    "ORDER BY Total_Citas DESC";
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
@@ -189,12 +194,12 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void cargarClientesFrecuentes() {
         try {
-            String sql = "SELECT u.Nombre, u.Telefono, COUNT(c.idCita) as Total_Citas "
-                    + "FROM cita c "
-                    + "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
-                    + "GROUP BY u.idUsuarios, u.Nombre, u.Telefono "
-                    + "ORDER BY Total_Citas DESC "
-                    + "LIMIT 10";
+            String sql = "SELECT u.Nombre, u.Telefono, COUNT(c.idCita) as Total_Citas " +
+                    "FROM cita c " +
+                    "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
+                    "GROUP BY u.idUsuarios, u.Nombre, u.Telefono " +
+                    "ORDER BY Total_Citas DESC " +
+                    "LIMIT 10";
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
@@ -229,14 +234,14 @@ public class NewJReportes extends javax.swing.JFrame {
             String fechaInicio = obtenerFechaDesdeOpcion(comboxRangoinicio.getSelectedItem().toString());
             String fechaFin = obtenerFechaDesdeOpcion(comboxRangofin.getSelectedItem().toString());
 
-            String sql = "SELECT c.idCita, u.Nombre as Cliente, s.Nombre_servicio as Servicio, "
-                    + "c.Fecha, c.Hora, c.Estado "
-                    + "FROM cita c "
-                    + "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
-                    + "INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita "
-                    + "INNER JOIN servicios s ON chs.idServicios = s.idServicios "
-                    + "WHERE c.Fecha BETWEEN ? AND ? "
-                    + "ORDER BY c.Fecha, c.Hora";
+            String sql = "SELECT c.idCita, u.Nombre as Cliente, s.Nombre_servicio as Servicio, " +
+                    "c.Fecha, c.Hora, c.Estado " +
+                    "FROM cita c " +
+                    "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
+                    "INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita " +
+                    "INNER JOIN servicios s ON chs.idServicios = s.idServicios " +
+                    "WHERE c.Fecha BETWEEN ? AND ? " +
+                    "ORDER BY c.Fecha, c.Hora";
 
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             ps.setString(1, fechaInicio);
@@ -770,49 +775,50 @@ public class NewJReportes extends javax.swing.JFrame {
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
         // Determinar qué tipo de reporte generar
-        String tipoReporte = jComboBox1.getSelectedItem().toString();
+ String tipoReporte = jComboBox1.getSelectedItem().toString();
 
         try {
-            // Verificar qué tipo de reporte se quiere generar basado en el comboBox
             if (tipoReporte.contains("Servicios") || tipoReporte.equals("Todos los servicios")
                     || tipoReporte.equals("Servicios activos") || tipoReporte.equals("Precios de servicios")) {
 
                 String ruta = "Reporte_Servicios_AndyNails.pdf";
-                andynails.ReporteServicios.generarPDF(ruta);
+                ReporteServicios.generarPDF(ruta);
                 javax.swing.JOptionPane.showMessageDialog(this,
-                        " Reporte de servicios generado exitosamente:\n" + ruta,
+                        "Reporte de servicios generado exitosamente:\n" + ruta,
                         "Reporte Generado",
                         javax.swing.JOptionPane.INFORMATION_MESSAGE);
 
-            } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")) {
+            } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")
+                    || tipoReporte.contains("Ingresos") || tipoReporte.contains("Clientes frecuentes")) {
 
-                andynails.ReporteEstadistico.generarPDF();
+                ReporteEstadistico.generarPDF();
                 javax.swing.JOptionPane.showMessageDialog(this,
-                        " Reporte estadístico generado exitosamente",
+                        "Reporte estadístico generado exitosamente",
                         "Reporte Generado",
                         javax.swing.JOptionPane.INFORMATION_MESSAGE);
 
             } else if (tipoReporte.contains("Pagos")) {
 
+                //  IMPLEMENTADO - Generar reporte de pagos
+                ReportePagos.generarReportePagos();
                 javax.swing.JOptionPane.showMessageDialog(this,
-                        " Generando reporte de pagos...\n(Pendiente de implementar)",
-                        "Reporte en Desarrollo",
+                        "Reporte de pagos generado exitosamente",
+                        "Reporte Generado",
                         javax.swing.JOptionPane.INFORMATION_MESSAGE);
 
             } else {
                 javax.swing.JOptionPane.showMessageDialog(this,
-                        " Por favor, selecciona un tipo de reporte específico",
+                        "Por favor, selecciona un tipo de reporte específico",
                         "Selección Requerida",
                         javax.swing.JOptionPane.WARNING_MESSAGE);
             }
         } catch (Exception e) {
             javax.swing.JOptionPane.showMessageDialog(this,
-                    " Error al generar el reporte: " + e.getMessage(),
+                    "Error al generar el reporte: " + e.getMessage(),
                     "Error",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
-
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
