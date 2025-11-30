@@ -361,11 +361,16 @@ public class NewJRevPag extends javax.swing.JFrame {
 
             // SI NO HAY CITA ASOCIADA, preguntar si crear una
             if (idCita == null) {
-                int crearCita = javax.swing.JOptionPane.showConfirmDialog(this,
+                Object[] opciones = {"Sí", "No"};
+                int crearCita = javax.swing.JOptionPane.showOptionDialog(this,
                         "No hay una cita asociada a este pago.\n"
                         + "¿Deseas crear una nueva cita para asociar el servicio?",
                         "Crear Cita",
-                        javax.swing.JOptionPane.YES_NO_OPTION);
+                        javax.swing.JOptionPane.YES_NO_OPTION,
+                        javax.swing.JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opciones,
+                        opciones[0]);
 
                 if (crearCita == javax.swing.JOptionPane.YES_OPTION) {
                     idCita = crearCitaParaPago(idPago);
@@ -426,13 +431,18 @@ public class NewJRevPag extends javax.swing.JFrame {
                 double precio = servicioPrecios.get(servicioSeleccionado);
 
                 // CONFIRMAR antes de agregar el servicio
-                int confirmacion = javax.swing.JOptionPane.showConfirmDialog(this,
+                Object[] opcionesConfirmar = {"Sí", "No"};
+                int confirmacion = javax.swing.JOptionPane.showOptionDialog(this,
                         "¿Estás seguro de que quieres agregar este servicio?\n\n"
                         + "Servicio: " + servicioSeleccionado + "\n"
                         + "Cita: #" + idCita + "\n"
                         + "Pago: #" + idPago,
                         "Confirmar Agregar Servicio",
-                        javax.swing.JOptionPane.YES_NO_OPTION);
+                        javax.swing.JOptionPane.YES_NO_OPTION,
+                        javax.swing.JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        opcionesConfirmar,
+                        opcionesConfirmar[0]);
 
                 if (confirmacion == javax.swing.JOptionPane.YES_OPTION) {
                     // Insertar en la tabla cita_has_servicios CON idCita
@@ -453,7 +463,7 @@ public class NewJRevPag extends javax.swing.JFrame {
                     psUpdateMonto.close();
 
                     javax.swing.JOptionPane.showMessageDialog(this,
-                            "✅ Servicio agregado exitosamente\n"
+                            " Servicio agregado exitosamente\n"
                             + "Servicio: " + servicioSeleccionado + "\n"
                             + "Cita asociada: #" + idCita + "\n"
                             + "Monto actualizado: +$" + precio,
@@ -525,14 +535,19 @@ public class NewJRevPag extends javax.swing.JFrame {
             }
 
             // CONFIRMAR creación de la cita
-            int confirmacion = javax.swing.JOptionPane.showConfirmDialog(this,
+            Object[] opciones = {"Sí", "No"};
+            int confirmacion = javax.swing.JOptionPane.showOptionDialog(this,
                     "¿Confirmar creación de cita?\n\n"
                     + "Cliente: " + nombreCliente + "\n"
                     + "Fecha: " + fechaCita + "\n"
                     + "Hora: 10:00 AM\n"
                     + "Estado: Confirmada",
                     "Confirmar Creación de Cita",
-                    javax.swing.JOptionPane.YES_NO_OPTION);
+                    javax.swing.JOptionPane.YES_NO_OPTION,
+                    javax.swing.JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opciones,
+                    opciones[0]);
 
             if (confirmacion == javax.swing.JOptionPane.YES_OPTION) {
                 String sqlInsertCita = "INSERT INTO cita (idUsuarios, Fecha, Hora, Estado, Pago_idPago) VALUES (?, ?, '10:00:00', 'Confirmada', ?)";
@@ -1050,7 +1065,6 @@ public class NewJRevPag extends javax.swing.JFrame {
     }//GEN-LAST:event_jButton5ActionPerformed
 
     private void jButton6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton6ActionPerformed
-        // TODO add your handling code here:
         int selectedRow = jTable1.getSelectedRow();
         if (selectedRow == -1) {
             javax.swing.JOptionPane.showMessageDialog(this,
@@ -1065,13 +1079,18 @@ public class NewJRevPag extends javax.swing.JFrame {
             String cliente = jTable1.getValueAt(selectedRow, 1).toString();
             String monto = jTable1.getValueAt(selectedRow, 2).toString();
 
-            int confirmacion = javax.swing.JOptionPane.showConfirmDialog(this,
+            Object[] opciones = {"Sí", "No"};
+            int confirmacion = javax.swing.JOptionPane.showOptionDialog(this,
                     "¿Estás seguro de que quieres eliminar este pago?\n\n"
                     + "Cliente: " + cliente + "\n"
                     + "Monto: " + monto + "\n"
                     + "ID: " + idPago,
                     "Confirmar Eliminación",
-                    javax.swing.JOptionPane.YES_NO_OPTION);
+                    javax.swing.JOptionPane.YES_NO_OPTION,
+                    javax.swing.JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    opciones,
+                    opciones[1]); // "No" como opción por defecto
 
             if (confirmacion == javax.swing.JOptionPane.YES_OPTION) {
                 // Eliminar de la base de datos
@@ -1104,6 +1123,7 @@ public class NewJRevPag extends javax.swing.JFrame {
                     javax.swing.JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
+
     }//GEN-LAST:event_jButton6ActionPerformed
 
     private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
