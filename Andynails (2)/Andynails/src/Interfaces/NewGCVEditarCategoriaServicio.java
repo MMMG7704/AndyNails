@@ -23,7 +23,7 @@ import andynails.RedesSociales;
  */
 public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
-        // Variable para guardar la ruta de la imagen seleccionada
+    // Variable para guardar la ruta de la imagen seleccionada
     private String rutaImagen = "";
 
     /**
@@ -31,67 +31,78 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
      */
     public NewGCVEditarCategoriaServicio() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
     }
 
-    
     private void cargarCategoriasPorServicio(String nombreServicio) {
-    jComboCategoria.removeAllItems();
-    try (Connection conn = ConexionBD.getConnection()) {
-        String sql = """
+        jComboCategoria.removeAllItems();
+        try (Connection conn = ConexionBD.getConnection()) {
+            String sql = """
             SELECT cs.Nombre_categoria 
             FROM categoria_servicio cs
             INNER JOIN servicios s ON s.idServicios = cs.idServicios
             WHERE s.Nombre_servicio = ?;
         """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nombreServicio);
-            ResultSet rs = ps.executeQuery();
-            while (rs.next()) {
-                jComboCategoria.addItem(rs.getString("Nombre_categoria"));
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, nombreServicio);
+                ResultSet rs = ps.executeQuery();
+                while (rs.next()) {
+                    jComboCategoria.addItem(rs.getString("Nombre_categoria"));
+                }
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
         }
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
     }
-}
-    
-    
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
     private void cargarDatosCategoria(String servicio, String categoria) {
-    try (Connection conn = ConexionBD.getConnection()) {
-        String sql = """
+        try (Connection conn = ConexionBD.getConnection()) {
+            String sql = """
             SELECT cs.Descripcion, cs.Precio, cs.Imagen_Archivo
             FROM categoria_servicio cs
             INNER JOIN servicios s ON s.idServicios = cs.idServicios
             WHERE s.Nombre_servicio = ? AND cs.Nombre_categoria = ?;
         """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, servicio);
-            ps.setString(2, categoria);
-            ResultSet rs = ps.executeQuery();
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, servicio);
+                ps.setString(2, categoria);
+                ResultSet rs = ps.executeQuery();
 
-            if (rs.next()) {
-                jTextField2nombreservici.setText(categoria);
-                jTextField1descripcion.setText(rs.getString("Descripcion"));
-                jTextFieldprecio.setText(rs.getString("Precio"));
+                if (rs.next()) {
+                    jTextField2nombreservici.setText(categoria);
+                    jTextField1descripcion.setText(rs.getString("Descripcion"));
+                    jTextFieldprecio.setText(rs.getString("Precio"));
 
-                String ruta = rs.getString("Imagen_Archivo");
-                rutaImagen = ruta;
-                if (ruta != null && !ruta.isEmpty()) {
-                    ImageIcon icono = new ImageIcon(ruta);
-                    Image img = icono.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
-                    jLabelImagen.setIcon(new ImageIcon(img));
-                } else {
-                    jLabelImagen.setIcon(null);
+                    String ruta = rs.getString("Imagen_Archivo");
+                    rutaImagen = ruta;
+                    if (ruta != null && !ruta.isEmpty()) {
+                        ImageIcon icono = new ImageIcon(ruta);
+                        Image img = icono.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+                        jLabelImagen.setIcon(new ImageIcon(img));
+                    } else {
+                        jLabelImagen.setIcon(null);
+                    }
                 }
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
         }
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
     }
-}
-
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -139,6 +150,8 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         jLabel5.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel5.setText("Categoria de cada servicio");
@@ -433,6 +446,18 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -457,7 +482,7 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
     private void btninsertarimgActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btninsertarimgActionPerformed
         // TODO add your handling code here:
-     JFileChooser chooser = new JFileChooser();
+        JFileChooser chooser = new JFileChooser();
         chooser.setDialogTitle("Seleccionar imagen");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
         FileNameExtensionFilter filter = new FileNameExtensionFilter(
@@ -479,44 +504,44 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
     private void btnactualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnactualizarActionPerformed
         // TODO add your handling code here:
-    String servicio = (String) jComboServicios.getSelectedItem();
-    String categoria = (String) jComboCategoria.getSelectedItem();
-    String descripcion = jTextField1descripcion.getText().trim();
-    String precioStr = jTextFieldprecio.getText().trim();
-    String nuevaCategoria = jTextField2nombreservici.getText().trim();
+        String servicio = (String) jComboServicios.getSelectedItem();
+        String categoria = (String) jComboCategoria.getSelectedItem();
+        String descripcion = jTextField1descripcion.getText().trim();
+        String precioStr = jTextFieldprecio.getText().trim();
+        String nuevaCategoria = jTextField2nombreservici.getText().trim();
 
-    if (servicio == null || categoria == null || descripcion.isEmpty() || precioStr.isEmpty() || nuevaCategoria.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Por favor completa todos los campos.");
-        return;
-    }
+        if (servicio == null || categoria == null || descripcion.isEmpty() || precioStr.isEmpty() || nuevaCategoria.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Por favor completa todos los campos.");
+            return;
+        }
 
-    try (Connection conn = ConexionBD.getConnection()) {
-        String sql = """
+        try (Connection conn = ConexionBD.getConnection()) {
+            String sql = """
             UPDATE categoria_servicio cs
             INNER JOIN servicios s ON s.idServicios = cs.idServicios
             SET cs.Nombre_categoria = ?, cs.Descripcion = ?, cs.Precio = ?, cs.Imagen_Archivo = ?
             WHERE s.Nombre_servicio = ? AND cs.Nombre_categoria = ?;
         """;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nuevaCategoria);
-            ps.setString(2, descripcion);
-            ps.setBigDecimal(3, new java.math.BigDecimal(precioStr));
-            ps.setString(4, rutaImagen);
-            ps.setString(5, servicio);
-            ps.setString(6, categoria);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, nuevaCategoria);
+                ps.setString(2, descripcion);
+                ps.setBigDecimal(3, new java.math.BigDecimal(precioStr));
+                ps.setString(4, rutaImagen);
+                ps.setString(5, servicio);
+                ps.setString(6, categoria);
 
-            int filas = ps.executeUpdate();
-            if (filas > 0) {
-                JOptionPane.showMessageDialog(this, "Categoría actualizada correctamente.");
-                cargarCategoriasPorServicio(servicio); // refresca lista
-                jComboCategoria.setSelectedItem(nuevaCategoria);
-            } else {
-                JOptionPane.showMessageDialog(this, "No se encontró la categoría a actualizar.");
+                int filas = ps.executeUpdate();
+                if (filas > 0) {
+                    JOptionPane.showMessageDialog(this, "Categoría actualizada correctamente.");
+                    cargarCategoriasPorServicio(servicio); // refresca lista
+                    jComboCategoria.setSelectedItem(nuevaCategoria);
+                } else {
+                    JOptionPane.showMessageDialog(this, "No se encontró la categoría a actualizar.");
+                }
             }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
         }
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
-    }
 
     }//GEN-LAST:event_btnactualizarActionPerformed
 
@@ -534,27 +559,27 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
     private void jComboServiciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboServiciosActionPerformed
         // TODO add your handling code here:
-    String servicioSeleccionado = (String) jComboServicios.getSelectedItem();
-    cargarCategoriasPorServicio(servicioSeleccionado);
+        String servicioSeleccionado = (String) jComboServicios.getSelectedItem();
+        cargarCategoriasPorServicio(servicioSeleccionado);
         //cargarTabla(cat);
     }//GEN-LAST:event_jComboServiciosActionPerformed
 
     private void jComboCategoriaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboCategoriaActionPerformed
         // TODO add your handling code here:
-            String servicioSeleccionado = (String) jComboServicios.getSelectedItem();
-    String categoriaSeleccionada = (String) jComboCategoria.getSelectedItem();
-    if (categoriaSeleccionada != null) {
-        cargarDatosCategoria(servicioSeleccionado, categoriaSeleccionada);
-    }
+        String servicioSeleccionado = (String) jComboServicios.getSelectedItem();
+        String categoriaSeleccionada = (String) jComboCategoria.getSelectedItem();
+        if (categoriaSeleccionada != null) {
+            cargarDatosCategoria(servicioSeleccionado, categoriaSeleccionada);
+        }
 
     }//GEN-LAST:event_jComboCategoriaActionPerformed
 
     private void btncancelarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarActionPerformed
         // TODO add your handling code here:
-                 this.dispose();
- NewGCVCategoriaServicio NewGCVCategoriaServicio = new NewGCVCategoriaServicio(); // <-- PASAMOS "this"
+        this.dispose();
+        NewGCVCategoriaServicio NewGCVCategoriaServicio = new NewGCVCategoriaServicio(); // <-- PASAMOS "this"
         NewGCVCategoriaServicio.setVisible(true);
-        
+
     }//GEN-LAST:event_btncancelarActionPerformed
 
     private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
@@ -600,6 +625,11 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -660,6 +690,7 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JLabel jLabelImagen;
     private javax.swing.JMenu jMenu12;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -672,6 +703,7 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JTextField jTextField1descripcion;

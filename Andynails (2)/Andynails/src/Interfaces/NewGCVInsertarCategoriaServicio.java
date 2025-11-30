@@ -26,24 +26,23 @@ import javax.swing.filechooser.FileNameExtensionFilter;
  */
 public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
 
-  private File archivoSeleccionado; // Archivo de imagen seleccionado
+    private File archivoSeleccionado; // Archivo de imagen seleccionado
     private int idServicio; // ID del servicio
     private String nombreServicio; // Nombre del servicio
 
-
- public void setDatosServicio(int idServicio, String nombreServicio) {
+    public void setDatosServicio(int idServicio, String nombreServicio) {
         this.idServicio = idServicio;
         this.nombreServicio = nombreServicio;
 
         // Si quieres, puedes actualizar un label invisible o algún campo de texto
         // para mantener la referencia dentro de la ventana
         System.out.println("Servicio recibido: " + nombreServicio + " con ID: " + idServicio);
- }
+    }
 
-   public NewGCVInsertarCategoriaServicio() {
+    public NewGCVInsertarCategoriaServicio() {
         initComponents();
         cargarServicios();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
     }
 
@@ -54,29 +53,23 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
         jLabelImagen.setIcon(null);
         archivoSeleccionado = null;
     }
-    
-   // public NewGCVInsertarCategoriaServicio() {
-     //   initComponents();
-       // jComboServicios = new javax.swing.JComboBox<>();
-       //cargarServicios(); // Método que carga los servicios desde BD
 
-    //}
-    
-    
-  //  public void setNombreServicio(String nombreServicio) {
-    //jLabelServicio.setText(nombreServicio);
-//}
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
 
- //public void setDatosServicio(int id, String nombre) {
-   // this.idServicioSeleccionado = id; // variable de tu clase
-    //jLabelServicio.setText(nombre);   // muestra el nombre del servicio
-//}
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
 
- 
-  private void cargarServicios() {
-        try (Connection con = ConexionBD.getConnection();
-             PreparedStatement ps = con.prepareStatement("SELECT Nombre_servicio FROM servicios");
-             java.sql.ResultSet rs = ps.executeQuery()) {
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
+    private void cargarServicios() {
+        try (Connection con = ConexionBD.getConnection(); PreparedStatement ps = con.prepareStatement("SELECT Nombre_servicio FROM servicios"); java.sql.ResultSet rs = ps.executeQuery()) {
 
             jComboServicios.removeAllItems();
             while (rs.next()) {
@@ -89,8 +82,7 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
         }
     }
 
-
- // Método auxiliar para obtener el id del servicio por su nombre
+    // Método auxiliar para obtener el id del servicio por su nombre
     private int obtenerIdServicioPorNombre(String nombreServicio) {
         int id = -1;
         try (Connection con = ConexionBD.getConnection()) {
@@ -107,8 +99,6 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
         return id;
     }
 
-  
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -151,6 +141,8 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -396,6 +388,18 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -416,7 +420,7 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-   String nombre = jTextFieldNombrecategoria.getText().trim();
+        String nombre = jTextFieldNombrecategoria.getText().trim();
         String descripcion = jTextFieldDescripcion.getText().trim();
         String precioText = jTextFieldPrecio.getText().trim();
 
@@ -439,9 +443,8 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
 
         String rutaImagen = archivoSeleccionado.getAbsolutePath();
 
-        try (Connection con = ConexionBD.getConnection();
-             PreparedStatement ps = con.prepareStatement(
-                     "INSERT INTO categoria_servicio (idServicios, Imagen_Archivo, Nombre_categoria, Descripcion, Precio) VALUES (?, ?, ?, ?, ?)")) {
+        try (Connection con = ConexionBD.getConnection(); PreparedStatement ps = con.prepareStatement(
+                "INSERT INTO categoria_servicio (idServicios, Imagen_Archivo, Nombre_categoria, Descripcion, Precio) VALUES (?, ?, ?, ?, ?)")) {
 
             ps.setInt(1, idServicioSeleccionado);
             ps.setString(2, rutaImagen);
@@ -534,6 +537,11 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -588,6 +596,7 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JLabel jLabelImagen;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
@@ -601,6 +610,7 @@ public class NewGCVInsertarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem23;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel5;
     private javax.swing.JTextField jTextFieldDescripcion;

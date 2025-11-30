@@ -36,39 +36,38 @@ public class NewJBloqueoHorario extends javax.swing.JFrame {
         initComponents();
         configurarSeleccionFecha();
         cargarHoras();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
     }
-private void configurarSeleccionFecha() {
-    // Actualizar calendario al cambiar el mes
-    jMonthChooser1.addPropertyChangeListener("month", evt -> {
-        int mesSeleccionado = jMonthChooser1.getMonth();
-        Calendar cal = Calendar.getInstance();
-        cal.set(Calendar.MONTH, mesSeleccionado);
-        cal.set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR));
-        jDayChooser2.setMonth(cal.get(Calendar.MONTH));
-        jDayChooser2.setYear(cal.get(Calendar.YEAR));
-    });
 
-    // Mostrar fecha al seleccionar un día
-    jDayChooser2.addPropertyChangeListener("day", evt -> {
-        int dia = jDayChooser2.getDay();
-        if(dia > 0) { // para evitar 0 al iniciar
-            int mes = jMonthChooser1.getMonth() + 1; // enero = 0
-            int anio = Calendar.getInstance().get(Calendar.YEAR);
-            lblFecha.setText(dia + "/" + mes + "/" + anio);
-        }
-    });
-    
-    
-      // Inicializar lblFecha con la fecha de hoy
-    Calendar hoy = Calendar.getInstance();
-    jDayChooser2.setDay(hoy.get(Calendar.DAY_OF_MONTH));
-    jMonthChooser1.setMonth(hoy.get(Calendar.MONTH));
-    lblFecha.setText(hoy.get(Calendar.DAY_OF_MONTH) + "/" + (hoy.get(Calendar.MONTH)+1) + "/" + hoy.get(Calendar.YEAR));
+    private void configurarSeleccionFecha() {
+        // Actualizar calendario al cambiar el mes
+        jMonthChooser1.addPropertyChangeListener("month", evt -> {
+            int mesSeleccionado = jMonthChooser1.getMonth();
+            Calendar cal = Calendar.getInstance();
+            cal.set(Calendar.MONTH, mesSeleccionado);
+            cal.set(Calendar.YEAR, Calendar.getInstance().get(Calendar.YEAR));
+            jDayChooser2.setMonth(cal.get(Calendar.MONTH));
+            jDayChooser2.setYear(cal.get(Calendar.YEAR));
+        });
 
-}
+        // Mostrar fecha al seleccionar un día
+        jDayChooser2.addPropertyChangeListener("day", evt -> {
+            int dia = jDayChooser2.getDay();
+            if (dia > 0) { // para evitar 0 al iniciar
+                int mes = jMonthChooser1.getMonth() + 1; // enero = 0
+                int anio = Calendar.getInstance().get(Calendar.YEAR);
+                lblFecha.setText(dia + "/" + mes + "/" + anio);
+            }
+        });
+
+        // Inicializar lblFecha con la fecha de hoy
+        Calendar hoy = Calendar.getInstance();
+        jDayChooser2.setDay(hoy.get(Calendar.DAY_OF_MONTH));
+        jMonthChooser1.setMonth(hoy.get(Calendar.MONTH));
+        lblFecha.setText(hoy.get(Calendar.DAY_OF_MONTH) + "/" + (hoy.get(Calendar.MONTH) + 1) + "/" + hoy.get(Calendar.YEAR));
+
+    }
 
     private void cargarHoras() {
         cbHorainicio.removeAllItems();
@@ -98,6 +97,20 @@ private void configurarSeleccionFecha() {
         } catch (Exception e) {
             return "00:00";
         }
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     /**
@@ -149,6 +162,8 @@ private void configurarSeleccionFecha() {
         jMenuItem9 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setBackground(new java.awt.Color(243, 224, 255));
@@ -497,6 +512,18 @@ private void configurarSeleccionFecha() {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -519,46 +546,46 @@ private void configurarSeleccionFecha() {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-    try {
-        // Obtener fecha y convertir a java.sql.Date
-        String fechaStr = lblFecha.getText(); // ejemplo: "21/10/2025"
-        if (fechaStr == null || fechaStr.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Selecciona una fecha.");
-            return;
-        }
-        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
-        java.util.Date fechaUtil = sdf.parse(fechaStr);
-        java.sql.Date fechaSQL = new java.sql.Date(fechaUtil.getTime());
+        try {
+            // Obtener fecha y convertir a java.sql.Date
+            String fechaStr = lblFecha.getText(); // ejemplo: "21/10/2025"
+            if (fechaStr == null || fechaStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Selecciona una fecha.");
+                return;
+            }
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
+            java.util.Date fechaUtil = sdf.parse(fechaStr);
+            java.sql.Date fechaSQL = new java.sql.Date(fechaUtil.getTime());
 
-        // Obtener horas y motivo
-        String horaInicioStr = (String) cbHorainicio.getSelectedItem();
-        String horaFinStr = (String) cbHorafinal.getSelectedItem();
-        String motivo = txtMotivo.getText();
-        int idUsuario = 1; // Cambia por el usuario logueado
+            // Obtener horas y motivo
+            String horaInicioStr = (String) cbHorainicio.getSelectedItem();
+            String horaFinStr = (String) cbHorafinal.getSelectedItem();
+            String motivo = txtMotivo.getText();
+            int idUsuario = 1; // Cambia por el usuario logueado
 
-        if (horaInicioStr == null || horaFinStr == null || motivo.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Completa todos los campos antes de guardar.");
-            return;
-        }
+            if (horaInicioStr == null || horaFinStr == null || motivo.trim().isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Completa todos los campos antes de guardar.");
+                return;
+            }
 
-        // Convertir a LocalTime y luego a Time SQL
-        LocalTime horaInicioLocal = parseHora(horaInicioStr);
-        LocalTime horaFinLocal = parseHora(horaFinStr);
+            // Convertir a LocalTime y luego a Time SQL
+            LocalTime horaInicioLocal = parseHora(horaInicioStr);
+            LocalTime horaFinLocal = parseHora(horaFinStr);
 
-        if (horaFinLocal.isBefore(horaInicioLocal) || horaFinLocal.equals(horaInicioLocal)) {
-            JOptionPane.showMessageDialog(this, "La hora fin debe ser posterior a la hora inicio.");
-            return;
-        }
+            if (horaFinLocal.isBefore(horaInicioLocal) || horaFinLocal.equals(horaInicioLocal)) {
+                JOptionPane.showMessageDialog(this, "La hora fin debe ser posterior a la hora inicio.");
+                return;
+            }
 
-        Time horaInicioSQL = Time.valueOf(horaInicioLocal);
-        Time horaFinSQL = Time.valueOf(horaFinLocal);
+            Time horaInicioSQL = Time.valueOf(horaInicioLocal);
+            Time horaFinSQL = Time.valueOf(horaFinLocal);
 
-       // Conectarse a la base de datos usando tu clase ConexionBD
-        ConexionBD cbd = new ConexionBD();
-        try (Connection conn = cbd.getConexion()) {
+            // Conectarse a la base de datos usando tu clase ConexionBD
+            ConexionBD cbd = new ConexionBD();
+            try (Connection conn = cbd.getConexion()) {
 
-            // Verificar superposición de horarios
-            String check = """
+                // Verificar superposición de horarios
+                String check = """
                 SELECT COUNT(*) FROM Bloqueo_Horario
                 WHERE Fecha = ?
                 AND (
@@ -567,45 +594,45 @@ private void configurarSeleccionFecha() {
                     (Hora_inicio >= ? AND Hora_fin <= ?)
                 )
                 """;
-            try (PreparedStatement psCheck = conn.prepareStatement(check)) {
-                psCheck.setDate(1, fechaSQL);
-                psCheck.setTime(2, horaFinSQL);
-                psCheck.setTime(3, horaInicioSQL);
-                psCheck.setTime(4, horaFinSQL);
-                psCheck.setTime(5, horaInicioSQL);
-                psCheck.setTime(6, horaInicioSQL);
-                psCheck.setTime(7, horaFinSQL);
-                try (ResultSet rs = psCheck.executeQuery()) {
-                    if (rs.next() && rs.getInt(1) > 0) {
-                        JOptionPane.showMessageDialog(this, "Ese horario ya está bloqueado o se superpone con otro bloqueo.");
-                        return;
+                try (PreparedStatement psCheck = conn.prepareStatement(check)) {
+                    psCheck.setDate(1, fechaSQL);
+                    psCheck.setTime(2, horaFinSQL);
+                    psCheck.setTime(3, horaInicioSQL);
+                    psCheck.setTime(4, horaFinSQL);
+                    psCheck.setTime(5, horaInicioSQL);
+                    psCheck.setTime(6, horaInicioSQL);
+                    psCheck.setTime(7, horaFinSQL);
+                    try (ResultSet rs = psCheck.executeQuery()) {
+                        if (rs.next() && rs.getInt(1) > 0) {
+                            JOptionPane.showMessageDialog(this, "Ese horario ya está bloqueado o se superpone con otro bloqueo.");
+                            return;
+                        }
                     }
                 }
+
+                // Insertar nuevo bloqueo
+                String sql = "INSERT INTO Bloqueo_Horario (idUsuarios, Fecha, Hora_inicio, Hora_fin, Motivo) VALUES (?, ?, ?, ?, ?)";
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setInt(1, idUsuario);
+                    ps.setDate(2, fechaSQL);
+                    ps.setTime(3, horaInicioSQL);
+                    ps.setTime(4, horaFinSQL);
+                    ps.setString(5, motivo.trim());
+                    ps.executeUpdate();
+                }
+
+                JOptionPane.showMessageDialog(this, "Bloqueo registrado correctamente.");
+                txtMotivo.setText("");
+
             }
 
-            // Insertar nuevo bloqueo
-            String sql = "INSERT INTO Bloqueo_Horario (idUsuarios, Fecha, Hora_inicio, Hora_fin, Motivo) VALUES (?, ?, ?, ?, ?)";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, idUsuario);
-                ps.setDate(2, fechaSQL);
-                ps.setTime(3, horaInicioSQL);
-                ps.setTime(4, horaFinSQL);
-                ps.setString(5, motivo.trim());
-                ps.executeUpdate();
-            }
-
-            JOptionPane.showMessageDialog(this, "Bloqueo registrado correctamente.");
-            txtMotivo.setText("");
-
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al guardar en la base de datos: " + ex.getMessage());
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
         }
-
-    } catch (SQLException ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al guardar en la base de datos: " + ex.getMessage());
-    } catch (Exception ex) {
-        ex.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage());
-    }
 
     }//GEN-LAST:event_btnGuardarActionPerformed
 
@@ -681,20 +708,20 @@ private void configurarSeleccionFecha() {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-            // Cierra la ventana actual
-    this.dispose();
+        // Cierra la ventana actual
+        this.dispose();
 
-    // Abre la ventana principal (cambia "Inicio" por el nombre de tu JFrame principal)
-    NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
-    NewJPanelAdministracion.setVisible(true);
-    NewJPanelAdministracion.setLocationRelativeTo(null); // Para que aparezca centrado
+        // Abre la ventana principal (cambia "Inicio" por el nombre de tu JFrame principal)
+        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion.setVisible(true);
+        NewJPanelAdministracion.setLocationRelativeTo(null); // Para que aparezca centrado
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
         // TODO add your handling code here:
         NewJBloqueosExistentess NewJBloqueosExistentess = new NewJBloqueosExistentess();
-    NewJBloqueosExistentess.setVisible(true);
-    NewJBloqueosExistentess.setLocationRelativeTo(null); // Para que aparezca centrado
+        NewJBloqueosExistentess.setVisible(true);
+        NewJBloqueosExistentess.setLocationRelativeTo(null); // Para que aparezca centrado
     }//GEN-LAST:event_jMenuItem10ActionPerformed
 
     private void jMenuItem19ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem19ActionPerformed
@@ -733,6 +760,11 @@ private void configurarSeleccionFecha() {
         NewJAgenC.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -787,6 +819,7 @@ private void configurarSeleccionFecha() {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu6;
@@ -805,6 +838,7 @@ private void configurarSeleccionFecha() {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private com.toedter.calendar.JMonthChooser jMonthChooser1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel7;

@@ -37,7 +37,7 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
     public NewGCVEliminarCategoriaServicio() {
         initComponents();
         cargarServicios();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
 // Inicializar servicio seleccionado
         if (jComboServicios.getItemCount() > 0) {
@@ -54,6 +54,20 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
                 }
             }
         });
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     // Método para cargar tabla según la categoría
@@ -226,6 +240,8 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu19 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jDialog1Layout = new javax.swing.GroupLayout(jDialog1.getContentPane());
         jDialog1.getContentPane().setLayout(jDialog1Layout);
@@ -601,6 +617,18 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu19.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu19.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu19);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -733,6 +761,11 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -798,6 +831,7 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu18;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -826,6 +860,7 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

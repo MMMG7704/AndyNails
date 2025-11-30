@@ -78,6 +78,20 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
     }
 
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
     private boolean puedeSeleccionar() {
         if (!andynails.SesionUsuario.sesionActiva()) {
             javax.swing.JOptionPane.showMessageDialog(this,
@@ -208,24 +222,24 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         this.dispose();
     }
 
-    
     // En el método donde se selecciona "Francesas Blancas"
-private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {                                                 
-    System.out.println("=== SELECCIONANDO FRANCESAS BLANCAS ===");
-    
-    ImageIcon imagen = new ImageIcon(getClass().getResource("/Img/francesas.jpg"));
-    String descripcion = "Francesas Blancas";
-    String precio = "$350";
-    
-    System.out.println("DEBUG - Creando servicio:");
-    System.out.println("Descripción: " + descripcion);
-    System.out.println("Precio: " + precio);
-    
-    // Abrir ventana de agendamiento
-    NewJAgenC agendar = new NewJAgenC(imagen, descripcion, precio);
-    agendar.setVisible(true);
-    this.dispose();
-} 
+    private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
+        System.out.println("=== SELECCIONANDO FRANCESAS BLANCAS ===");
+
+        ImageIcon imagen = new ImageIcon(getClass().getResource("/Img/francesas.jpg"));
+        String descripcion = "Francesas Blancas";
+        String precio = "$350";
+
+        System.out.println("DEBUG - Creando servicio:");
+        System.out.println("Descripción: " + descripcion);
+        System.out.println("Precio: " + precio);
+
+        // Abrir ventana de agendamiento
+        NewJAgenC agendar = new NewJAgenC(imagen, descripcion, precio);
+        agendar.setVisible(true);
+        this.dispose();
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -277,6 +291,8 @@ private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
         jMenuItem5 = new javax.swing.JMenuItem();
         jMenu8 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         jMenu5.setText("File");
         jMenuBar2.add(jMenu5);
@@ -599,6 +615,18 @@ private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
 
         jMenuBar1.add(jMenu8);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -702,6 +730,11 @@ private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -754,6 +787,7 @@ private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JLabel jLabel7;
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
@@ -769,6 +803,7 @@ private void jButtonFrancesasActionPerformed(java.awt.event.ActionEvent evt) {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;

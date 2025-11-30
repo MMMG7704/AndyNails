@@ -37,6 +37,7 @@ public class NewGCV extends javax.swing.JFrame {
     /**
      * Creates new form NewGCV
      */
+    
     public NewGCV() {
         initComponents();
         cargarServicios(); // carga los servicios desde la BD
@@ -54,6 +55,16 @@ public class NewGCV extends javax.swing.JFrame {
                 cargarTabla(seleccionado.toString());
             }
         });
+    }
+
+ 
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
 // Método seguro para actualizar combo después de insertar un servicio
@@ -119,9 +130,8 @@ public class NewGCV extends javax.swing.JFrame {
         modelo.addColumn("Nombre");
         modelo.addColumn("Precio");
 
-      //  jTable1setvicio.setRowHeight(120); // Altura suficiente para las imágenes
-       // jTable1setvicio.setModel(modelo);
-
+        //  jTable1setvicio.setRowHeight(120); // Altura suficiente para las imágenes
+        // jTable1setvicio.setModel(modelo);
         // Rutas base (usuario mgmmo) - las que compartiste
         String base = "C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\rubi\\Andynails (2)\\Andynails\\src\\Img\\";
 
@@ -316,46 +326,44 @@ public class NewGCV extends javax.swing.JFrame {
             e.printStackTrace();
         }
     }
-    
-    
-    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {                                          
-    String servicioSeleccionado = jComboBox1.getSelectedItem().toString();
 
-    if (servicioSeleccionado == null || servicioSeleccionado.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Selecciona un servicio para editar.");
-        return;
-    }
+    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {
+        String servicioSeleccionado = jComboBox1.getSelectedItem().toString();
 
-    try (Connection conn = DriverManager.getConnection(
-            "jdbc:mariadb://localhost:3307/andynails", "root", "mora")) {
-
-        String sql = "SELECT Nombre_servicio, Descripcion, Precio FROM servicios WHERE Nombre_servicio = ?";
-        PreparedStatement ps = conn.prepareStatement(sql);
-        ps.setString(1, servicioSeleccionado);
-        var rs = ps.executeQuery();
-
-        if (rs.next()) {
-            String nombre = rs.getString("Nombre_servicio");
-            String descripcion = rs.getString("Descripcion");
-            String precio = rs.getString("Precio");
-
-            // 🔹 Crear la ventana de edición y pasarle los datos
-            NewGCVInsertar ventanaEditar = new NewGCVInsertar();
-            ventanaEditar.setVisible(true);
-
-            // Llenar los campos con los valores obtenidos
-            ventanaEditar.llenarCampos(nombre, descripcion, precio);
-
-            this.dispose(); // cerrar ventana actual si quieres
-        } else {
-            JOptionPane.showMessageDialog(this, "No se encontró información del servicio.");
+        if (servicioSeleccionado == null || servicioSeleccionado.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecciona un servicio para editar.");
+            return;
         }
 
-    } catch (Exception e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
-    }
-}
+        try (Connection conn = DriverManager.getConnection(
+                "jdbc:mariadb://localhost:3307/andynails", "root", "mora")) {
 
+            String sql = "SELECT Nombre_servicio, Descripcion, Precio FROM servicios WHERE Nombre_servicio = ?";
+            PreparedStatement ps = conn.prepareStatement(sql);
+            ps.setString(1, servicioSeleccionado);
+            var rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String nombre = rs.getString("Nombre_servicio");
+                String descripcion = rs.getString("Descripcion");
+                String precio = rs.getString("Precio");
+
+                // 🔹 Crear la ventana de edición y pasarle los datos
+                NewGCVInsertar ventanaEditar = new NewGCVInsertar();
+                ventanaEditar.setVisible(true);
+
+                // Llenar los campos con los valores obtenidos
+                ventanaEditar.llenarCampos(nombre, descripcion, precio);
+
+                this.dispose(); // cerrar ventana actual si quieres
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontró información del servicio.");
+            }
+
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -392,6 +400,8 @@ public class NewGCV extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -603,6 +613,18 @@ public class NewGCV extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -640,52 +662,52 @@ public class NewGCV extends javax.swing.JFrame {
     private void btnEditar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditar1ActionPerformed
         // TODO add your handling code here:
 
-    String servicioSeleccionado = jComboBox1.getSelectedItem().toString();
+        String servicioSeleccionado = jComboBox1.getSelectedItem().toString();
 
-    if (servicioSeleccionado == null || servicioSeleccionado.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Selecciona un servicio para editar.");
-        return;
-    }
+        if (servicioSeleccionado == null || servicioSeleccionado.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecciona un servicio para editar.");
+            return;
+        }
 
-    // Crear ventana y pasar el nombre seleccionado
-    NewGCVEditar ventanaEditar = new NewGCVEditar(servicioSeleccionado);
-    ventanaEditar.setVisible(true);
-    this.dispose();
+        // Crear ventana y pasar el nombre seleccionado
+        NewGCVEditar ventanaEditar = new NewGCVEditar(servicioSeleccionado);
+        ventanaEditar.setVisible(true);
+        this.dispose();
 
     }//GEN-LAST:event_btnEditar1ActionPerformed
 
     private void btnEliminar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminar1ActionPerformed
         // TODO add your handling code here:
-    // 🔹 Obtener el nombre del servicio seleccionado en el ComboBox
-    String servicioSeleccionado = (String) jComboBox1.getSelectedItem();
+        // 🔹 Obtener el nombre del servicio seleccionado en el ComboBox
+        String servicioSeleccionado = (String) jComboBox1.getSelectedItem();
 
-    if (servicioSeleccionado == null || servicioSeleccionado.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Selecciona un servicio para eliminar.");
-        return;
-    }
-
-    try (Connection conn = ConexionBD.getConnection()) {
-        // Buscar el ID del servicio seleccionado
-        PreparedStatement ps = conn.prepareStatement(
-            "SELECT idServicios FROM servicios WHERE Nombre_servicio = ?");
-        ps.setString(1, servicioSeleccionado);
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            int id = rs.getInt("idServicios");
-
-            // Abrir ventana de confirmación con el ID y el nombre
-            NewGCVEliminar eliminar = new NewGCVEliminar(id, servicioSeleccionado);
-            eliminar.setVisible(true);
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this,
-                "No se encontró el servicio seleccionado en la base de datos.");
+        if (servicioSeleccionado == null || servicioSeleccionado.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Selecciona un servicio para eliminar.");
+            return;
         }
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this,
-            "Error al buscar el servicio: " + e.getMessage());
-    }
+
+        try (Connection conn = ConexionBD.getConnection()) {
+            // Buscar el ID del servicio seleccionado
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT idServicios FROM servicios WHERE Nombre_servicio = ?");
+            ps.setString(1, servicioSeleccionado);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                int id = rs.getInt("idServicios");
+
+                // Abrir ventana de confirmación con el ID y el nombre
+                NewGCVEliminar eliminar = new NewGCVEliminar(id, servicioSeleccionado);
+                eliminar.setVisible(true);
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                        "No se encontró el servicio seleccionado en la base de datos.");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al buscar el servicio: " + e.getMessage());
+        }
     }//GEN-LAST:event_btnEliminar1ActionPerformed
 
     private void btnEliminar2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminar2ActionPerformed
@@ -737,6 +759,12 @@ public class NewGCV extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem11ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);     
+
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -785,6 +813,7 @@ public class NewGCV extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JMenu jMenu12;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -797,6 +826,7 @@ public class NewGCV extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     // End of variables declaration//GEN-END:variables

@@ -21,8 +21,22 @@ public class NewJCancelarC extends javax.swing.JFrame {
     public NewJCancelarC() {
         initComponents();
         conexion = new ConexionBD("andinails");// Inicializo la conexión a la base de datos
-    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     /**
@@ -61,6 +75,8 @@ public class NewJCancelarC extends javax.swing.JFrame {
         jMenuItem23 = new javax.swing.JMenuItem();
         jMenu4 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -297,6 +313,18 @@ public class NewJCancelarC extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu4);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -323,9 +351,9 @@ public class NewJCancelarC extends javax.swing.JFrame {
 
     private void jMenu1MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu1MenuSelected
         // TODO add your handling code here:
-         //inicio
+        //inicio
         Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);    
+        Inicio.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu1MenuSelected
@@ -342,7 +370,7 @@ public class NewJCancelarC extends javax.swing.JFrame {
         // TODO add your handling code here:
         //boton de contacto
         NewJContacto NewJContacto = new NewJContacto();
-        NewJContacto.setVisible(true);  
+        NewJContacto.setVisible(true);
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem6ActionPerformed
@@ -383,6 +411,11 @@ public class NewJCancelarC extends javax.swing.JFrame {
         catalogo.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem22ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -433,6 +466,7 @@ public class NewJCancelarC extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
@@ -443,6 +477,7 @@ public class NewJCancelarC extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem22;
     private javax.swing.JMenuItem jMenuItem23;
     private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private java.awt.Label label11;

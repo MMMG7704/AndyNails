@@ -34,13 +34,14 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
     private javax.swing.JTextField jTextFieldNombreservicio;
     private javax.swing.JTextField jTextField1; // descripción
     private javax.swing.JTextField jTextFieldPrecio;
+    
 
     /**
      * Creates new form NewGCV
      */
     public NewGCVAgregarServicio() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         // Cargar datos inicialmente según la primera opción del JComboBox
         if (jComboBox1.getItemCount() > 0) {
@@ -58,6 +59,20 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
             cargarTabla(seleccion);
         });
 
+    }
+
+// Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     // Método para cargar la tabla con imágenes, nombre y precio
@@ -257,8 +272,6 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
         return id;
     }
 
-    
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -296,6 +309,8 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -515,6 +530,18 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -541,59 +568,60 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
 
     private void jComboBox1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1ActionPerformed
         // TODO add your handling code here:
-            String cat = jComboBox1.getSelectedItem().toString();
-    cargarTabla(cat);
+        String cat = jComboBox1.getSelectedItem().toString();
+        cargarTabla(cat);
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void btnAgregarserviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarserviciosActionPerformed
         // TODO add your handling code here:
-    String nombre = jTextFieldNombreservicio.getText().trim();
-    String descripcion = jTextField1.getText().trim();
-    String precioText = jTextFieldPrecio.getText().trim();
+        String nombre = jTextFieldNombreservicio.getText().trim();
+        String descripcion = jTextField1.getText().trim();
+        String precioText = jTextFieldPrecio.getText().trim();
 
-    if(nombre.isEmpty()){
-        JOptionPane.showMessageDialog(this, "Debe ingresar un nombre de servicio", "Advertencia", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    double precio = 0;
-    try {
-        if(!precioText.isEmpty())
-            precio = Double.parseDouble(precioText);
-    } catch(NumberFormatException e){
-        JOptionPane.showMessageDialog(this, "Precio inválido", "Error", JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    try {
-        Class.forName("org.mariadb.jdbc.Driver");
-        Connection con = DriverManager.getConnection(
-            "jdbc:mariadb://localhost:3307/andynails", "root", "mora"
-        );
-
-        String sql = "INSERT INTO servicios(Nombre_servicio, Descripcion, Precio) VALUES(?, ?, ?)";
-        PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, nombre);
-        ps.setString(2, descripcion);
-        ps.setDouble(3, precio);
-
-        int filas = ps.executeUpdate();
-        if(filas > 0){
-            JOptionPane.showMessageDialog(this, "¡Servicio agregado correctamente!");
-            // Limpiar campos
-            jTextFieldNombreservicio.setText("");
-            jTextField1.setText("");
-            jTextFieldPrecio.setText("");
+        if (nombre.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debe ingresar un nombre de servicio", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
-        ps.close();
-        con.close();
+        double precio = 0;
+        try {
+            if (!precioText.isEmpty()) {
+                precio = Double.parseDouble(precioText);
+            }
+        } catch (NumberFormatException e) {
+            JOptionPane.showMessageDialog(this, "Precio inválido", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    } catch(ClassNotFoundException e){
-        JOptionPane.showMessageDialog(this, "Driver no encontrado: " + e.getMessage());
-    } catch(SQLException e){
-        JOptionPane.showMessageDialog(this, "Error al guardar: " + e.getMessage());
-    }
+        try {
+            Class.forName("org.mariadb.jdbc.Driver");
+            Connection con = DriverManager.getConnection(
+                    "jdbc:mariadb://localhost:3307/andynails", "root", "mora"
+            );
+
+            String sql = "INSERT INTO servicios(Nombre_servicio, Descripcion, Precio) VALUES(?, ?, ?)";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ps.setString(2, descripcion);
+            ps.setDouble(3, precio);
+
+            int filas = ps.executeUpdate();
+            if (filas > 0) {
+                JOptionPane.showMessageDialog(this, "¡Servicio agregado correctamente!");
+                // Limpiar campos
+                jTextFieldNombreservicio.setText("");
+                jTextField1.setText("");
+                jTextFieldPrecio.setText("");
+            }
+
+            ps.close();
+            con.close();
+
+        } catch (ClassNotFoundException e) {
+            JOptionPane.showMessageDialog(this, "Driver no encontrado: " + e.getMessage());
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al guardar: " + e.getMessage());
+        }
 
 
     }//GEN-LAST:event_btnAgregarserviciosActionPerformed
@@ -601,10 +629,10 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
     private void btninsertarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btninsertarActionPerformed
         // TODO add your handling code here:
 
-         NewGCVInsertar newGCVInsertar = new NewGCVInsertar();
+        NewGCVInsertar newGCVInsertar = new NewGCVInsertar();
         newGCVInsertar.setVisible(true);
         this.dispose(); // cierra la actual
-        
+
     }//GEN-LAST:event_btninsertarActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
@@ -650,6 +678,11 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
         NewJAgenC.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem11ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -700,6 +733,7 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JMenu jMenu12;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -712,6 +746,7 @@ public class NewGCVAgregarServicio extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;

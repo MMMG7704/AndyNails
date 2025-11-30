@@ -19,76 +19,81 @@ import java.sql.SQLException;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-
 /**
  *
  * @author User
  */
 public class NewGCVEditar extends javax.swing.JFrame {
 
-        // Variable para guardar la ruta de la imagen seleccionada
+    // Variable para guardar la ruta de la imagen seleccionada
     private String rutaImagen = "";
     private String nombreOriginal;
     private int idServicio;
-
-
 
     /**
      * Creates new form NewGCV
      */
     public NewGCVEditar() {
         initComponents();
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
     }
 
     private void cargarServiciosEnComboBox() {
-    String sql = "SELECT DISTINCT idServicios, Nombre_categoria FROM categoria_servicio ORDER BY Nombre_categoria ASC";
+        String sql = "SELECT DISTINCT idServicios, Nombre_categoria FROM categoria_servicio ORDER BY Nombre_categoria ASC";
 
-    try (Connection con = ConexionBD.getConnection();
-         PreparedStatement ps = con.prepareStatement(sql);
-         ResultSet rs = ps.executeQuery()) {
+        try (Connection con = ConexionBD.getConnection(); PreparedStatement ps = con.prepareStatement(sql); ResultSet rs = ps.executeQuery()) {
 
-        while (rs.next()) {
-            String nombre = rs.getString("Nombre_categoria");
+            while (rs.next()) {
+                String nombre = rs.getString("Nombre_categoria");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
         }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
     }
-}
 
     public NewGCVEditar(String nombreServicio) {
-    initComponents();
+        initComponents();
         nombreOriginal = nombreServicio; // Guardamos el nombre original
-    cargarDatosServicio(nombreServicio);
-}
-
-    
-    
-private void cargarDatosServicio(String nombreServicio) {
-    try (Connection con = ConexionBD.getConnection();
-         PreparedStatement ps = con.prepareStatement(
-             "SELECT idServicios, Nombre_servicio, Descripcion, Precio FROM servicios WHERE Nombre_servicio = ?")) {
-
-        ps.setString(1, nombreServicio);
-        ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            idServicio = rs.getInt("idServicios"); // 🔹 guardamos el ID
-            jTextField2nombreservici.setText(rs.getString("Nombre_servicio"));
-            jTextField1descripcion.setText(rs.getString("Descripcion"));
-            String precio = rs.getString("Precio");
-            jTextFieldprecio.setText(precio != null ? precio : ""); // Mostrar vacío si es NULL
-        } else {
-            JOptionPane.showMessageDialog(this, "No se encontraron datos del servicio seleccionado.");
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
+        cargarDatosServicio(nombreServicio);
     }
-}
 
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
+    private void cargarDatosServicio(String nombreServicio) {
+        try (Connection con = ConexionBD.getConnection(); PreparedStatement ps = con.prepareStatement(
+                "SELECT idServicios, Nombre_servicio, Descripcion, Precio FROM servicios WHERE Nombre_servicio = ?")) {
+
+            ps.setString(1, nombreServicio);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                idServicio = rs.getInt("idServicios"); // 🔹 guardamos el ID
+                jTextField2nombreservici.setText(rs.getString("Nombre_servicio"));
+                jTextField1descripcion.setText(rs.getString("Descripcion"));
+                String precio = rs.getString("Precio");
+                jTextFieldprecio.setText(precio != null ? precio : ""); // Mostrar vacío si es NULL
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontraron datos del servicio seleccionado.");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar datos: " + e.getMessage());
+        }
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -129,6 +134,8 @@ private void cargarDatosServicio(String nombreServicio) {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         jLabel5.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel5.setText("Categoria de cada servicio");
@@ -353,6 +360,18 @@ private void cargarDatosServicio(String nombreServicio) {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -370,32 +389,32 @@ private void cargarDatosServicio(String nombreServicio) {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnactualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnactualizarActionPerformed
-    try (Connection conn = ConexionBD.getConnection()) {
-        String sql = "UPDATE servicios SET Nombre_servicio=?, Descripcion=?, Precio=? WHERE idServicios=?";
-        PreparedStatement ps = conn.prepareStatement(sql);
+        try (Connection conn = ConexionBD.getConnection()) {
+            String sql = "UPDATE servicios SET Nombre_servicio=?, Descripcion=?, Precio=? WHERE idServicios=?";
+            PreparedStatement ps = conn.prepareStatement(sql);
 
-        ps.setString(1, jTextField2nombreservici.getText());
-        ps.setString(2, jTextField1descripcion.getText());
+            ps.setString(1, jTextField2nombreservici.getText());
+            ps.setString(2, jTextField1descripcion.getText());
 
-        String precioText = jTextFieldprecio.getText().trim();
-        if (precioText.isEmpty()) {
-            ps.setNull(3, java.sql.Types.DECIMAL);
-        } else {
-            ps.setBigDecimal(3, new java.math.BigDecimal(precioText));
+            String precioText = jTextFieldprecio.getText().trim();
+            if (precioText.isEmpty()) {
+                ps.setNull(3, java.sql.Types.DECIMAL);
+            } else {
+                ps.setBigDecimal(3, new java.math.BigDecimal(precioText));
+            }
+
+            ps.setInt(4, idServicio); // 🔹 ahora se busca por ID, no por nombre
+
+            int filas = ps.executeUpdate();
+            if (filas > 0) {
+                JOptionPane.showMessageDialog(this, "Servicio actualizado correctamente.");
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontró el servicio seleccionado.");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
         }
-
-        ps.setInt(4, idServicio); // 🔹 ahora se busca por ID, no por nombre
-
-        int filas = ps.executeUpdate();
-        if (filas > 0) {
-            JOptionPane.showMessageDialog(this, "Servicio actualizado correctamente.");
-        } else {
-            JOptionPane.showMessageDialog(this, "No se encontró el servicio seleccionado.");
-        }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
-    }
 
     }//GEN-LAST:event_btnactualizarActionPerformed
 
@@ -413,8 +432,8 @@ private void cargarDatosServicio(String nombreServicio) {
 
     private void btncancelarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarActionPerformed
         // TODO add your handling code here:
-            this.dispose();
- NewGCV NewGCV = new NewGCV(); // <-- PASAMOS "this"
+        this.dispose();
+        NewGCV NewGCV = new NewGCV(); // <-- PASAMOS "this"
         NewGCV.setVisible(true);
     }//GEN-LAST:event_btncancelarActionPerformed
 
@@ -461,6 +480,11 @@ private void cargarDatosServicio(String nombreServicio) {
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -512,6 +536,7 @@ private void cargarDatosServicio(String nombreServicio) {
     private javax.swing.JLabel jLabel8;
     private javax.swing.JLabel jLabelImagen;
     private javax.swing.JMenu jMenu12;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -524,6 +549,7 @@ private void cargarDatosServicio(String nombreServicio) {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JTextField jTextField1descripcion;

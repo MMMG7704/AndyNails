@@ -34,27 +34,39 @@ public class NewGCVEliminar extends javax.swing.JFrame {
     private javax.swing.JTextField jTextFieldNombreservicio;
     private int idServicio; // Guardará el ID del servicio a eliminar
 
-
     public NewGCVEliminar() {
-        initComponents();    
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        initComponents();
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
     }
 
-  public NewGCVEliminar(int idServicio, String nombreServicio) {
-    initComponents();
-    this.idServicio = idServicio;
+    public NewGCVEliminar(int idServicio, String nombreServicio) {
+        initComponents();
+        this.idServicio = idServicio;
 
-    // Mostrar el nombre del servicio en el JLabel
-    jLabelServicio.setText(nombreServicio);
-    System.out.println("Servicio a eliminar: " + nombreServicio);
+        // Mostrar el nombre del servicio en el JLabel
+        jLabelServicio.setText(nombreServicio);
+        System.out.println("Servicio a eliminar: " + nombreServicio);
 
+        // Ajustes visuales del texto de advertencia
+        jTextField2.setEditable(false);
+        jTextField2.setBorder(null);
+        jTextField2.setBackground(jPanel1.getBackground());
+    }
 
-    // Ajustes visuales del texto de advertencia
-    jTextField2.setEditable(false);
-    jTextField2.setBorder(null);
-    jTextField2.setBackground(jPanel1.getBackground());
-}
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -121,6 +133,8 @@ public class NewGCVEliminar extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu19 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jDialog1Layout = new javax.swing.GroupLayout(jDialog1.getContentPane());
         jDialog1.getContentPane().setLayout(jDialog1Layout);
@@ -456,6 +470,18 @@ public class NewGCVEliminar extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu19.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu19.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu19);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -487,43 +513,43 @@ public class NewGCVEliminar extends javax.swing.JFrame {
 
     private void btneliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btneliminarActionPerformed
         // TODO add your handling code here:
-    String nombreServicio = jLabelServicio.getText();
+        String nombreServicio = jLabelServicio.getText();
 
-    int confirm = JOptionPane.showOptionDialog(this,
-            "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?",
-            "Confirmar eliminación",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.WARNING_MESSAGE,
-            null,
-            new Object[]{"Sí", "No"},
-            "No");
+        int confirm = JOptionPane.showOptionDialog(this,
+                "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?",
+                "Confirmar eliminación",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE,
+                null,
+                new Object[]{"Sí", "No"},
+                "No");
 
-    if (confirm == JOptionPane.YES_OPTION) {
-        try (Connection conn = ConexionBD.getConnection()) {
+        if (confirm == JOptionPane.YES_OPTION) {
+            try (Connection conn = ConexionBD.getConnection()) {
 
-            // 🔹 Eliminar solo el servicio con ese ID
-            PreparedStatement ps = conn.prepareStatement(
-                    "DELETE FROM servicios WHERE idServicios = ?");
-            ps.setInt(1, idServicio);
+                // 🔹 Eliminar solo el servicio con ese ID
+                PreparedStatement ps = conn.prepareStatement(
+                        "DELETE FROM servicios WHERE idServicios = ?");
+                ps.setInt(1, idServicio);
 
-            int filas = ps.executeUpdate();
-            if (filas > 0) {
-                JOptionPane.showMessageDialog(this,
-                        "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.");
-            } else {
-                JOptionPane.showMessageDialog(this,
-                        "El servicio ya no existe en la base de datos.");
+                int filas = ps.executeUpdate();
+                if (filas > 0) {
+                    JOptionPane.showMessageDialog(this,
+                            "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.");
+                } else {
+                    JOptionPane.showMessageDialog(this,
+                            "El servicio ya no existe en la base de datos.");
+                }
+
+                // 🔹 Regresar a la ventana anterior
+                NewGCV vista = new NewGCV();
+                vista.setVisible(true);
+                this.dispose();
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el servicio: " + e.getMessage());
             }
-
-            // 🔹 Regresar a la ventana anterior
-            NewGCV vista = new NewGCV();
-            vista.setVisible(true);
-            this.dispose();
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al eliminar el servicio: " + e.getMessage());
         }
-    }
 
 
     }//GEN-LAST:event_btneliminarActionPerformed
@@ -571,6 +597,11 @@ public class NewGCVEliminar extends javax.swing.JFrame {
         NewJAgenC.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -628,6 +659,7 @@ public class NewGCVEliminar extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu18;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
@@ -656,6 +688,7 @@ public class NewGCVEliminar extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

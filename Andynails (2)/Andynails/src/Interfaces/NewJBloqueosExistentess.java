@@ -20,7 +20,6 @@ import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
 import andynails.RedesSociales;
 
-
 /**
  *
  * @author mgmmo
@@ -35,7 +34,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     public NewJBloqueosExistentess() {
         initComponents();
         llenarTablaBloqueos(); // Llenamos la tabla al iniciar
-                RedesSociales.configurarRedesSociales(INS2, WPP, FACE2);
+        RedesSociales.configurarRedesSociales(INS2, WPP, FACE2);
 
     }
 
@@ -62,6 +61,20 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(null, "Error al llenar tabla: " + e.getMessage());
             e.printStackTrace();
         }
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     /**
@@ -105,6 +118,8 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         jMenuItem9 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu16 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setAutoRequestFocus(false);
@@ -205,7 +220,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
                                 .addComponent(btnEliminar)
                                 .addGap(121, 121, 121)
                                 .addComponent(jButton2)))))
-                .addContainerGap(55, Short.MAX_VALUE))
+                .addContainerGap(233, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -386,6 +401,18 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
+        jMenu16.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu16.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu16);
+
         setJMenuBar(jMenuBar1);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -487,20 +514,19 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
         Object[] opciones = {"Sí", "No"};
         int confirm = JOptionPane.showOptionDialog(
-            null,
-            "¿Seguro que quieres eliminar este bloqueo?",
-            "Confirmar",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            opciones,
-            opciones[1] // "No" seleccionado por defecto
+                null,
+                "¿Seguro que quieres eliminar este bloqueo?",
+                "Confirmar",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE,
+                null,
+                opciones,
+                opciones[1] // "No" seleccionado por defecto
         );
 
         if (confirm == 0) { // 0 = Sí
             String sql = "DELETE FROM bloqueo_horario WHERE idBloqueo_Horario=?";
-            try (Connection conn = conexion.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (Connection conn = conexion.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setInt(1, idBloqueo);
                 ps.executeUpdate();
@@ -536,13 +562,17 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         JTextField horaFinField = new JTextField(horaFin);
         JTextField motivoField = new JTextField(motivo);
 
-        panel.add(new JLabel("Fecha (YYYY-MM-DD):")); panel.add(fechaField);
-        panel.add(new JLabel("Hora Inicio (HH:MM:SS):")); panel.add(horaInicioField);
-        panel.add(new JLabel("Hora Fin (HH:MM:SS):")); panel.add(horaFinField);
-        panel.add(new JLabel("Motivo:")); panel.add(motivoField);
+        panel.add(new JLabel("Fecha (YYYY-MM-DD):"));
+        panel.add(fechaField);
+        panel.add(new JLabel("Hora Inicio (HH:MM:SS):"));
+        panel.add(horaInicioField);
+        panel.add(new JLabel("Hora Fin (HH:MM:SS):"));
+        panel.add(horaFinField);
+        panel.add(new JLabel("Motivo:"));
+        panel.add(motivoField);
 
         int result = JOptionPane.showConfirmDialog(null, panel,
-            "Editar Bloqueo", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+                "Editar Bloqueo", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
         if (result == JOptionPane.OK_OPTION) {
             String nuevaFecha = fechaField.getText();
@@ -551,8 +581,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
             String nuevoMotivo = motivoField.getText();
 
             String sql = "UPDATE bloqueo_horario SET Fecha=?, Hora_inicio=?, Hora_fin=?, Motivo=? WHERE idBloqueo_Horario=?";
-            try (Connection conn = conexion.getConnection();
-                PreparedStatement ps = conn.prepareStatement(sql)) {
+            try (Connection conn = conexion.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
 
                 ps.setString(1, nuevaFecha);
                 ps.setString(2, nuevaHoraInicio);
@@ -619,6 +648,11 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
 
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -669,6 +703,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
+    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu6;
@@ -687,6 +722,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaBloqueos;

@@ -8,9 +8,7 @@ import java.sql.ResultSet;
 import java.sql.Connection;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import javax.swing.JOptionPane; 
-
-
+import javax.swing.JOptionPane;
 
 /*
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
@@ -30,29 +28,40 @@ public class NewJBuscarCita extends javax.swing.JFrame {
      */
     public NewJBuscarCita() {
         initComponents();
-                            RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
         conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
     }
-    
+
     private JFrame ventanaAnterior;
 
-public NewJBuscarCita(JFrame anterior) {
-    initComponents();
-    this.ventanaAnterior = anterior;
-    conexion = new ConexionBD("andynails");
-}
-
-
-
-private void regresar() {
-    if (ventanaAnterior != null) {
-        ventanaAnterior.setVisible(true);
+    public NewJBuscarCita(JFrame anterior) {
+        initComponents();
+        this.ventanaAnterior = anterior;
+        conexion = new ConexionBD("andynails");
     }
-    this.dispose();
-}
 
+    private void regresar() {
+        if (ventanaAnterior != null) {
+            ventanaAnterior.setVisible(true);
+        }
+        this.dispose();
+    }
+
+// Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
 
     /**
      * This method is called from within the constructor to initialize the form.
@@ -121,6 +130,8 @@ private void regresar() {
         jMenuItem17 = new javax.swing.JMenuItem();
         jMenu26 = new javax.swing.JMenu();
         jMenuItem18 = new javax.swing.JMenuItem();
+        jMenu20 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -544,6 +555,18 @@ private void regresar() {
 
         jMenuBar5.add(jMenu26);
 
+        jMenu20.setText("CERRAR SECION");
+
+        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu20.add(jMenuItemCerrarSecion);
+
+        jMenuBar5.add(jMenu20);
+
         setJMenuBar(jMenuBar5);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
@@ -562,67 +585,67 @@ private void regresar() {
 
     private void btnBuscarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnBuscarActionPerformed
         // TODO add your handling code here:
-                                          
-    String nombre = txtNombre.getText().trim();
-    String paterno = txtPaterno.getText().trim();
-    String materno = txtMaterno.getText().trim();
-    String fechaTexto = txtFecha.getText().trim();
-    String horaTexto = txtHora.getText().trim();
 
-    if (nombre.isEmpty() || paterno.isEmpty() || materno.isEmpty() || fechaTexto.isEmpty() || horaTexto.isEmpty()) {
-        javax.swing.JOptionPane.showMessageDialog(this, "Por favor completa todos los campos");
-        return;
-    }
+        String nombre = txtNombre.getText().trim();
+        String paterno = txtPaterno.getText().trim();
+        String materno = txtMaterno.getText().trim();
+        String fechaTexto = txtFecha.getText().trim();
+        String horaTexto = txtHora.getText().trim();
 
-    try {
-        // 🔹 Convertir formato de fecha de dd-MM-yyyy → yyyy-MM-dd
-        java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("dd-MM-yyyy");
-        java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        String fechaConvertida = "";
-        try {
-            java.util.Date fecha = formatoEntrada.parse(fechaTexto);
-            fechaConvertida = formatoSalida.format(fecha);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(null, "Formato de fecha inválido. Usa dd-MM-yyyy");
+        if (nombre.isEmpty() || paterno.isEmpty() || materno.isEmpty() || fechaTexto.isEmpty() || horaTexto.isEmpty()) {
+            javax.swing.JOptionPane.showMessageDialog(this, "Por favor completa todos los campos");
             return;
         }
 
-        // 🔹 Ajustar formato de hora (añadir segundos si faltan)
-        if (horaTexto.length() == 5) {
-            horaTexto += ":00";
+        try {
+            // 🔹 Convertir formato de fecha de dd-MM-yyyy → yyyy-MM-dd
+            java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("dd-MM-yyyy");
+            java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            String fechaConvertida = "";
+            try {
+                java.util.Date fecha = formatoEntrada.parse(fechaTexto);
+                fechaConvertida = formatoSalida.format(fecha);
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(null, "Formato de fecha inválido. Usa dd-MM-yyyy");
+                return;
+            }
+
+            // 🔹 Ajustar formato de hora (añadir segundos si faltan)
+            if (horaTexto.length() == 5) {
+                horaTexto += ":00";
+            }
+
+            java.sql.Connection con = conexion.conectar();
+
+            String sql = "SELECT c.idCita FROM cita c "
+                    + "JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
+                    + "WHERE u.Nombre = ? AND u.Paterno = ? AND u.Materno = ? "
+                    + "AND c.Fecha = ? AND c.Hora = ?";
+
+            java.sql.PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombre);
+            ps.setString(2, paterno);
+            ps.setString(3, materno);
+            ps.setString(4, fechaConvertida);
+            ps.setString(5, horaTexto);
+
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                int idCita = rs.getInt("idCita");
+                NewJDatosCita datosCita = new NewJDatosCita(this, idCita);
+                datosCita.setVisible(true);
+                this.dispose();
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this, "No se encontró la cita con esos datos");
+            }
+
+            con.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this, "Error al buscar la cita: " + e.getMessage());
         }
-
-        java.sql.Connection con = conexion.conectar();
-
-        String sql = "SELECT c.idCita FROM cita c "
-                   + "JOIN usuarios u ON c.idUsuarios = u.idUsuarios "
-                   + "WHERE u.Nombre = ? AND u.Paterno = ? AND u.Materno = ? "
-                   + "AND c.Fecha = ? AND c.Hora = ?";
-
-        java.sql.PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, nombre);
-        ps.setString(2, paterno);
-        ps.setString(3, materno);
-        ps.setString(4, fechaConvertida);
-        ps.setString(5, horaTexto);
-
-        java.sql.ResultSet rs = ps.executeQuery();
-
-        if (rs.next()) {
-            int idCita = rs.getInt("idCita");
-            NewJDatosCita datosCita = new NewJDatosCita(this, idCita);
-            datosCita.setVisible(true);
-            this.dispose();
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this, "No se encontró la cita con esos datos");
-        }
-
-        con.close();
-
-    } catch (Exception e) {
-        e.printStackTrace();
-        javax.swing.JOptionPane.showMessageDialog(this, "Error al buscar la cita: " + e.getMessage());
-    }
 
     }//GEN-LAST:event_btnBuscarActionPerformed
 
@@ -761,11 +784,11 @@ private void regresar() {
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-                                                 
-    // Regresar al panel anterior
-    NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
-    anterior.setVisible(true);
-    this.dispose(); // Cierra la ventana actual
+
+        // Regresar al panel anterior
+        NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
 
     }//GEN-LAST:event_btnRegresarActionPerformed
 
@@ -788,6 +811,11 @@ private void regresar() {
         NewJAgenC.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -863,6 +891,7 @@ private void regresar() {
     private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu19;
+    private javax.swing.JMenu jMenu20;
     private javax.swing.JMenu jMenu21;
     private javax.swing.JMenu jMenu22;
     private javax.swing.JMenu jMenu25;
@@ -889,6 +918,7 @@ private void regresar() {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;
