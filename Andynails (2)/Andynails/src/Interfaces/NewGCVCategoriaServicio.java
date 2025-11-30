@@ -37,21 +37,18 @@ public class NewGCVCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JTextField jTextFieldPrecio;
     private javax.swing.JComboBox<String> jComboServicios = new javax.swing.JComboBox<>();
 
-
-
-
     /**
      * Creates new form NewGCV
      */
     public NewGCVCategoriaServicio() {
         initComponents();
-         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         jComboServicios.addItem("Maquillaje");
-    jComboServicios.addItem("Peinados");
-    jComboServicios.addItem("Uñas");
-    jComboServicios.addItem("Otros");
-    
+        jComboServicios.addItem("Peinados");
+        jComboServicios.addItem("Uñas");
+        jComboServicios.addItem("Otros");
+
         // Cargar datos inicialmente según la primera opción del JComboBox
         if (jComboServicios.getItemCount() > 0) {
             cargarTabla(jComboServicios.getItemAt(0));
@@ -66,81 +63,76 @@ public class NewGCVCategoriaServicio extends javax.swing.JFrame {
     }
 
     // Método para cargar la tabla con imágenes, nombre y precio
-   
     // Método para cargar la tabla desde la base de datos
-private void cargarTabla(String categoriaSeleccionada) {
-    DefaultTableModel modelo = new DefaultTableModel() {
-        @Override
-        public boolean isCellEditable(int row, int column) {
-            return false;
-        }
-    };
+    private void cargarTabla(String categoriaSeleccionada) {
+        DefaultTableModel modelo = new DefaultTableModel() {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
 
-    modelo.addColumn("Imagen");
-    modelo.addColumn("Nombre de Categoría");
-    modelo.addColumn("Descripción");
-    modelo.addColumn("Precio");
-
-    jTable1setvicio.setModel(modelo);
-    jTable1setvicio.setRowHeight(70);
-
-    try (Connection con = ConexionBD.getConnection()) {
-        // ❌ Sin filtro por servicio para mostrar todas las categorías
-        String sql = "SELECT cs.Imagen_Archivo, cs.Nombre_categoria, cs.Descripcion, cs.Precio "
-                   + "FROM categoria_servicio cs "
-                   + "INNER JOIN servicios s ON cs.idServicios = s.idServicios";
-
-        PreparedStatement ps = con.prepareStatement(sql);
-        ResultSet rs = ps.executeQuery();
-
-        while (rs.next()) {
-            String rutaImagen = rs.getString("Imagen_Archivo");
-            ImageIcon icono = new ImageIcon(rutaImagen);
-            Image imagen = icono.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
-            icono = new ImageIcon(imagen);
-
-            String nombre = rs.getString("Nombre_categoria");
-            String descripcion = rs.getString("Descripcion");
-            double precio = rs.getDouble("Precio");
-
-            modelo.addRow(new Object[]{
-                icono,
-                nombre,
-                descripcion,
-                String.format("$ %.2f", precio)
-            });
-        }
-
-        if (modelo.getRowCount() == 0) {
-            modelo.addRow(new Object[]{"", "Sin categorías registradas", "", ""});
-        }
+        modelo.addColumn("Imagen");
+        modelo.addColumn("Nombre de Categoría");
+        modelo.addColumn("Descripción");
+        modelo.addColumn("Precio");
 
         jTable1setvicio.setModel(modelo);
+        jTable1setvicio.setRowHeight(70);
 
-        jTable1setvicio.getColumn("Imagen").setCellRenderer(new DefaultTableCellRenderer() {
-            @Override
-            public void setValue(Object value) {
-                if (value instanceof ImageIcon) {
-                    setIcon((ImageIcon) value);
-                    setText("");
-                    setHorizontalAlignment(CENTER); // centramos imagen
-                } else {
-                    setIcon(null);
-                    setText((value != null) ? value.toString() : "");
-                }
+        try (Connection con = ConexionBD.getConnection()) {
+            // ❌ Sin filtro por servicio para mostrar todas las categorías
+            String sql = "SELECT cs.Imagen_Archivo, cs.Nombre_categoria, cs.Descripcion, cs.Precio "
+                    + "FROM categoria_servicio cs "
+                    + "INNER JOIN servicios s ON cs.idServicios = s.idServicios";
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ResultSet rs = ps.executeQuery();
+
+            while (rs.next()) {
+                String rutaImagen = rs.getString("Imagen_Archivo");
+                ImageIcon icono = new ImageIcon(rutaImagen);
+                Image imagen = icono.getImage().getScaledInstance(60, 60, Image.SCALE_SMOOTH);
+                icono = new ImageIcon(imagen);
+
+                String nombre = rs.getString("Nombre_categoria");
+                String descripcion = rs.getString("Descripcion");
+                double precio = rs.getDouble("Precio");
+
+                modelo.addRow(new Object[]{
+                    icono,
+                    nombre,
+                    descripcion,
+                    String.format("$ %.2f", precio)
+                });
             }
-        });
 
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
+            if (modelo.getRowCount() == 0) {
+                modelo.addRow(new Object[]{"", "Sin categorías registradas", "", ""});
+            }
+
+            jTable1setvicio.setModel(modelo);
+
+            jTable1setvicio.getColumn("Imagen").setCellRenderer(new DefaultTableCellRenderer() {
+                @Override
+                public void setValue(Object value) {
+                    if (value instanceof ImageIcon) {
+                        setIcon((ImageIcon) value);
+                        setText("");
+                        setHorizontalAlignment(CENTER); // centramos imagen
+                    } else {
+                        setIcon(null);
+                        setText((value != null) ? value.toString() : "");
+                    }
+                }
+            });
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+        }
     }
-}
-
-
-    
-    
 
     // Método para obtener el id de la categoría según la fila seleccionada
     private int obtenerIdDeFila(int fila) {
@@ -164,24 +156,22 @@ private void cargarTabla(String categoriaSeleccionada) {
         return id;
     }
 
-    
     private int obtenerIdServicio(String nombreServicio) {
-    int id = -1;
-    try (Connection con = ConexionBD.getConnection()) {
-        String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio = ?";
-        PreparedStatement ps = con.prepareStatement(sql);
-        ps.setString(1, nombreServicio);
-        ResultSet rs = ps.executeQuery();
-        if (rs.next()) {
-            id = rs.getInt("idServicios");
+        int id = -1;
+        try (Connection con = ConexionBD.getConnection()) {
+            String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombreServicio);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                id = rs.getInt("idServicios");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
-    } catch (SQLException e) {
-        e.printStackTrace();
+        return id;
     }
-    return id;
-}
 
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -204,20 +194,24 @@ private void cargarTabla(String categoriaSeleccionada) {
         btnEliminar = new javax.swing.JButton();
         btnAgregarservicios = new javax.swing.JButton();
         jButton1 = new javax.swing.JButton();
+        jButton2 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
-        jMenu4 = new javax.swing.JMenu();
-        jMenuItem1 = new javax.swing.JMenuItem();
-        jMenuItem2 = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
+        jMenu12 = new javax.swing.JMenu();
+        jMenuItem7 = new javax.swing.JMenuItem();
+        jMenuItem8 = new javax.swing.JMenuItem();
+        jMenuItem9 = new javax.swing.JMenuItem();
+        jMenuItem10 = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
-        jMenuItem6 = new javax.swing.JMenuItem();
+        jMenuItem11 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
 
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
@@ -301,6 +295,14 @@ private void cargarTabla(String categoriaSeleccionada) {
             }
         });
 
+        jButton2.setBackground(new java.awt.Color(255, 204, 255));
+        jButton2.setText("Regresar");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -308,24 +310,27 @@ private void cargarTabla(String categoriaSeleccionada) {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(45, 45, 45)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(118, 118, 118)
-                                .addComponent(jLabel2))
-                            .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 244, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(btnAgregarservicios)
-                                .addGap(26, 26, 26)
-                                .addComponent(btnEditar)
-                                .addGap(36, 36, 36)
-                                .addComponent(btnEliminar))
-                            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 443, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(43, 43, 43)
-                        .addComponent(jButton1))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(45, 45, 45)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jButton2)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGap(118, 118, 118)
+                                        .addComponent(jLabel2))
+                                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 244, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(btnAgregarservicios)
+                                        .addGap(26, 26, 26)
+                                        .addComponent(btnEditar)
+                                        .addGap(36, 36, 36)
+                                        .addComponent(btnEliminar))
+                                    .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 443, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(43, 43, 43)
+                                .addComponent(jButton1)))))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -345,45 +350,60 @@ private void cargarTabla(String categoriaSeleccionada) {
                     .addComponent(btnEditar)
                     .addComponent(btnEliminar)
                     .addComponent(jButton1))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 51, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jButton2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 16, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jMenu3.setText("LOGO");
         jMenuBar1.add(jMenu3);
 
-        jMenu4.setText("CATALÓGO");
+        jMenu12.setText("CATALÓGO");
 
-        jMenuItem1.setText("UÑAS");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem7.setText("Uñas");
+        jMenuItem7.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
+                jMenuItem7ActionPerformed(evt);
             }
         });
-        jMenu4.add(jMenuItem1);
+        jMenu12.add(jMenuItem7);
 
-        jMenuItem2.setText("PEINADOS");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem8.setText("Peinados");
+        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                jMenuItem8ActionPerformed(evt);
             }
         });
-        jMenu4.add(jMenuItem2);
+        jMenu12.add(jMenuItem8);
 
-        jMenuItem3.setText("MAQUILLAJES");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem9.setText("Maquillaje");
+        jMenuItem9.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
+                jMenuItem9ActionPerformed(evt);
             }
         });
-        jMenu4.add(jMenuItem3);
+        jMenu12.add(jMenuItem9);
 
-        jMenuBar1.add(jMenu4);
+        jMenuItem10.setText("Otros");
+        jMenuItem10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem10ActionPerformed(evt);
+            }
+        });
+        jMenu12.add(jMenuItem10);
+
+        jMenuBar1.add(jMenu12);
 
         jMenu5.setText("AGENDAR CITA");
 
-        jMenuItem6.setText("CANECLAR CITA");
-        jMenu5.add(jMenuItem6);
+        jMenuItem11.setText("Agendar Cita");
+        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem11ActionPerformed(evt);
+            }
+        });
+        jMenu5.add(jMenuItem11);
 
         jMenuBar1.add(jMenu5);
 
@@ -421,7 +441,7 @@ private void cargarTabla(String categoriaSeleccionada) {
 
     private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
         // TODO add your handling code here:
-      NewGCVEditarCategoriaServicio editar = new NewGCVEditarCategoriaServicio();
+        NewGCVEditarCategoriaServicio editar = new NewGCVEditarCategoriaServicio();
         editar.setVisible(true);
         this.dispose();
 
@@ -429,50 +449,73 @@ private void cargarTabla(String categoriaSeleccionada) {
 
     private void btnAgregarserviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarserviciosActionPerformed
         // TODO add your handling code here:
-String servicioSeleccionado = jComboServicios.getSelectedItem().toString();
-int idServicioSeleccionado = obtenerIdServicio(servicioSeleccionado); // método que obtendrá el id desde BD
+        String servicioSeleccionado = jComboServicios.getSelectedItem().toString();
+        int idServicioSeleccionado = obtenerIdServicio(servicioSeleccionado); // método que obtendrá el id desde BD
 
-NewGCVInsertarCategoriaServicio ventanaInsertar = new NewGCVInsertarCategoriaServicio();
-ventanaInsertar.setDatosServicio(idServicioSeleccionado, servicioSeleccionado); // pasamos id y nombre
-ventanaInsertar.setVisible(true);
-this.dispose();
+        NewGCVInsertarCategoriaServicio ventanaInsertar = new NewGCVInsertarCategoriaServicio();
+        ventanaInsertar.setDatosServicio(idServicioSeleccionado, servicioSeleccionado); // pasamos id y nombre
+        ventanaInsertar.setVisible(true);
+        this.dispose();
 
     }//GEN-LAST:event_btnAgregarserviciosActionPerformed
 
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
         // TODO add your handling code here:
-    NewGCVEliminarCategoriaServicio eliminar = new NewGCVEliminarCategoriaServicio();
+        NewGCVEliminarCategoriaServicio eliminar = new NewGCVEliminarCategoriaServicio();
         eliminar.setVisible(true);
         this.dispose();
     }//GEN-LAST:event_btnEliminarActionPerformed
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-         NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
         NewJPanelAdministracion.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jButton1ActionPerformed
 
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-         NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
+    }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
         NewJCatalogoUñas.setVisible(true);
         this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
+    }//GEN-LAST:event_jMenuItem7ActionPerformed
 
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
+    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
         // TODO add your handling code here:
-          NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
         NewJCatalogoPeinado.setVisible(true);
         this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
+    }//GEN-LAST:event_jMenuItem8ActionPerformed
 
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
+    private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
         // TODO add your handling code here:
-          NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
         NewJCatalogoMaq.setVisible(true);
         this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
+    }//GEN-LAST:event_jMenuItem9ActionPerformed
+
+    private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem10ActionPerformed
+
+    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+        // TODO add your handling code here:
+        //agendar cita
+        NewJAgenC NewJAgenC = new NewJAgenC();
+        NewJAgenC.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem11ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -518,20 +561,22 @@ this.dispose();
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnEliminar;
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel5;
+    private javax.swing.JMenu jMenu12;
     private javax.swing.JMenu jMenu3;
-    private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JMenuItem jMenuItem2;
-    private javax.swing.JMenuItem jMenuItem3;
+    private javax.swing.JMenuItem jMenuItem10;
+    private javax.swing.JMenuItem jMenuItem11;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;
-    private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItem9;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JScrollPane jScrollPane1;
