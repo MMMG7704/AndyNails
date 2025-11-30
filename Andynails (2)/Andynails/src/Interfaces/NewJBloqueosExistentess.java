@@ -6,6 +6,7 @@ package Interfaces;
 
 import andynails.ConexionBD;
 import andynails.RedesSociales;
+import static com.itextpdf.text.html.HtmlTags.FACE;
 import java.awt.GridLayout;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,6 +18,8 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
+import andynails.RedesSociales;
+
 
 /**
  *
@@ -32,8 +35,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     public NewJBloqueosExistentess() {
         initComponents();
         llenarTablaBloqueos(); // Llenamos la tabla al iniciar
-                RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-
+                RedesSociales.configurarRedesSociales(INS2, WPP, FACE2);
 
     }
 
@@ -72,24 +74,26 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private void initComponents() {
 
         jDayChooser1 = new com.toedter.calendar.JDayChooser();
-        jPanel6 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
+        INS = new javax.swing.JPanel();
+        INS2 = new javax.swing.JLabel();
+        FACE2 = new javax.swing.JLabel();
         WPP = new javax.swing.JLabel();
+        jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tablaBloqueos = new javax.swing.JTable();
+        jLabel2 = new javax.swing.JLabel();
         btnEditar = new javax.swing.JButton();
         btnEliminar = new javax.swing.JButton();
-        jLabel2 = new javax.swing.JLabel();
         jButton2 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
-        jMenu5 = new javax.swing.JMenu();
-        jMenuItem2 = new javax.swing.JMenuItem();
-        jMenuItem1 = new javax.swing.JMenuItem();
-        jMenuItem3 = new javax.swing.JMenuItem();
+        jMenu18 = new javax.swing.JMenu();
+        jMenuItem19 = new javax.swing.JMenuItem();
+        jMenuItem20 = new javax.swing.JMenuItem();
+        jMenuItem21 = new javax.swing.JMenuItem();
+        jMenuItem22 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
-        jMenuItem4 = new javax.swing.JMenuItem();
+        jMenuItem23 = new javax.swing.JMenuItem();
         jMenu8 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu9 = new javax.swing.JMenu();
@@ -103,39 +107,42 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         jMenuItem5 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setAutoRequestFocus(false);
         setBackground(new java.awt.Color(204, 204, 255));
 
-        jPanel6.setBackground(new java.awt.Color(204, 0, 204));
+        INS.setBackground(new java.awt.Color(204, 0, 204));
 
-        INS.setText("INS");
+        INS2.setText("INS");
 
-        FACE.setText("FACE");
+        FACE2.setText("FACE");
 
         WPP.setText("WPP");
 
-        javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
-        jPanel6.setLayout(jPanel6Layout);
-        jPanel6Layout.setHorizontalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(123, 123, 123)
+        javax.swing.GroupLayout INSLayout = new javax.swing.GroupLayout(INS);
+        INS.setLayout(INSLayout);
+        INSLayout.setHorizontalGroup(
+            INSLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(INSLayout.createSequentialGroup()
+                .addGap(45, 45, 45)
+                .addComponent(INS2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(185, 185, 185)
                 .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(148, 148, 148)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(267, 267, 267))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(FACE2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(88, 88, 88))
         );
-        jPanel6Layout.setVerticalGroup(
-            jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel6Layout.createSequentialGroup()
+        INSLayout.setVerticalGroup(
+            INSLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(INSLayout.createSequentialGroup()
                 .addGap(14, 14, 14)
-                .addGroup(jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
+                .addGroup(INSLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(INS2)
                     .addComponent(WPP)
-                    .addComponent(FACE))
+                    .addComponent(FACE2))
                 .addContainerGap(25, Short.MAX_VALUE))
         );
+
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
 
         tablaBloqueos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -149,6 +156,9 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
             }
         ));
         jScrollPane1.setViewportView(tablaBloqueos);
+
+        jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
+        jLabel2.setText("BLOQUEOS EXISTENETES");
 
         btnEditar.setBackground(new java.awt.Color(255, 204, 255));
         btnEditar.setText("Editar ");
@@ -167,17 +177,50 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
             }
         });
 
-        jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
-        jLabel2.setText("BLOQUEOS EXISTENETES");
-
         jButton2.setBackground(new java.awt.Color(255, 204, 255));
         jButton2.setFont(new java.awt.Font("Dialog", 0, 12)); // NOI18N
-        jButton2.setText("Volver a inicio");
+        jButton2.setText("Regresar");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
             }
         });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(184, 184, 184)
+                        .addComponent(jLabel2))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(36, 36, 36)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 519, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(121, 121, 121)
+                                .addComponent(btnEliminar)
+                                .addGap(121, 121, 121)
+                                .addComponent(jButton2)))))
+                .addContainerGap(55, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(15, 15, 15)
+                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 89, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnEditar)
+                    .addComponent(btnEliminar)
+                    .addComponent(jButton2))
+                .addGap(79, 79, 79))
+        );
 
         jMenu4.setText("INICIO");
         jMenu4.addMenuListener(new javax.swing.event.MenuListener() {
@@ -191,43 +234,51 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         });
         jMenuBar1.add(jMenu4);
 
-        jMenu5.setText("CATALÓGO");
+        jMenu18.setText("CATALÓGO");
 
-        jMenuItem2.setText("UÑAS");
-        jMenuItem2.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem19.setText("Uñas");
+        jMenuItem19.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem2ActionPerformed(evt);
+                jMenuItem19ActionPerformed(evt);
             }
         });
-        jMenu5.add(jMenuItem2);
+        jMenu18.add(jMenuItem19);
 
-        jMenuItem1.setText("PEINADO");
-        jMenuItem1.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem20.setText("Peinados");
+        jMenuItem20.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem1ActionPerformed(evt);
+                jMenuItem20ActionPerformed(evt);
             }
         });
-        jMenu5.add(jMenuItem1);
+        jMenu18.add(jMenuItem20);
 
-        jMenuItem3.setText("MAQUILLAJES");
-        jMenuItem3.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem21.setText("Maquillaje");
+        jMenuItem21.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem3ActionPerformed(evt);
+                jMenuItem21ActionPerformed(evt);
             }
         });
-        jMenu5.add(jMenuItem3);
+        jMenu18.add(jMenuItem21);
 
-        jMenuBar1.add(jMenu5);
+        jMenuItem22.setText("Otros");
+        jMenuItem22.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem22ActionPerformed(evt);
+            }
+        });
+        jMenu18.add(jMenuItem22);
+
+        jMenuBar1.add(jMenu18);
 
         jMenu6.setText("AGENDA");
 
-        jMenuItem4.setText("CANCELAR CITA");
-        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem23.setText("Agendar Cita");
+        jMenuItem23.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem4ActionPerformed(evt);
+                jMenuItem23ActionPerformed(evt);
             }
         });
-        jMenu6.add(jMenuItem4);
+        jMenu6.add(jMenuItem23);
 
         jMenuBar1.add(jMenu6);
 
@@ -341,40 +392,15 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, 632, Short.MAX_VALUE)
-            .addGroup(layout.createSequentialGroup()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(188, 188, 188)
-                        .addComponent(jLabel2))
-                    .addGroup(layout.createSequentialGroup()
-                        .addGap(48, 48, 48)
-                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 519, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                .addContainerGap(65, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addGap(89, 89, 89)
-                .addComponent(btnEditar, javax.swing.GroupLayout.PREFERRED_SIZE, 95, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jButton2)
-                    .addComponent(btnEliminar))
-                .addGap(119, 119, 119))
+            .addComponent(INS, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addGap(36, 36, 36)
-                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(37, 37, 37)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 231, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(39, 39, 39)
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnEliminar)
-                    .addComponent(btnEditar))
-                .addGap(27, 27, 27)
-                .addComponent(jButton2)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 45, Short.MAX_VALUE)
-                .addComponent(jPanel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         pack();
@@ -387,38 +413,6 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         Inicio.setVisible(true);
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenu4MenuSelected
-
-    private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        // TODO add your handling code here:
-        //para arir uñas
-        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
-        NewJCatalogoUñas.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem2ActionPerformed
-
-    private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
-        // TODO add your handling code here:
-        //para abrir peinados
-        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
-        NewJCatalogoPeinado.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem1ActionPerformed
-
-    private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
-        // TODO add your handling code here:
-        //para maquillaje
-        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
-        NewJCatalogoMaq.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem3ActionPerformed
-
-    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
-        // TODO add your handling code here:
-        //agendar 
-        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
-        NewJCitaAgenda.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem4ActionPerformed
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
         // TODO add your handling code here:
@@ -481,63 +475,6 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem10ActionPerformed
 
-    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
-        // TODO add your handling code here:
-    int fila = tablaBloqueos.getSelectedRow();
-    if (fila == -1) {
-        JOptionPane.showMessageDialog(null, "Selecciona un bloqueo primero");
-        return;
-    }
-
-    int idBloqueo = (int) tablaBloqueos.getValueAt(fila, 4);
-    String fecha = (String) tablaBloqueos.getValueAt(fila, 0);
-    String horaInicio = (String) tablaBloqueos.getValueAt(fila, 1);
-    String horaFin = (String) tablaBloqueos.getValueAt(fila, 2);
-    String motivo = (String) tablaBloqueos.getValueAt(fila, 3);
-
-    // Creamos el panel con los campos para editar
-    JPanel panel = new JPanel(new GridLayout(4, 2, 5, 5));
-    JTextField fechaField = new JTextField(fecha);
-    JTextField horaInicioField = new JTextField(horaInicio);
-    JTextField horaFinField = new JTextField(horaFin);
-    JTextField motivoField = new JTextField(motivo);
-
-    panel.add(new JLabel("Fecha (YYYY-MM-DD):")); panel.add(fechaField);
-    panel.add(new JLabel("Hora Inicio (HH:MM:SS):")); panel.add(horaInicioField);
-    panel.add(new JLabel("Hora Fin (HH:MM:SS):")); panel.add(horaFinField);
-    panel.add(new JLabel("Motivo:")); panel.add(motivoField);
-
-    int result = JOptionPane.showConfirmDialog(null, panel, 
-        "Editar Bloqueo", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-    if (result == JOptionPane.OK_OPTION) {
-        String nuevaFecha = fechaField.getText();
-        String nuevaHoraInicio = horaInicioField.getText();
-        String nuevaHoraFin = horaFinField.getText();
-        String nuevoMotivo = motivoField.getText();
-
-        String sql = "UPDATE bloqueo_horario SET Fecha=?, Hora_inicio=?, Hora_fin=?, Motivo=? WHERE idBloqueo_Horario=?";
-        try (Connection conn = conexion.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, nuevaFecha);
-            ps.setString(2, nuevaHoraInicio);
-            ps.setString(3, nuevaHoraFin);
-            ps.setString(4, nuevoMotivo);
-            ps.setInt(5, idBloqueo);
-
-            ps.executeUpdate();
-            JOptionPane.showMessageDialog(null, "Bloqueo actualizado");
-            llenarTablaBloqueos();
-
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al actualizar: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-
-    }//GEN-LAST:event_btnEditarActionPerformed
-
     private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
         // TODO add your handling code here:
         int fila = tablaBloqueos.getSelectedRow();
@@ -548,35 +485,91 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
         int idBloqueo = (int) tablaBloqueos.getValueAt(fila, 4);
 
-  Object[] opciones = {"Sí", "No"};
-    int confirm = JOptionPane.showOptionDialog(
-        null,
-        "¿Seguro que quieres eliminar este bloqueo?",
-        "Confirmar",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.QUESTION_MESSAGE,
-        null,
-        opciones,
-        opciones[1] // "No" seleccionado por defecto
-    );
+        Object[] opciones = {"Sí", "No"};
+        int confirm = JOptionPane.showOptionDialog(
+            null,
+            "¿Seguro que quieres eliminar este bloqueo?",
+            "Confirmar",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[1] // "No" seleccionado por defecto
+        );
 
-    if (confirm == 0) { // 0 = Sí
-        String sql = "DELETE FROM bloqueo_horario WHERE idBloqueo_Horario=?";
-        try (Connection conn = conexion.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (confirm == 0) { // 0 = Sí
+            String sql = "DELETE FROM bloqueo_horario WHERE idBloqueo_Horario=?";
+            try (Connection conn = conexion.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
 
-            ps.setInt(1, idBloqueo);
-            ps.executeUpdate();
+                ps.setInt(1, idBloqueo);
+                ps.executeUpdate();
 
-            JOptionPane.showMessageDialog(null, "Bloqueo eliminado");
-            llenarTablaBloqueos();
+                JOptionPane.showMessageDialog(null, "Bloqueo eliminado");
+                llenarTablaBloqueos();
 
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(null, "Error al eliminar: " + e.getMessage());
-            e.printStackTrace();
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Error al eliminar: " + e.getMessage());
+                e.printStackTrace();
+            }
         }
-    }
     }//GEN-LAST:event_btnEliminarActionPerformed
+
+    private void btnEditarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditarActionPerformed
+        // TODO add your handling code here:
+        int fila = tablaBloqueos.getSelectedRow();
+        if (fila == -1) {
+            JOptionPane.showMessageDialog(null, "Selecciona un bloqueo primero");
+            return;
+        }
+
+        int idBloqueo = (int) tablaBloqueos.getValueAt(fila, 4);
+        String fecha = (String) tablaBloqueos.getValueAt(fila, 0);
+        String horaInicio = (String) tablaBloqueos.getValueAt(fila, 1);
+        String horaFin = (String) tablaBloqueos.getValueAt(fila, 2);
+        String motivo = (String) tablaBloqueos.getValueAt(fila, 3);
+
+        // Creamos el panel con los campos para editar
+        JPanel panel = new JPanel(new GridLayout(4, 2, 5, 5));
+        JTextField fechaField = new JTextField(fecha);
+        JTextField horaInicioField = new JTextField(horaInicio);
+        JTextField horaFinField = new JTextField(horaFin);
+        JTextField motivoField = new JTextField(motivo);
+
+        panel.add(new JLabel("Fecha (YYYY-MM-DD):")); panel.add(fechaField);
+        panel.add(new JLabel("Hora Inicio (HH:MM:SS):")); panel.add(horaInicioField);
+        panel.add(new JLabel("Hora Fin (HH:MM:SS):")); panel.add(horaFinField);
+        panel.add(new JLabel("Motivo:")); panel.add(motivoField);
+
+        int result = JOptionPane.showConfirmDialog(null, panel,
+            "Editar Bloqueo", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+        if (result == JOptionPane.OK_OPTION) {
+            String nuevaFecha = fechaField.getText();
+            String nuevaHoraInicio = horaInicioField.getText();
+            String nuevaHoraFin = horaFinField.getText();
+            String nuevoMotivo = motivoField.getText();
+
+            String sql = "UPDATE bloqueo_horario SET Fecha=?, Hora_inicio=?, Hora_fin=?, Motivo=? WHERE idBloqueo_Horario=?";
+            try (Connection conn = conexion.getConnection();
+                PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                ps.setString(1, nuevaFecha);
+                ps.setString(2, nuevaHoraInicio);
+                ps.setString(3, nuevaHoraFin);
+                ps.setString(4, nuevoMotivo);
+                ps.setInt(5, idBloqueo);
+
+                ps.executeUpdate();
+                JOptionPane.showMessageDialog(null, "Bloqueo actualizado");
+                llenarTablaBloqueos();
+
+            } catch (SQLException e) {
+                JOptionPane.showMessageDialog(null, "Error al actualizar: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }//GEN-LAST:event_btnEditarActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
@@ -588,6 +581,43 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         NewJPanelAdministracion.setVisible(true);
         NewJPanelAdministracion.setLocationRelativeTo(null); // Para que aparezca centrado
     }//GEN-LAST:event_jButton2ActionPerformed
+
+    private void jMenuItem19ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem19ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem19ActionPerformed
+
+    private void jMenuItem20ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem20ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem20ActionPerformed
+
+    private void jMenuItem21ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem21ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem21ActionPerformed
+
+    private void jMenuItem22ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem22ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem22ActionPerformed
+
+    private void jMenuItem23ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem23ActionPerformed
+        // TODO add your handling code here:
+        //agendar cita
+        NewJAgenC NewJAgenC = new NewJAgenC();
+        NewJAgenC.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem23ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -628,8 +658,9 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JLabel FACE;
-    private javax.swing.JLabel INS;
+    private javax.swing.JLabel FACE2;
+    private javax.swing.JPanel INS;
+    private javax.swing.JLabel INS2;
     private javax.swing.JLabel WPP;
     private javax.swing.JButton btnEditar;
     private javax.swing.JButton btnEliminar;
@@ -638,24 +669,25 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
+    private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu4;
-    private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
     private javax.swing.JMenu jMenu9;
     private javax.swing.JMenuBar jMenuBar1;
-    private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JMenuItem jMenuItem10;
-    private javax.swing.JMenuItem jMenuItem2;
-    private javax.swing.JMenuItem jMenuItem3;
-    private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenuItem jMenuItem19;
+    private javax.swing.JMenuItem jMenuItem20;
+    private javax.swing.JMenuItem jMenuItem21;
+    private javax.swing.JMenuItem jMenuItem22;
+    private javax.swing.JMenuItem jMenuItem23;
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
-    private javax.swing.JPanel jPanel6;
+    private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaBloqueos;
     // End of variables declaration//GEN-END:variables

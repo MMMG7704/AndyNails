@@ -114,7 +114,7 @@ private void regresar() {
         jMenuBar5 = new javax.swing.JMenuBar();
         jMenu19 = new javax.swing.JMenu();
         jMenu21 = new javax.swing.JMenu();
-        jMenuItem13 = new javax.swing.JMenuItem();
+        jMenuItem23 = new javax.swing.JMenuItem();
         jMenu22 = new javax.swing.JMenu();
         jMenuItem14 = new javax.swing.JMenuItem();
         jMenu25 = new javax.swing.JMenu();
@@ -480,13 +480,13 @@ private void regresar() {
 
         jMenu21.setText("AGENDA");
 
-        jMenuItem13.setText("CANCELAR CITA");
-        jMenuItem13.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItem23.setText("Agendar Cita");
+        jMenuItem23.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItem13ActionPerformed(evt);
+                jMenuItem23ActionPerformed(evt);
             }
         });
-        jMenu21.add(jMenuItem13);
+        jMenu21.add(jMenuItem23);
 
         jMenuBar5.add(jMenu21);
 
@@ -728,14 +728,6 @@ private void regresar() {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenu19MenuSelected
 
-    private void jMenuItem13ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem13ActionPerformed
-        // TODO add your handling code here:
-        //agendar
-        NewJCitaAgendaE NewJCitaAgenda = new NewJCitaAgendaE();
-        NewJCitaAgenda.setVisible(true);
-        this.dispose(); // cierra la actual
-    }//GEN-LAST:event_jMenuItem13ActionPerformed
-
     private void jMenuItem14ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem14ActionPerformed
         // TODO add your handling code here:
         //boton de PAGOS
@@ -788,6 +780,14 @@ private void regresar() {
     private void txtHoraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtHoraActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_txtHoraActionPerformed
+
+    private void jMenuItem23ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem23ActionPerformed
+        // TODO add your handling code here:
+        //agendar cita
+        NewJAgenC NewJAgenC = new NewJAgenC();
+        NewJAgenC.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem23ActionPerformed
 
     /**
      * @param args the command line arguments
@@ -877,11 +877,11 @@ private void regresar() {
     private javax.swing.JMenuBar jMenuBar4;
     private javax.swing.JMenuBar jMenuBar5;
     private javax.swing.JMenuItem jMenuItem1;
-    private javax.swing.JMenuItem jMenuItem13;
     private javax.swing.JMenuItem jMenuItem14;
     private javax.swing.JMenuItem jMenuItem17;
     private javax.swing.JMenuItem jMenuItem18;
     private javax.swing.JMenuItem jMenuItem2;
+    private javax.swing.JMenuItem jMenuItem23;
     private javax.swing.JMenuItem jMenuItem3;
     private javax.swing.JMenuItem jMenuItem4;
     private javax.swing.JMenuItem jMenuItem5;

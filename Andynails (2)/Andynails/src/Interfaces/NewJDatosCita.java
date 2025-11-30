@@ -252,6 +252,8 @@ public class NewJDatosCita extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
+
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
         INS.setText("INS");

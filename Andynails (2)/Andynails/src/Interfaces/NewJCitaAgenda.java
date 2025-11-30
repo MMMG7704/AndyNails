@@ -270,6 +270,8 @@ private void cargarCitasPorFecha(Date fechaSeleccionada) {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
+
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
         jLabel3.setText("INS");
@@ -514,8 +516,6 @@ this.dispose();
     }//GEN-LAST:event_btnEditarCitaActionPerformed
 
     private void btnEliminarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarCitaActionPerformed
-                                                
-
     int fila = jTablecontenidocitas.getSelectedRow();
     if (fila == -1) {
         JOptionPane.showMessageDialog(this, "Selecciona una cita para eliminar.");
@@ -533,25 +533,34 @@ this.dispose();
         return;
     }
 
-    int confirm = JOptionPane.showConfirmDialog(
+    // 🔹 MOSTRAR CONFIRMACIÓN EN ESPAÑOL CON BOTONES "SÍ" Y "NO"
+    Object[] opciones = {"Sí", "No"};
+    int confirm = JOptionPane.showOptionDialog(
             this,
-            "¿Deseas eliminar esta cita?",
+            "¿Estás seguro de que deseas eliminar esta cita?",
             "Confirmar eliminación",
-            JOptionPane.YES_NO_OPTION
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,  // Botones personalizados en español
+            opciones[1] // Opción por defecto ("No")
     );
 
     if (confirm != JOptionPane.YES_OPTION) {
-        return;
+        return; // El usuario eligió "No"
     }
 
     try (Connection con = conexion.conectar()) {
-
         if (con == null) {
             JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
             return;
         }
 
-        // 🔹 1. Obtener los pagos de los servicios
+        // Desactivar temporalmente las verificaciones de claves foráneas
+        try (Statement stmt = con.createStatement()) {
+            stmt.execute("SET FOREIGN_KEY_CHECKS=0");
+        }
+
         String sqlPagosServicios = "SELECT Pago_idPago FROM cita_has_servicios WHERE idCita = ?";
         List<Integer> pagosServicios = new ArrayList<>();
 
@@ -559,11 +568,13 @@ this.dispose();
             ps.setInt(1, idCita);
             ResultSet rs = ps.executeQuery();
             while (rs.next()) {
-                pagosServicios.add(rs.getInt("Pago_idPago"));
+                int pagoId = rs.getInt("Pago_idPago");
+                if (!rs.wasNull()) { // Solo agregar si no es NULL
+                    pagosServicios.add(pagoId);
+                }
             }
         }
 
-        // 🔹 2. Obtener el pago principal de la cita
         Integer pagoPrincipal = null;
         String sqlPagoPrincipal = "SELECT Pago_idPago FROM Cita WHERE idCita = ?";
 
@@ -572,50 +583,68 @@ this.dispose();
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
                 pagoPrincipal = rs.getInt("Pago_idPago");
+                if (rs.wasNull()) {
+                    pagoPrincipal = null;
+                }
             }
         }
 
-        // 🔹 3. Borrar servicios de la cita
         String sqlDeleteServicios = "DELETE FROM cita_has_servicios WHERE idCita = ?";
         try (PreparedStatement ps = con.prepareStatement(sqlDeleteServicios)) {
             ps.setInt(1, idCita);
             ps.executeUpdate();
         }
 
-        // 
-        String sqlDeletePago = "DELETE FROM pago WHERE idPago = ?";
-        try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
-            for (Integer idPago : pagosServicios) {
-                ps.setInt(1, idPago);
-                ps.executeUpdate();
+        if (!pagosServicios.isEmpty()) {
+            String sqlDeletePago = "DELETE FROM pago WHERE idPago = ?";
+            try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
+                for (Integer idPago : pagosServicios) {
+                    ps.setInt(1, idPago);
+                    ps.executeUpdate();
+                }
             }
         }
 
-        // 
         if (pagoPrincipal != null) {
+            String sqlDeletePago = "DELETE FROM pago WHERE idPago = ?";
             try (PreparedStatement ps = con.prepareStatement(sqlDeletePago)) {
                 ps.setInt(1, pagoPrincipal);
                 ps.executeUpdate();
             }
         }
 
-        // 🔹 6. Borrar la cita
         String sqlDeleteCita = "DELETE FROM Cita WHERE idCita = ?";
         try (PreparedStatement ps = con.prepareStatement(sqlDeleteCita)) {
             ps.setInt(1, idCita);
-            ps.executeUpdate();
+            int filasAfectadas = ps.executeUpdate();
+            
+            if (filasAfectadas > 0) {
+                JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
+            } else {
+                JOptionPane.showMessageDialog(this, "No se pudo eliminar la cita.");
+            }
         }
 
-        JOptionPane.showMessageDialog(this, "Cita eliminada correctamente.");
+        try (Statement stmt = con.createStatement()) {
+            stmt.execute("SET FOREIGN_KEY_CHECKS=1");
+        }
 
-        //🔄 Actualizar tabla
         cargarCitasPorFecha(CalCitasAgendadas.getCalendar().getTime());
 
     } catch (SQLException e) {
         JOptionPane.showMessageDialog(this,
-                " Error al eliminar cita: " + e.getMessage());
+                "Error al eliminar cita: " + e.getMessage() + 
+                "\n\nPosible causa: La cita tiene registros relacionados que no se pueden eliminar.");
+        e.printStackTrace();
+        
+        // Intentar reactivar las verificaciones en caso de error
+        try (Connection con = conexion.conectar();
+             Statement stmt = con.createStatement()) {
+            stmt.execute("SET FOREIGN_KEY_CHECKS=1");
+        } catch (SQLException ex) {
+            // Ignorar error secundario
+        }
     }
-
     }//GEN-LAST:event_btnEliminarCitaActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
