@@ -49,7 +49,7 @@ public class ConexionBD {
 
             // Establecer la conexión
             conexion = DriverManager.getConnection(url, user, pwd);
-            System.out.println("Conexión exitosa a la base de datos " + bd);
+           // System.out.println("Conexión exitosa a la base de datos " + bd);
         } catch (ClassNotFoundException e) {
             System.out.println("Error al cargar el driver: " + e.getMessage());
         } catch (SQLException e) {
