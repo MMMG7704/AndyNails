@@ -1,52 +1,64 @@
 package andynails;
 
+import Interfaces.RecordatorioCita; // IMPORTANTE: Agrega esta importación
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 
 public class SessionManager {
     private static String tipoUsuario = null;
     
-    // Método para iniciar sesión que usa tu SesionUsuario existente
+    // Método para iniciar sesión (sin cambios)
     public static void iniciarSesion(int id, String usuario, String tipo) {
         SesionUsuario.iniciarSesion(id, usuario);
         tipoUsuario = tipo;
         System.out.println("SessionManager - Sesión iniciada: " + usuario + " (" + tipo + ")");
     }
     
-    // Método para cerrar sesión con confirmación gráfica
-   public static void cerrarSesion(JFrame ventanaActual) {
-    // Crear opciones personalizadas en español
-    Object[] opciones = {"Sí", "No"};
-    
-    int confirmacion = JOptionPane.showOptionDialog(
-        ventanaActual,
-        "¿Estás seguro de que deseas cerrar sesión?",
-        "Confirmar cierre de sesión",
-        JOptionPane.YES_NO_OPTION,
-        JOptionPane.QUESTION_MESSAGE,
-        null,
-        opciones,  // Botones personalizados en español
-        opciones[1] // Opción por defecto ("No")
-    );
-    
-    if (confirmacion == JOptionPane.YES_OPTION) {
-        // Limpiar todos los datos usando tu método existente
-        SesionUsuario.cerrarSesion();
-        SesionUsuario.limpiarDatosCita();
-        tipoUsuario = null;
+    // MÉTODO MODIFICADO PARA CERRAR SESIÓN CON RECORDATORIO
+    public static void cerrarSesion(JFrame ventanaActual) {
+        // Crear opciones personalizadas en español
+        Object[] opciones = {"Sí", "No"};
         
-        // Cerrar ventana actual
-        ventanaActual.dispose();
+        int confirmacion = JOptionPane.showOptionDialog(
+            ventanaActual,
+            "¿Estás seguro de que deseas cerrar sesión?",
+            "Confirmar cierre de sesión",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.QUESTION_MESSAGE,
+            null,
+            opciones,
+            opciones[1]
+        );
         
-        // Abrir ventana de login
-        Interfaces.NewJLogin login = new Interfaces.NewJLogin();
-        login.setVisible(true);
-        
-        JOptionPane.showMessageDialog(null, "Sesión cerrada correctamente");
+        if (confirmacion == JOptionPane.YES_OPTION) {
+            try {
+                // ✅ ENVIAR RECORDATORIOS ANTES DE CERRAR SESIÓN
+                System.out.println("🔄 Enviando recordatorios de citas...");
+                RecordatorioCita.enviarRecordatoriosCierreSesion();
+                System.out.println("✅ Recordatorios enviados correctamente");
+                
+            } catch (Exception e) {
+                System.err.println("⚠️ Error al enviar recordatorios: " + e.getMessage());
+                // No impedimos el cierre de sesión por error en recordatorios
+            }
+            
+            // Limpiar todos los datos usando tu método existente
+            SesionUsuario.cerrarSesion();
+            SesionUsuario.limpiarDatosCita();
+            tipoUsuario = null;
+            
+            // Cerrar ventana actual
+            ventanaActual.dispose();
+            
+            // Abrir ventana de login
+            Interfaces.NewJLogin login = new Interfaces.NewJLogin();
+            login.setVisible(true);
+            
+            JOptionPane.showMessageDialog(null, "Sesión cerrada correctamente");
+        }
     }
-}
     
-    // Getters que combinan ambas clases
+    // Los demás métodos permanecen igual...
     public static int getIdUsuario() {
         return SesionUsuario.getIdUsuario();
     }
