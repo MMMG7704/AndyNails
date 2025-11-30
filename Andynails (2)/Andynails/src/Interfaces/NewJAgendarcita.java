@@ -1160,6 +1160,10 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         } else {
             registrarCitaNueva();
         }
+          NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion.setVisible(true);
+        this.dispose(); // cierra la actual
+        
 
     }//GEN-LAST:event_jButton2ActionPerformed
 

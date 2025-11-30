@@ -28,12 +28,10 @@ public class Inicio extends javax.swing.JFrame {
         this.setLocationRelativeTo(null);
         conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-            this.setVisible(true);
+        this.setVisible(true);
         iniciarCarruseles();
-         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-                 AutoRecordatorio.iniciar();
-
-
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        AutoRecordatorio.iniciar();
 
     }
 
@@ -277,68 +275,66 @@ public class Inicio extends javax.swing.JFrame {
     private void jMenu5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenu5ActionPerformed
         // TODO add your handling code here:
 //        NewJLogin login = new NewJLogin();
-  //      login.setVisible(true);
-    //    login.setLocationRelativeTo(null);
-      //  this.dispose(); // cierra la actual
+        //      login.setVisible(true);
+        //    login.setLocationRelativeTo(null);
+        //  this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu5ActionPerformed
 
     private void jMenuItem2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem2ActionPerformed
-        // TODO add your handling code here:
-        //para arir uñas
-        // Abrir catálogo de uñas - siempre permitido ver
 
-        NewJCatalogoUñas catalogoUñas = new NewJCatalogoUñas();
-        catalogoUñas.setVisible(true);
-        // Si no está logueado, deshabilitar la selección en el catálogo
         if (!andynails.SesionUsuario.sesionActiva()) {
-
-            catalogoUñas.deshabilitarSeleccion(); // Método que agregarás al catálogo
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Puedes ver el catálogo, pero para seleccionar servicios debes iniciar sesión.",
                     "Modo de visualización",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
         }
 
-       // this.dispose();
+        NewJCatalogoUñas catalogoUñas = new NewJCatalogoUñas();
+        catalogoUñas.setVisible(true);
 
+        if (!andynails.SesionUsuario.sesionActiva()) {
+            catalogoUñas.deshabilitarSeleccion();
+        }
 
     }//GEN-LAST:event_jMenuItem2ActionPerformed
 
     private void jMenuItem1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem1ActionPerformed
         // TODO add your handling code here:
-        // Abrir catálogo de peinados - siempre permitido ver
-       NewJCatalogoPeinado catalogoPeinado = new NewJCatalogoPeinado();
-        catalogoPeinado.setVisible(true);
-
-        // Si no está logueado, deshabilitar la selección en el catálogo
         if (!andynails.SesionUsuario.sesionActiva()) {
-            catalogoPeinado.deshabilitarSeleccion(); // Método que agregarás al catálogo
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Puedes ver el catálogo, pero para seleccionar servicios debes iniciar sesión.",
                     "Modo de visualización",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
         }
 
-       // this.dispose();
+        NewJCatalogoPeinado catalogoPeinado = new NewJCatalogoPeinado();
+        catalogoPeinado.setVisible(true);
+
+        if (!andynails.SesionUsuario.sesionActiva()) {
+            catalogoPeinado.deshabilitarSeleccion();
+        }
+
+        // this.dispose();
     }//GEN-LAST:event_jMenuItem1ActionPerformed
 
     private void jMenuItem3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem3ActionPerformed
         // TODO add your handling code here:
-        // Abrir catálogo de maquillaje - siempre permitido ver
-         NewJCatalogoMaq catalogoMaq = new NewJCatalogoMaq();
-         catalogoMaq.setVisible(true);
-
-        // Si no está logueado, deshabilitar la selección en el catálogo
         if (!andynails.SesionUsuario.sesionActiva()) {
-            catalogoMaq.deshabilitarSeleccion(); // Método que agregarás al catálogo
             javax.swing.JOptionPane.showMessageDialog(this,
                     "Puedes ver el catálogo, pero para seleccionar servicios debes iniciar sesión.",
                     "Modo de visualización",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
         }
 
-     //   this.dispose();
+        // LUEGO abrir el catálogo
+        NewJCatalogoMaq catalogoMaq = new NewJCatalogoMaq();
+        catalogoMaq.setVisible(true);
+
+        // FINALMENTE deshabilitar selección si no está logueado
+        if (!andynails.SesionUsuario.sesionActiva()) {
+            catalogoMaq.deshabilitarSeleccion();
+        }
 
     }//GEN-LAST:event_jMenuItem3ActionPerformed
 
@@ -363,31 +359,31 @@ public class Inicio extends javax.swing.JFrame {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         // Verificar si hay sesión activa
-    if (!andynails.SesionUsuario.sesionActiva()) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-                "Debes iniciar sesión o registrarte antes de poder agendar una cita.",
-                "Acceso restringido",
-                javax.swing.JOptionPane.WARNING_MESSAGE);
-        
-        // Abrir login si no hay sesión
-        NewJLogin login = new NewJLogin();
-        login.setVisible(true);
-        login.setLocationRelativeTo(null);
-        this.dispose();
-        return;
-    }
+        if (!andynails.SesionUsuario.sesionActiva()) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Debes iniciar sesión o registrarte antes de poder agendar una cita.",
+                    "Acceso restringido",
+                    javax.swing.JOptionPane.WARNING_MESSAGE);
 
-    // Si está logueado, permitir agendar
-    NewJAgenC ventana = new NewJAgenC();
-    ventana.setVisible(true);
-    this.dispose();
+            // Abrir login si no hay sesión
+            NewJLogin login = new NewJLogin();
+            login.setVisible(true);
+            login.setLocationRelativeTo(null);
+            this.dispose();
+            return;
+        }
+
+        // Si está logueado, permitir agendar
+        NewJAgenC ventana = new NewJAgenC();
+        ventana.setVisible(true);
+        //this.dispose();
 
     }//GEN-LAST:event_jMenuItem4ActionPerformed
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
         // TODO add your handling code here:
         //contacto
-        NewJContacto NewJContacto = new NewJContacto();
+        NewJContactoin NewJContacto = new NewJContactoin();
         NewJContacto.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -397,10 +393,10 @@ public class Inicio extends javax.swing.JFrame {
     private void jMenuItem6ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem6ActionPerformed
         // TODO add your handling code here:
         //login
-    NewJLogin login = new NewJLogin();
-    login.setVisible(true);
-    login.setLocationRelativeTo(null);
-    this.dispose(); // cierra la actual
+        NewJLogin login = new NewJLogin();
+        login.setVisible(true);
+        login.setLocationRelativeTo(null);
+        this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 

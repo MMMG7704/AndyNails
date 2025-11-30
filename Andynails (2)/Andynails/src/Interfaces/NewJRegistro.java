@@ -2,6 +2,7 @@ package Interfaces;
 
 import andynails.ConexionBD;
 import andynails.RedesSociales;
+import andynails.SesionUsuario;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import javax.swing.JFrame;
@@ -63,7 +64,6 @@ public class NewJRegistro extends javax.swing.JFrame {
             }
         });
 
-        
         // Limitar txtPaterno a 10 caracteres (solo letras)
         ((AbstractDocument) txtPaterno.getDocument()).setDocumentFilter(new DocumentFilter() {
             @Override
@@ -200,8 +200,19 @@ public class NewJRegistro extends javax.swing.JFrame {
         });
     }
 
-    
-    
+    // Método para obtener el ID del usuario recién registrado
+    private int obtenerIdUsuarioRecienRegistrado(String correo, Connection con) throws SQLException {
+        String sql = "SELECT idUsuarios FROM usuarios WHERE Correo = ?";
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setString(1, correo);
+        ResultSet rs = ps.executeQuery();
+
+        if (rs.next()) {
+            return rs.getInt("idUsuarios");
+        }
+        return 0;
+    }
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -909,6 +920,23 @@ public class NewJRegistro extends javax.swing.JFrame {
 
             ps.executeUpdate();
             JOptionPane.showMessageDialog(this, "Usuario registrado correctamente.");
+// === AGREGAR ESTO: INICIAR SESIÓN AUTOMÁTICAMENTE ===
+// Obtener el ID del usuario recién registrado
+            int idUsuario = obtenerIdUsuarioRecienRegistrado(correo, con);
+
+// Iniciar sesión automáticamente
+            String nombreCompleto = nombre + " " + paterno + " " + materno;
+            SesionUsuario.iniciarSesion(idUsuario, nombreCompleto);
+            System.out.println("DEBUG: Sesión iniciada - ID: " + idUsuario + ", Nombre: " + nombreCompleto);
+
+// Limpiar campos después de registrar
+            txtNombre.setText("");
+
+            con.close();
+
+            NewJMiscitasCi misCitas = new NewJMiscitasCi();
+            misCitas.setVisible(true);
+            this.dispose();
 
             // Limpiar campos después de registrar
             txtNombre.setText("");

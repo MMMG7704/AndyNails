@@ -26,23 +26,26 @@ public class NewJReportes extends javax.swing.JFrame {
      * Creates new form NewJReportes
      */
     public NewJReportes() {
-        initComponents();
-        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-        conexion = new ConexionBD("andynails");
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+            initComponents();
+    RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+    conexion = new ConexionBD("andynails");
+    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        // Configurar ComboBox de fechas con opciones predefinidas
-        configurarComboBoxFechas();
+    // Configurar ComboBox de fechas con opciones predefinidas
+    configurarComboBoxFechas();
+    
+    // INICIALIZAR EL COMBOBOX CON UN TIPO DE REPORTE VÁLIDO
+    btnServiciosActionPerformed(null); // Iniciar con servicios por defecto
 
-        // Configurar tooltips
-        btnEstadisticos.setToolTipText("Generar reportes estadísticos y gráficos");
-        btnPagos.setToolTipText("Reportes de estado de pagos e ingresos");
-        btnServicios.setToolTipText("Catálogo y información de servicios");
-        jButton3.setToolTipText("Cargar datos en la tabla antes de exportar");
-        jButton1.setToolTipText("Exportar a PDF los datos mostrados");
-        jComboBox1.setToolTipText("Seleccione el tipo específico de reporte");
-        comboxRangoinicio.setToolTipText("Seleccione fecha inicial");
-        comboxRangofin.setToolTipText("Seleccione fecha final");
+    // Configurar tooltips
+    btnEstadisticos.setToolTipText("Generar reportes estadísticos y gráficos");
+    btnPagos.setToolTipText("Reportes de estado de pagos e ingresos");
+    btnServicios.setToolTipText("Catálogo y información de servicios");
+    jButton3.setToolTipText("Cargar datos en la tabla antes de exportar");
+    jButton1.setToolTipText("Exportar a PDF los datos mostrados");
+    jComboBox1.setToolTipText("Seleccione el tipo específico de reporte");
+    comboxRangoinicio.setToolTipText("Seleccione fecha inicial");
+    comboxRangofin.setToolTipText("Seleccione fecha final");
     }
 
     private void configurarComboBoxFechas() {
@@ -774,51 +777,60 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-        // Determinar qué tipo de reporte generar
- String tipoReporte = jComboBox1.getSelectedItem().toString();
+    if (jComboBox1.getSelectedItem() == null) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Por favor, seleccione un tipo de reporte antes de exportar",
+                "Selección Requerida", 
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    String tipoReporte = jComboBox1.getSelectedItem().toString();
 
-        try {
-            if (tipoReporte.contains("Servicios") || tipoReporte.equals("Todos los servicios")
-                    || tipoReporte.equals("Servicios activos") || tipoReporte.equals("Precios de servicios")) {
+    try {
+        // Primero generar los datos en la tabla
+        jButton3ActionPerformed(evt);
+        
+        // Luego exportar según el tipo
+        if (tipoReporte.contains("Servicios") || tipoReporte.equals("Todos los servicios")
+                || tipoReporte.equals("Servicios activos") || tipoReporte.equals("Precios de servicios")) {
 
-                String ruta = "Reporte_Servicios_AndyNails.pdf";
-                ReporteServicios.generarPDF(ruta);
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "Reporte de servicios generado exitosamente:\n" + ruta,
-                        "Reporte Generado",
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-            } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")
-                    || tipoReporte.contains("Ingresos") || tipoReporte.contains("Clientes frecuentes")) {
-
-                ReporteEstadistico.generarPDF();
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "Reporte estadístico generado exitosamente",
-                        "Reporte Generado",
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-            } else if (tipoReporte.contains("Pagos")) {
-
-                //  IMPLEMENTADO - Generar reporte de pagos
-                ReportePagos.generarReportePagos();
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "Reporte de pagos generado exitosamente",
-                        "Reporte Generado",
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-            } else {
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        "Por favor, selecciona un tipo de reporte específico",
-                        "Selección Requerida",
-                        javax.swing.JOptionPane.WARNING_MESSAGE);
-            }
-        } catch (Exception e) {
+            String ruta = "Reporte_Servicios_AndyNails.pdf";
+            ReporteServicios.generarPDF(ruta);
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al generar el reporte: " + e.getMessage(),
-                    "Error",
+                    "Reporte de servicios generado exitosamente:\n" + ruta,
+                    "Reporte Generado",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")
+                || tipoReporte.contains("Ingresos") || tipoReporte.contains("Clientes frecuentes")) {
+
+            ReporteEstadistico.generarPDF();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Reporte estadístico generado exitosamente",
+                    "Reporte Generado",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        } else if (tipoReporte.contains("Pagos")) {
+            ReportePagos.generarReportePagos();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Reporte de pagos generado exitosamente",
+                    "Reporte Generado",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "Tipo de reporte no soportado para exportación: " + tipoReporte,
+                    "Error de Exportación",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
         }
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Error al generar el reporte: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+    }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
@@ -897,90 +909,135 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void btnEstadisticosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEstadisticosActionPerformed
         // TODO add your handling code here:
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
-                new String[]{
-                    "Servicios más solicitados",
-                    "Ingresos por mes",
-                    "Clientes frecuentes",
-                    "Horarios populares"
-                }
-        ));
+       String[] opciones = {
+        "Servicios más solicitados",
+        "Ingresos por mes", 
+        "Clientes frecuentes",
+        "Horarios populares"
+    };
+    
+    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
 
-        // Actualizar etiquetas para estadísticas
-        jLabel9.setText("Tipo de estadística:");
-        jLabel10.setText("Rango de fechas:");
+    // Actualizar etiquetas para estadísticas
+    jLabel9.setText("Tipo de estadística:");
+    jLabel10.setText("Rango de fechas:");
+    
+    // Cargar datos automáticamente
+    cargarServiciosMasSolicitados();
     }//GEN-LAST:event_btnEstadisticosActionPerformed
 
     private void btnPagosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPagosActionPerformed
         // TODO add your handling code here:
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
-                new String[]{
-                    "Pagos pendientes",
-                    "Pagos completados",
-                    "Historial de pagos",
-                    "Métodos de pago más usados"
-                }
-        ));
+        String[] opciones = {
+        "Pagos pendientes",
+        "Pagos completados", 
+        "Historial de pagos",
+        "Métodos de pago más usados"
+    };
+    
+    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
 
-        jLabel9.setText("Tipo de pago:");
-        jLabel10.setText("Rango de fechas:");
+    jLabel9.setText("Tipo de pago:");
+    jLabel10.setText("Rango de fechas:");
+    
+    // Cargar datos automáticamente
+    cargarPagosDesdeBD();
     }//GEN-LAST:event_btnPagosActionPerformed
 
     private void btnServiciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnServiciosActionPerformed
         // TODO add your handling code here:
-        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(
-                new String[]{
-                    "Todos los servicios",
-                    "Servicios activos",
-                    "Servicios por categoría",
-                    "Precios de servicios"
-                }
-        ));
+        String[] opciones = {
+        "Todos los servicios",
+        "Servicios activos", 
+        "Servicios por categoría",
+        "Precios de servicios"
+    };
+    
+    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
 
-        jLabel9.setText("Tipo de servicio:");
-        jLabel10.setText("Rango de fechas:");
+    jLabel9.setText("Tipo de servicio:");
+    jLabel10.setText("Rango de fechas:");
+    
+    // Cargar datos automáticamente
+    cargarServiciosDesdeBD();
     }//GEN-LAST:event_btnServiciosActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-        // TODO add your handling code here:
-        String tipoSeleccionado = jComboBox1.getSelectedItem().toString();
-        javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-        model.setRowCount(0); // Limpiar tabla
+    // TODO add your handling code here:
+    if (jComboBox1.getSelectedItem() == null) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Por favor, seleccione primero un tipo de reporte",
+                "Selección Requerida",
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+    
+    String tipoSeleccionado = jComboBox1.getSelectedItem().toString();
+    javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+    model.setRowCount(0); // Limpiar tabla
 
-        try {
-            if (tipoSeleccionado.contains("Servicios") || tipoSeleccionado.equals("Todos los servicios")) {
+    try {
+        // Mapeo más específico de opciones
+        switch (tipoSeleccionado) {
+            case "Todos los servicios":
+            case "Servicios activos":
+            case "Servicios por categoría":
+            case "Precios de servicios":
                 cargarServiciosDesdeBD();
-            } else if (tipoSeleccionado.contains("Pagos") || tipoSeleccionado.equals("Pagos completados")) {
+                break;
+                
+            case "Pagos pendientes":
+            case "Pagos completados":
+            case "Historial de pagos":
+            case "Métodos de pago más usados":
                 cargarPagosDesdeBD();
-            } else if (tipoSeleccionado.contains("más solicitados")) {
+                break;
+                
+            case "Servicios más solicitados":
                 cargarServiciosMasSolicitados();
-            } else if (tipoSeleccionado.contains("Clientes frecuentes")) {
+                break;
+                
+            case "Clientes frecuentes":
                 cargarClientesFrecuentes();
-            } else if (tipoSeleccionado.contains("Citas por fecha")) {
+                break;
+                
+            case "Ingresos por mes":
+            case "Horarios populares":
+            case "Citas por fecha":
                 cargarCitasPorFecha();
-            } else {
+                break;
+                
+            default:
                 javax.swing.JOptionPane.showMessageDialog(this,
-                        "Selecciona un tipo de reporte válido",
-                        "Información",
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
-            }
-
-            // Mostrar mensaje de éxito
-            if (model.getRowCount() > 0) {
-                javax.swing.JOptionPane.showMessageDialog(this,
-                        +model.getRowCount() + " registros cargados desde la base de datos",
-                        "Datos Cargados",
-                        javax.swing.JOptionPane.INFORMATION_MESSAGE);
-            }
-
-        } catch (Exception e) {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                    " Error al cargar datos: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
+                        "Tipo de reporte no reconocido: " + tipoSeleccionado,
+                        "Error",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+                return;
         }
 
+        // Mostrar mensaje de éxito
+        if (model.getRowCount() > 0) {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    model.getRowCount() + " registros cargados desde la base de datos",
+                    "Datos Cargados",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            javax.swing.JOptionPane.showMessageDialog(this,
+                    "No se encontraron datos para el reporte seleccionado",
+                    "Sin Datos",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        }
+
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+                "Error al cargar datos: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+    }
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed

@@ -157,116 +157,125 @@ public class NewJPagoit extends javax.swing.JFrame {
     }
 
     // MÉTODO NUEVO PARA INSERTAR CITA DESPUÉS DEL PAGO
-    private void insertarCitaYServicios(int idPago) {
-        String fecha = SesionUsuario.getFechaCita();
-        String hora = SesionUsuario.getHoraCita();
-        java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+private void insertarCitaYServicios(int idPago) {
+    String fecha = SesionUsuario.getFechaCita();
+    String hora = SesionUsuario.getHoraCita();
+    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
 
-        System.out.println("=== DEBUG INSERTAR CITA ===");
-        System.out.println("Fecha: " + fecha + ", Hora: " + hora);
-        System.out.println("Servicios a insertar:");
+    System.out.println("=== DEBUG INSERTAR CITA ===");
+    System.out.println("Fecha: " + fecha + ", Hora: " + hora);
+    System.out.println("Servicios a insertar:");
 
+    for (Object[] servicio : servicios) {
+        String descripcion = (String) servicio[1];
+        System.out.println(" - Descripción: " + descripcion);
+    }
+    System.out.println("===========================");
+
+    if (fecha == null || hora == null || servicios.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Error: No hay datos de cita guardados.");
+        return;
+    }
+
+    java.sql.Connection conn = null;
+    java.sql.PreparedStatement psCita = null;
+    java.sql.PreparedStatement psServicios = null;
+    java.sql.ResultSet rsCita = null;
+
+    try {
+        conn = ConexionBD.getConnection();
+        conn.setAutoCommit(false);
+
+        // 1. INSERTAR CITA
+        String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) VALUES (?, ?, ?, ?, ?)";
+        psCita = conn.prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
+
+        psCita.setDate(1, java.sql.Date.valueOf(fecha));
+        psCita.setTime(2, java.sql.Time.valueOf(hora + ":00"));
+        psCita.setString(3, "Confirmada");
+        psCita.setInt(4, SesionUsuario.getIdUsuario());
+        psCita.setInt(5, idPago);
+
+        psCita.executeUpdate();
+
+        // OBTENER ID DE LA CITA
+        rsCita = psCita.getGeneratedKeys();
+        int idCita = 0;
+        if (rsCita.next()) {
+            idCita = rsCita.getInt(1);
+            System.out.println("Cita creada con ID: " + idCita);
+        } else {
+            throw new SQLException("No se pudo obtener el ID de la cita creada");
+        }
+
+        // 2. INSERTAR SERVICIOS DE LA CITA - CORREGIDO CON INSERT IGNORE
+        String sqlServicios = "INSERT IGNORE INTO cita_has_servicios (idCita, idServicios, Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
+        psServicios = conn.prepareStatement(sqlServicios);
+
+        int serviciosInsertados = 0;
         for (Object[] servicio : servicios) {
             String descripcion = (String) servicio[1];
-            System.out.println(" - Descripción: " + descripcion);
-        }
-        System.out.println("===========================");
+            int idServicio = obtenerIdServicioPorDescripcion(descripcion);
 
-        if (fecha == null || hora == null || servicios.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Error: No hay datos de cita guardados.");
-            return;
+            if (idServicio > 0) {
+                psServicios.setInt(1, idCita);
+                psServicios.setInt(2, idServicio);
+                psServicios.setInt(3, idPago);
+                psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(SesionUsuario.getMontoTotalCita()));
+                psServicios.addBatch();
+                serviciosInsertados++;
+                System.out.println(" Insertando servicio: " + descripcion + " -> ID: " + idServicio);
+            } else {
+                System.out.println(" No se encontró ID para servicio: " + descripcion);
+            }
         }
 
-        java.sql.Connection conn = null;
-        java.sql.PreparedStatement psCita = null;
-        java.sql.PreparedStatement psServicios = null;
-        java.sql.ResultSet rsCita = null;
+        if (serviciosInsertados > 0) {
+            int[] resultados = psServicios.executeBatch();
+            System.out.println(" Servicios insertados: " + resultados.length);
+        } else {
+            System.out.println(" No se insertaron servicios");
+        }
+
+        conn.commit();
+
+        JOptionPane.showMessageDialog(this, "¡Cita agendada exitosamente!");
+
+        // Limpiar datos de la sesión
+        SesionUsuario.limpiarDatosCita();
+
+    } catch (java.sql.SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al agendar cita: " + e.getMessage());
 
         try {
-            conn = ConexionBD.getConnection();
-            conn.setAutoCommit(false);
-
-            // 1. INSERTAR CITA
-            String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) VALUES (?, ?, ?, ?, ?)";
-            psCita = conn.prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
-
-            psCita.setDate(1, java.sql.Date.valueOf(fecha));
-            psCita.setTime(2, java.sql.Time.valueOf(hora + ":00"));
-            psCita.setString(3, "Confirmada");
-            psCita.setInt(4, SesionUsuario.getIdUsuario());
-            psCita.setInt(5, idPago);
-
-            psCita.executeUpdate();
-
-            // OBTENER ID DE LA CITA
-            rsCita = psCita.getGeneratedKeys();
-            int idCita = 0;
-            if (rsCita.next()) {
-                idCita = rsCita.getInt(1);
-            } else {
-                throw new SQLException("No se pudo obtener el ID de la cita creada");
+            if (conn != null) {
+                conn.rollback();
             }
-
-            // 2. INSERTAR SERVICIOS DE LA CITA - CORREGIDO
-            String sqlServicios = "INSERT INTO cita_has_servicios (idCita, idServicios, Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
-            psServicios = conn.prepareStatement(sqlServicios);
-
-            for (Object[] servicio : servicios) {
-                String descripcion = (String) servicio[1];
-                int idServicio = obtenerIdServicioPorDescripcion(descripcion);
-
-                if (idServicio > 0) {
-                    psServicios.setInt(1, idCita);
-                    psServicios.setInt(2, idServicio);
-                    psServicios.setInt(3, idPago);
-                    psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(SesionUsuario.getMontoTotalCita()));
-                    psServicios.addBatch();
-                    System.out.println("Insertando servicio: " + descripcion + " -> ID: " + idServicio);
-                } else {
-                    System.out.println("No se encontró ID para servicio: " + descripcion);
-                }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    } finally {
+        // Cerrar todos los recursos
+        try {
+            if (rsCita != null) {
+                rsCita.close();
             }
-
-            psServicios.executeBatch();
-            conn.commit();
-
-            JOptionPane.showMessageDialog(this, "¡Cita agendada exitosamente!");
-
-            // Limpiar datos de la sesión
-            SesionUsuario.limpiarDatosCita();
-
-        } catch (java.sql.SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error al agendar cita: " + e.getMessage());
-
-            try {
-                if (conn != null) {
-                    conn.rollback();
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            if (psCita != null) {
+                psCita.close();
             }
-        } finally {
-            // Cerrar todos los recursos
-            try {
-                if (rsCita != null) {
-                    rsCita.close();
-                }
-                if (psCita != null) {
-                    psCita.close();
-                }
-                if (psServicios != null) {
-                    psServicios.close();
-                }
-                if (conn != null) {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            if (psServicios != null) {
+                psServicios.close();
             }
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
     }
+}
 
 // Método auxiliar para obtener ID de servicio - CORREGIDO
     private int obtenerIdServicioPorDescripcion(String descripcion) {

@@ -8,12 +8,14 @@ import java.util.function.Predicate;
 public class RecordatorioCita {
 
     public static void enviarRecordatorios(Predicate<String> permitirEnvio) {
+        // Tu código existente...
+    }
 
+    // NUEVO MÉTODO PARA ENVIAR RECORDATORIOS AL CERRAR SESIÓN
+    public static void enviarRecordatoriosCierreSesion() {
         try (Connection con = ConexionBD.getConnection()) {
-
             LocalDate manana = LocalDate.now().plusDays(1);
 
-            // 👇 SOLO ENVÍA A CITAS QUE AÚN NO HAN SIDO NOTIFICADAS
             String sql = "SELECT c.idCita, u.Nombre, u.Paterno, u.Materno, u.Correo, c.Fecha, c.Hora " +
                     "FROM cita c " +
                     "JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
@@ -25,14 +27,7 @@ public class RecordatorioCita {
             ResultSet rs = ps.executeQuery();
 
             while (rs.next()) {
-
                 String idCita = rs.getString("idCita");
-
-                // Validar si se permite el envío (siempre true en esta versión)
-                if (!permitirEnvio.test(idCita)) {
-                    continue;
-                }
-
                 String nombre = rs.getString("Nombre");
                 String paterno = rs.getString("Paterno");
                 String materno = rs.getString("Materno");
@@ -42,12 +37,12 @@ public class RecordatorioCita {
 
                 String nombreCompleto = nombre + " " + paterno + " " + materno;
 
-                System.out.println("📨 Enviando recordatorio a: " + nombreCompleto + " (" + correo + ")");
+                System.out.println("📨 Enviando recordatorio por cierre de sesión a: " + nombreCompleto + " (" + correo + ")");
 
-                // 👉 Enviar email
+                // Enviar email
                 RecordatorioEmail_1.enviarRecordatorio(correo, nombreCompleto, fecha, hora);
 
-                // 👉 MARCAR LA CITA COMO NOTIFICADA EN LA BD
+                // Marcar como notificado
                 PreparedStatement upd = con.prepareStatement(
                         "UPDATE cita SET Estado = 'Notificado' WHERE idCita = ?"
                 );
@@ -55,13 +50,14 @@ public class RecordatorioCita {
                 upd.executeUpdate();
                 upd.close();
 
-                System.out.println("✔ Cita " + idCita + " marcada como Notificada.");
+                System.out.println(" Cita " + idCita + " marcada como Notificada.");
             }
 
             rs.close();
             ps.close();
 
         } catch (SQLException e) {
+            System.err.println(" Error al enviar recordatorios al cerrar sesión: " + e.getMessage());
             e.printStackTrace();
         }
     }
