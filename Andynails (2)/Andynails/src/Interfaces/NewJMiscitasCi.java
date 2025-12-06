@@ -573,9 +573,6 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabelNomcl;
-    private javax.swing.JMenu jMenu16;
-    private javax.swing.JMenu jMenu17;
-    private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
@@ -588,9 +585,6 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion3;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion4;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion5;
     private javax.swing.JMenuItem jMenuItemCerrarSecion6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;

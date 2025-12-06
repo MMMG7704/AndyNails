@@ -16,7 +16,7 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
     private ArrayList<CategoriaServicio> serviciosList = new ArrayList<>();
 
     public NewJCatalogoGenerico(ConexionBD conexion) {
-        initComponents(); // usa tu diseño visual de NetBeans
+        initComponents(); 
         this.conexion = conexion;
         cargarServiciosDesdeBD();
     }

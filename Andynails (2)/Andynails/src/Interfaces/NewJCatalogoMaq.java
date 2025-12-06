@@ -135,7 +135,7 @@ public class NewJCatalogoMaq extends javax.swing.JFrame {
                 c.precio = precio;
                 c.nombre = nombre;
 
-                // 🔹 Clasificación automática
+                // Clasificación automática
                 switch (nombre.toLowerCase().trim()) {
                     case "boda":
                     case "maquillaje boda":
@@ -184,7 +184,7 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
             double precioNum = Double.parseDouble(c.precio);
             lblPrecio.setText(String.format("$%.2f", precioNum));
         } catch (NumberFormatException e) {
-            lblPrecio.setText("$" + c.precio); // Si ya tiene formato
+            lblPrecio.setText("$" + c.precio); 
         }
     } else {
         lblPrecio.setText("$0.00");
@@ -425,8 +425,8 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
                             .addComponent(labelCategoria3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addGap(125, 125, 125))
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
+                            .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addGroup(jPanel2Layout.createSequentialGroup()
                                     .addGap(101, 101, 101)
                                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                         .addGroup(jPanel2Layout.createSequentialGroup()
@@ -441,25 +441,22 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
                                             .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                             .addComponent(txtPrecio2, javax.swing.GroupLayout.PREFERRED_SIZE, 65, javax.swing.GroupLayout.PREFERRED_SIZE))
                                         .addComponent(lblImg2, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel2Layout.createSequentialGroup()
-                                    .addGap(108, 108, 108)
-                                    .addComponent(lblDesc1)
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                    .addComponent(lblDesc2)
-                                    .addGap(20, 20, 20))
-                                .addGroup(jPanel2Layout.createSequentialGroup()
+                                .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel2Layout.createSequentialGroup()
                                     .addGap(148, 148, 148)
                                     .addComponent(jButton3)
                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addComponent(jButton5)
-                                    .addGap(44, 44, 44)))
+                                    .addGap(44, 44, 44))
+                                .addGroup(jPanel2Layout.createSequentialGroup()
+                                    .addGap(108, 108, 108)
+                                    .addComponent(lblDesc1)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addComponent(lblDesc2)
+                                    .addGap(40, 40, 40)))
                             .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addGroup(jPanel2Layout.createSequentialGroup()
                                     .addGap(250, 250, 250)
                                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGroup(jPanel2Layout.createSequentialGroup()
-                                    .addGap(172, 172, 172)
-                                    .addComponent(lblDesc3))
                                 .addGroup(jPanel2Layout.createSequentialGroup()
                                     .addGap(133, 133, 133)
                                     .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -470,7 +467,10 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
                                         .addComponent(lblImg3, javax.swing.GroupLayout.PREFERRED_SIZE, 208, javax.swing.GroupLayout.PREFERRED_SIZE)))
                                 .addGroup(jPanel2Layout.createSequentialGroup()
                                     .addGap(214, 214, 214)
-                                    .addComponent(jButton6)))))
+                                    .addComponent(jButton6))
+                                .addGroup(jPanel2Layout.createSequentialGroup()
+                                    .addGap(144, 144, 144)
+                                    .addComponent(lblDesc3)))))
                     .addGroup(jPanel2Layout.createSequentialGroup()
                         .addGap(503, 503, 503)
                         .addComponent(jLabel11)))
@@ -533,8 +533,6 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(jPanel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
         );
-
-        jMenuBar1.setBackground(new java.awt.Color(255, 153, 255));
 
         jMenu1.setText("INICIO");
         jMenu1.addMenuListener(new javax.swing.event.MenuListener() {

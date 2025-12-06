@@ -99,7 +99,6 @@ public class NewJCita extends javax.swing.JFrame {
         // Cargar servicios desde la base de datos
         cargarServicios();
 
-        // Configurar fecha actual - FORMA CORRECTA
         cargarFechasDisponibles();
 
         // Estado por defecto

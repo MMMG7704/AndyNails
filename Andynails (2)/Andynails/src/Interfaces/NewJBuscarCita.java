@@ -598,7 +598,6 @@ public class NewJBuscarCita extends javax.swing.JFrame {
         }
 
         try {
-            // 🔹 Convertir formato de fecha de dd-MM-yyyy → yyyy-MM-dd
             java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("dd-MM-yyyy");
             java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("yyyy-MM-dd");
             String fechaConvertida = "";
@@ -610,7 +609,6 @@ public class NewJBuscarCita extends javax.swing.JFrame {
                 return;
             }
 
-            // 🔹 Ajustar formato de hora (añadir segundos si faltan)
             if (horaTexto.length() == 5) {
                 horaTexto += ":00";
             }

@@ -112,7 +112,6 @@ public class NewGCVEliminar extends javax.swing.JFrame {
         jPanel1 = new javax.swing.JPanel();
         jLabel2 = new javax.swing.JLabel();
         btneliminar = new javax.swing.JButton();
-        btncancelar = new javax.swing.JButton();
         jTextField2 = new javax.swing.JTextField();
         jLabelServicio = new javax.swing.JLabel();
         jPanel4 = new javax.swing.JPanel();
@@ -304,14 +303,6 @@ public class NewGCVEliminar extends javax.swing.JFrame {
             }
         });
 
-        btncancelar.setBackground(new java.awt.Color(255, 204, 255));
-        btncancelar.setText("Cancelar");
-        btncancelar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btncancelarActionPerformed(evt);
-            }
-        });
-
         jTextField2.setText("⚠️ ¿Estás seguro de eliminar este servicio?     ");
         jTextField2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -338,7 +329,7 @@ public class NewGCVEliminar extends javax.swing.JFrame {
                 .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(109, 109, 109)
                 .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 101, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(79, 79, 79))
         );
@@ -367,25 +358,20 @@ public class NewGCVEliminar extends javax.swing.JFrame {
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(39, 39, 39)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addComponent(jLabel2)
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jLabelServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(50, 50, 50)
-                                .addComponent(btneliminar)
-                                .addGap(18, 18, 18)
-                                .addComponent(btncancelar)
-                                .addGap(18, 18, 18)
-                                .addComponent(jButton2)))
-                        .addGap(0, 0, Short.MAX_VALUE)))
-                .addContainerGap())
+                        .addGap(39, 39, 39)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel2)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addComponent(jLabelServicio, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(50, 50, 50)
+                        .addComponent(btneliminar)
+                        .addGap(18, 18, 18)
+                        .addComponent(jButton2)))
+                .addContainerGap(221, Short.MAX_VALUE))
+            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -399,7 +385,6 @@ public class NewGCVEliminar extends javax.swing.JFrame {
                 .addGap(61, 61, 61)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btneliminar)
-                    .addComponent(btncancelar)
                     .addComponent(jButton2))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 41, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -498,111 +483,102 @@ public class NewGCVEliminar extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void btncancelarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarActionPerformed
-        // TODO add your handling code here:
-        NewGCV NewGCV = new NewGCV();
-        NewGCV.setVisible(true);
-
-        this.dispose(); // Cierra la ventana actual
-
-    }//GEN-LAST:event_btncancelarActionPerformed
-
     private void jTextField2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2ActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField2ActionPerformed
 
     private void btneliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btneliminarActionPerformed
-    String nombreServicio = jLabelServicio.getText();
-    
-    try (Connection conn = ConexionBD.getConnection()) {
-        // 🔹 Primero verificar si hay categorías
-        PreparedStatement psVerificar = conn.prepareStatement(
-                "SELECT COUNT(*) FROM categoria_servicio WHERE idServicios = ?");
-        psVerificar.setInt(1, idServicio);
-        ResultSet rs = psVerificar.executeQuery();
-        
-        int totalCategorias = 0;
-        if (rs.next()) {
-            totalCategorias = rs.getInt(1);
-        }
-        
-        String mensajeAdvertencia;
-        if (totalCategorias > 0) {
-            mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?\n\n" +
-                                "️ ADVERTENCIA: Se eliminarán " + totalCategorias + " categorías relacionadas.";
-        } else {
-            mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?";
-        }
-        
-        int confirm = JOptionPane.showOptionDialog(this,
-                mensajeAdvertencia,
-                "Confirmar eliminación",
-                JOptionPane.YES_NO_OPTION,
-                totalCategorias > 0 ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE,
-                null,
-                new Object[]{"Sí", "No"},
-                "No");
+        String nombreServicio = jLabelServicio.getText();
 
-        if (confirm == JOptionPane.YES_OPTION) {
-            conn.setAutoCommit(false); // Iniciar transacción
-            
-            try {
-                // Eliminar categorías relacionadas 
-                if (totalCategorias > 0) {
-                    PreparedStatement psCategorias = conn.prepareStatement(
-                            "DELETE FROM categoria_servicio WHERE idServicios = ?");
-                    psCategorias.setInt(1, idServicio);
-                    psCategorias.executeUpdate();
-                }
-                
-                // Eliminar el servicio
-                PreparedStatement psServicio = conn.prepareStatement(
-                        "DELETE FROM servicios WHERE idServicios = ?");
-                psServicio.setInt(1, idServicio);
-                int filas = psServicio.executeUpdate();
-                
-                if (filas > 0) {
-                    conn.commit(); 
-                    
-                    String mensajeExito = "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.";
-                    if (totalCategorias > 0) {
-                        mensajeExito += "\nSe eliminaron " + totalCategorias + " categorías relacionadas.";
-                    }
-                    
-                    JOptionPane.showMessageDialog(this,
-                            mensajeExito,
-                            "Éxito",
-                            JOptionPane.INFORMATION_MESSAGE);
-                    
-                    // Regresar a la ventana anterior
-                    NewGCV vista = new NewGCV();
-                    vista.setVisible(true);
-                    this.dispose();
-                    
-                } else {
-                    conn.rollback();
-                    JOptionPane.showMessageDialog(this,
-                            "El servicio ya no existe en la base de datos.");
-                }
-                
-            } catch (SQLException e) {
-                conn.rollback();
-                throw e;
+        try (Connection conn = ConexionBD.getConnection()) {
+            // 🔹 Primero verificar si hay categorías
+            PreparedStatement psVerificar = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM categoria_servicio WHERE idServicios = ?");
+            psVerificar.setInt(1, idServicio);
+            ResultSet rs = psVerificar.executeQuery();
+
+            int totalCategorias = 0;
+            if (rs.next()) {
+                totalCategorias = rs.getInt(1);
             }
+
+            String mensajeAdvertencia;
+            if (totalCategorias > 0) {
+                mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?\n\n"
+                        + "️ ADVERTENCIA: Se eliminarán " + totalCategorias + " categorías relacionadas.";
+            } else {
+                mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?";
+            }
+
+            int confirm = JOptionPane.showOptionDialog(this,
+                    mensajeAdvertencia,
+                    "Confirmar eliminación",
+                    JOptionPane.YES_NO_OPTION,
+                    totalCategorias > 0 ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    new Object[]{"Sí", "No"},
+                    "No");
+
+            if (confirm == JOptionPane.YES_OPTION) {
+                conn.setAutoCommit(false); // Iniciar transacción
+
+                try {
+                    // Eliminar categorías relacionadas 
+                    if (totalCategorias > 0) {
+                        PreparedStatement psCategorias = conn.prepareStatement(
+                                "DELETE FROM categoria_servicio WHERE idServicios = ?");
+                        psCategorias.setInt(1, idServicio);
+                        psCategorias.executeUpdate();
+                    }
+
+                    // Eliminar el servicio
+                    PreparedStatement psServicio = conn.prepareStatement(
+                            "DELETE FROM servicios WHERE idServicios = ?");
+                    psServicio.setInt(1, idServicio);
+                    int filas = psServicio.executeUpdate();
+
+                    if (filas > 0) {
+                        conn.commit();
+
+                        String mensajeExito = "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.";
+                        if (totalCategorias > 0) {
+                            mensajeExito += "\nSe eliminaron " + totalCategorias + " categorías relacionadas.";
+                        }
+
+                        JOptionPane.showMessageDialog(this,
+                                mensajeExito,
+                                "Éxito",
+                                JOptionPane.INFORMATION_MESSAGE);
+
+                        // Regresar a la ventana anterior
+                        NewGCV vista = new NewGCV();
+                        vista.setVisible(true);
+                        this.dispose();
+
+                    } else {
+                        conn.rollback();
+                        JOptionPane.showMessageDialog(this,
+                                "El servicio ya no existe en la base de datos.");
+                    }
+
+                } catch (SQLException e) {
+                    conn.rollback();
+                    throw e;
+                }
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error al eliminar el servicio: " + e.getMessage(),
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
-        
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, 
-                "Error al eliminar el servicio: " + e.getMessage(),
-                "Error",
-                JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
-    }
     }//GEN-LAST:event_btneliminarActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-        NewGCVCategoriaServicio anterior = new NewGCVCategoriaServicio();
+        NewGCV anterior = new NewGCV();
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed
@@ -689,7 +665,6 @@ public class NewGCVEliminar extends javax.swing.JFrame {
     private javax.swing.JLabel FACE;
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
-    private javax.swing.JButton btncancelar;
     private javax.swing.JButton btneliminar;
     private javax.swing.JButton jButton2;
     private javax.swing.JDialog jDialog1;

@@ -38,7 +38,8 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private LocalDate fechaSeleccionada = LocalDate.now();
     private com.toedter.calendar.JDateChooser dateChooser;
     private DateTimeFormatter formatoFecha = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-private javax.swing.JMenuItem jMenuItemCerrarSesion;
+    private javax.swing.JMenuItem jMenuItemCerrarSesion;
+
     private void actualizarEncabezadosSemana(LocalDate fechaBase) {
         DefaultTableModel modelo = (DefaultTableModel) tabla.getModel();
 

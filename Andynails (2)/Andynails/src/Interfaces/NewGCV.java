@@ -178,7 +178,6 @@ public class NewGCV extends javax.swing.JFrame {
                 break;
 
             case "Otros":
-                // Si tienes subcarpetas para 'otros', agrégalas aquí (ejemplo vacío)
                 break;
 
             default:
@@ -348,7 +347,7 @@ public class NewGCV extends javax.swing.JFrame {
                 String descripcion = rs.getString("Descripcion");
                 String precio = rs.getString("Precio");
 
-                // 🔹 Crear la ventana de edición y pasarle los datos
+                // Crear la ventana de edición y pasarle los datos
                 NewGCVInsertar ventanaEditar = new NewGCVInsertar();
                 ventanaEditar.setVisible(true);
 
@@ -385,7 +384,6 @@ public class NewGCV extends javax.swing.JFrame {
         jComboBox1 = new javax.swing.JComboBox<>();
         btnEditar1 = new javax.swing.JButton();
         btnEliminar1 = new javax.swing.JButton();
-        btnEliminar2 = new javax.swing.JButton();
         btnRegresar = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
@@ -475,14 +473,6 @@ public class NewGCV extends javax.swing.JFrame {
             }
         });
 
-        btnEliminar2.setBackground(new java.awt.Color(255, 204, 255));
-        btnEliminar2.setText("Cancelar");
-        btnEliminar2.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btnEliminar2ActionPerformed(evt);
-            }
-        });
-
         btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
         btnRegresar.setText("Regresar");
         btnRegresar.addActionListener(new java.awt.event.ActionListener() {
@@ -508,23 +498,18 @@ public class NewGCV extends javax.swing.JFrame {
                             .addComponent(jLabel2))
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnAgregarservicios)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnEditar1))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(btnRegresar)))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnAgregarservicios)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnEditar1)
                         .addGap(61, 61, 61)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(btnEliminar1)
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addComponent(btnEliminar2)
-                                .addGap(20, 20, 20)))
+                        .addComponent(btnEliminar1)
                         .addGap(137, 137, 137)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(0, 0, Short.MAX_VALUE)
+                .addComponent(btnRegresar)
+                .addGap(172, 172, 172))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -541,9 +526,7 @@ public class NewGCV extends javax.swing.JFrame {
                     .addComponent(btnEditar1)
                     .addComponent(btnAgregarservicios))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 28, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(btnEliminar2)
-                    .addComponent(btnRegresar))
+                .addComponent(btnRegresar)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -654,7 +637,7 @@ public class NewGCV extends javax.swing.JFrame {
     private void btnAgregarserviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarserviciosActionPerformed
         NewGCVInsertar insertar = new NewGCVInsertar(this); 
         insertar.setVisible(true);
-        // this.dispose(); // NO cierres la ventana principal
+        this.dispose(); 
     }//GEN-LAST:event_btnAgregarserviciosActionPerformed
 
     private void btnEditar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditar1ActionPerformed
@@ -707,10 +690,6 @@ public class NewGCV extends javax.swing.JFrame {
                     "Error al buscar el servicio: " + e.getMessage());
         }
     }//GEN-LAST:event_btnEliminar1ActionPerformed
-
-    private void btnEliminar2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminar2ActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_btnEliminar2ActionPerformed
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
@@ -805,7 +784,6 @@ public class NewGCV extends javax.swing.JFrame {
     private javax.swing.JButton btnAgregarservicios;
     private javax.swing.JButton btnEditar1;
     private javax.swing.JButton btnEliminar1;
-    private javax.swing.JButton btnEliminar2;
     private javax.swing.JButton btnRegresar;
     private javax.swing.JComboBox<String> jComboBox1;
     private javax.swing.JLabel jLabel2;

@@ -151,7 +151,6 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         actualizarResumen();
     }
 
-
     private void actualizarLabelFecha() {
         DateTimeFormatter formato = DateTimeFormatter.ofPattern(
                 "EEEE, dd 'de' MMMM 'de' yyyy", new Locale("es", "ES")

@@ -25,7 +25,6 @@ public class NewJAgenC extends javax.swing.JFrame {
 
     // Declaro una variable para la conexión a la base de datos
     private int idCitaSeleccionada = 0; // Para guardar el ID de la cita seleccionada
-    // private static java.util.List<Object[]> serviciosSeleccionados = new java.util.ArrayList<>();
     private java.util.List<Object[]> serviciosSeleccionados = new java.util.ArrayList<>();//nueva
     private int indiceActual = 0;
 
@@ -64,7 +63,6 @@ public class NewJAgenC extends javax.swing.JFrame {
         this.idUsuario = SesionUsuario.getIdUsuario();
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        //this.idUsuario = idUsuario;
         // Deshabilitar botones y combos si no hay usuario logueado
         boolean logueado = idUsuario != 0;
         jButton4.setEnabled(logueado);
@@ -89,8 +87,6 @@ public class NewJAgenC extends javax.swing.JFrame {
                                 "Esta hora está bloqueada o no disponible. Por favor seleccione otra hora.",
                                 "Hora no disponible",
                                 JOptionPane.WARNING_MESSAGE);
-                        // Opcional: resetear la selección
-                        // cbHora.setSelectedIndex(-1);
                     }
                 }
             }
@@ -262,7 +258,6 @@ public class NewJAgenC extends javax.swing.JFrame {
                     JOptionPane.INFORMATION_MESSAGE);
         }
 
-        // Debug DESPUÉS de agregar
         System.out.println("Servicios DESPUÉS de agregar:");
         debugServiciosActuales();
     }
@@ -294,7 +289,6 @@ public class NewJAgenC extends javax.swing.JFrame {
         String sqlBloqueo = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha = ? "
                 + "AND ? BETWEEN Hora_inicio AND Hora_fin";
 
-        // Verificar en cita - MODIFICADO: verificar por servicio específico
         String sqlCita = """
         SELECT COUNT(*) FROM cita c 
         JOIN cita_has_servicios chs ON c.idCita = chs.idCita 
@@ -548,10 +542,7 @@ public class NewJAgenC extends javax.swing.JFrame {
         // Mapeo manual basado en tu estructura de base de datos
         java.util.Map<String, Integer> mapeoFallback = new java.util.HashMap<>();
 
-        // Basado en tu estructura:
-        // Servicio "Uñas" -> idServicios = 1
-        // Servicio "Maquillaje" -> idServicios = 2  
-        // Servicio "Peinado" -> idServicios = 3
+      
         if (descripcion.toLowerCase().contains("peinado")) {
             System.out.println("DEBUG - Fallback: '" + descripcion + "' -> 3 (Peinado)");
             return 3;
@@ -632,7 +623,6 @@ public class NewJAgenC extends javax.swing.JFrame {
             nombreReal = descripcion; // Si no hay mapeo, usa la original
         }
 
-        // ✅ CORRECCIÓN: Usar el nombre correcto de la columna
         String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio LIKE ?";
 
         try (java.sql.Connection con = conexion.getConexion(); java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
@@ -680,7 +670,6 @@ public class NewJAgenC extends javax.swing.JFrame {
         String hora = SesionUsuario.getHoraCita();
         java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
 
-        // VALIDACIÓN MEJORADA CON MENSAJES ESPECÍFICOS
         if (fecha == null || fecha.trim().isEmpty()) {
             JOptionPane.showMessageDialog(this,
                     "Error: No se ha seleccionado fecha para la cita.\n\n"
@@ -805,7 +794,6 @@ public class NewJAgenC extends javax.swing.JFrame {
                 throw new SQLException("No se pudo obtener el ID de la cita creada");
             }
 
-            // 2. INSERTAR SERVICIOS DE LA CITA - CORREGIDO PARA EVITAR DUPLICADOS
             String sqlServicios = "INSERT INTO cita_has_servicios (idCita, idServicios, Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
             psServicios = conn.prepareStatement(sqlServicios);
 
@@ -950,59 +938,57 @@ public class NewJAgenC extends javax.swing.JFrame {
         return serviciosOcupados;
     }
 
-private double calcularMontoTotal(java.util.List<Object[]> servicios) {
-    double total = 0.0;
-    System.out.println("=== CALCULANDO MONTO TOTAL ===");
+    private double calcularMontoTotal(java.util.List<Object[]> servicios) {
+        double total = 0.0;
+        System.out.println("=== CALCULANDO MONTO TOTAL ===");
 
-    for (int i = 0; i < servicios.size(); i++) {
-        Object[] servicio = servicios.get(i);
-        String descripcion = (String) servicio[1];
-        String precioStr = (String) servicio[2]; // Este precio viene del catálogo (categoria_servicio)
-        
-        if (precioStr == null || precioStr.trim().isEmpty()) {
-            System.out.println("ADVERTENCIA: Servicio '" + descripcion + "' sin precio. Usando 0.00");
-            precioStr = "0.00";
-        }
-        
-        precioStr = precioStr.replace("$", "").replace(",", "").trim();
+        for (int i = 0; i < servicios.size(); i++) {
+            Object[] servicio = servicios.get(i);
+            String descripcion = (String) servicio[1];
+            String precioStr = (String) servicio[2]; 
 
-        try {
-            double precio = Double.parseDouble(precioStr);
-            total += precio;
-            System.out.println("Servicio " + i + ": " + descripcion + " - $" + precio + " - Total acumulado: $" + total);
-        } catch (NumberFormatException e) {
-            System.out.println("Error parseando precio: '" + precioStr + "' para servicio: " + descripcion);
-            // Intentar obtener precio desde BD si está mal formateado
-            double precioAlternativo = obtenerPrecioDesdeCategoria(descripcion);
-            total += precioAlternativo;
-            System.out.println("Usando precio alternativo: $" + precioAlternativo);
-        }
-    }
-    System.out.println("MONTO TOTAL FINAL: $" + total);
-    System.out.println("=================================");
-    return total;
-}
+            if (precioStr == null || precioStr.trim().isEmpty()) {
+                System.out.println("ADVERTENCIA: Servicio '" + descripcion + "' sin precio. Usando 0.00");
+                precioStr = "0.00";
+            }
 
-// Método auxiliar para obtener precio desde categoria_servicio
-private double obtenerPrecioDesdeCategoria(String descripcionCategoria) {
-    String sql = "SELECT Precio FROM categoria_servicio WHERE Nombre_categoria = ? OR Descripcion LIKE ? LIMIT 1";
-    
-    try (java.sql.Connection conn = conexion.getConexion(); 
-         java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-        
-        ps.setString(1, descripcionCategoria);
-        ps.setString(2, "%" + descripcionCategoria + "%");
-        
-        try (java.sql.ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                return rs.getDouble("Precio");
+            precioStr = precioStr.replace("$", "").replace(",", "").trim();
+
+            try {
+                double precio = Double.parseDouble(precioStr);
+                total += precio;
+                System.out.println("Servicio " + i + ": " + descripcion + " - $" + precio + " - Total acumulado: $" + total);
+            } catch (NumberFormatException e) {
+                System.out.println("Error parseando precio: '" + precioStr + "' para servicio: " + descripcion);
+                double precioAlternativo = obtenerPrecioDesdeCategoria(descripcion);
+                total += precioAlternativo;
+                System.out.println("Usando precio alternativo: $" + precioAlternativo);
             }
         }
-    } catch (Exception e) {
-        e.printStackTrace();
+        System.out.println("MONTO TOTAL FINAL: $" + total);
+        System.out.println("=================================");
+        return total;
     }
-    return 0.0; // Precio por defecto
-}
+
+// Método auxiliar para obtener precio desde categoria_servicio
+    private double obtenerPrecioDesdeCategoria(String descripcionCategoria) {
+        String sql = "SELECT Precio FROM categoria_servicio WHERE Nombre_categoria = ? OR Descripcion LIKE ? LIMIT 1";
+
+        try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, descripcionCategoria);
+            ps.setString(2, "%" + descripcionCategoria + "%");
+
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getDouble("Precio");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0.0; // Precio por defecto
+    }
 
     // MÉTODO NUEVO PARA CONFIGURAR EL CALENDARIO CORRECTAMENTE
     private void configurarCalendario() {
@@ -1119,39 +1105,37 @@ private double obtenerPrecioDesdeCategoria(String descripcionCategoria) {
     }
 
     ////Nuevo que agregue
-private void cargarServiciosDesdeBD() {
-    if (conexion == null) {
-        System.out.println("ERROR: Conexión es null, inicializando...");
-        conexion = new ConexionBD("andynails");
-    }
-
-    cmbServicios.removeAllItems();
-    cmbServicios.addItem("Seleccione un servicio");
-
-    // Solo obtener servicios principales SIN PRECIO
-    String sql = "SELECT idServicios, Nombre_servicio FROM servicios WHERE Nombre_servicio IS NOT NULL AND Nombre_servicio != '' ORDER BY Nombre_servicio";
-
-    try (java.sql.Connection conn = conexion.getConexion(); 
-         java.sql.PreparedStatement ps = conn.prepareStatement(sql); 
-         java.sql.ResultSet rs = ps.executeQuery()) {
-
-        while (rs.next()) {
-            String nombreServicio = rs.getString("Nombre_servicio");
-            if (nombreServicio != null && !nombreServicio.trim().isEmpty()) {
-                cmbServicios.addItem(nombreServicio.trim());
-            }
+    private void cargarServiciosDesdeBD() {
+        if (conexion == null) {
+            System.out.println("ERROR: Conexión es null, inicializando...");
+            conexion = new ConexionBD("andynails");
         }
 
-        System.out.println("DEBUG - Servicios cargados desde BD: " + (cmbServicios.getItemCount() - 1));
+        cmbServicios.removeAllItems();
+        cmbServicios.addItem("Seleccione un servicio");
 
-    } catch (Exception e) {
-        e.printStackTrace();
-        JOptionPane.showMessageDialog(this,
-                "Error al cargar servicios: " + e.getMessage(),
-                "Error", JOptionPane.ERROR_MESSAGE);
-        cargarServiciosPorDefecto();
+        // Solo obtener servicios principales SIN PRECIO
+        String sql = "SELECT idServicios, Nombre_servicio FROM servicios WHERE Nombre_servicio IS NOT NULL AND Nombre_servicio != '' ORDER BY Nombre_servicio";
+
+        try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sql); java.sql.ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                String nombreServicio = rs.getString("Nombre_servicio");
+                if (nombreServicio != null && !nombreServicio.trim().isEmpty()) {
+                    cmbServicios.addItem(nombreServicio.trim());
+                }
+            }
+
+            System.out.println("DEBUG - Servicios cargados desde BD: " + (cmbServicios.getItemCount() - 1));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this,
+                    "Error al cargar servicios: " + e.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            cargarServiciosPorDefecto();
+        }
     }
-}
 
     private void eliminarDuplicados() {
         java.util.List<Object[]> serviciosUnicos = new java.util.ArrayList<>();
@@ -1562,7 +1546,7 @@ private void cargarServiciosDesdeBD() {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(jDayChooser2, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(42, 42, 42)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 15, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 27, Short.MAX_VALUE)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -1672,173 +1656,170 @@ private void cargarServiciosDesdeBD() {
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel3, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-    // Debug de servicios seleccionados
-    System.out.println("=== DEBUG SERVICIOS SELECCIONADOS ===");
-    for (int i = 0; i < serviciosSeleccionados.size(); i++) {
-        Object[] servicio = serviciosSeleccionados.get(i);
-        String descripcion = (String) servicio[1];
-        int idServicio = obtenerIdServicioPorDescripcion(descripcion);
-        System.out.println("Servicio " + i + ": '" + descripcion + "' -> ID Servicio: " + idServicio);
-    }
-    System.out.println("=====================================");
+        // Debug de servicios seleccionados
+        System.out.println("=== DEBUG SERVICIOS SELECCIONADOS ===");
+        for (int i = 0; i < serviciosSeleccionados.size(); i++) {
+            Object[] servicio = serviciosSeleccionados.get(i);
+            String descripcion = (String) servicio[1];
+            int idServicio = obtenerIdServicioPorDescripcion(descripcion);
+            System.out.println("Servicio " + i + ": '" + descripcion + "' -> ID Servicio: " + idServicio);
+        }
+        System.out.println("=====================================");
 
-    debugServiciosActuales();
-    // Validaciones básicas
-    if (!SesionUsuario.sesionActiva()) {
-        JOptionPane.showMessageDialog(this,
-                "Debes iniciar sesión o registrarte antes de agendar una cita.",
-                "Acceso denegado", JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-
-    String fecha = jTextFieldFecha1.getText().trim();
-    String hora = (String) cbHora.getSelectedItem();
-
-    // ===== VALIDACIÓN DE FECHA VACÍA =====
-    if (fecha == null || fecha.trim().isEmpty()) {
-        JOptionPane.showMessageDialog(this,
-                "Error: No has seleccionado una fecha para la cita.\n\n"
-                + "Por favor selecciona una fecha en el calendario antes de confirmar.",
-                "Fecha requerida",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // ===== VALIDACIÓN DE FECHA PASADA =====
-    try {
-        // Usar LocalDate para comparar solo fecha (sin hora)
-        java.time.LocalDate fechaSeleccionada = java.time.LocalDate.parse(fecha);
-        java.time.LocalDate hoy = java.time.LocalDate.now();
-        
-        // Verificar si la fecha es anterior a hoy
-        if (fechaSeleccionada.isBefore(hoy)) {
+        debugServiciosActuales();
+        // Validaciones básicas
+        if (!SesionUsuario.sesionActiva()) {
             JOptionPane.showMessageDialog(this,
-                    "Error: No puedes agendar una cita en una fecha pasada.\n\n"
-                    + "Fecha seleccionada: " + fecha + "\n"
-                    + "Fecha actual: " + hoy + "\n\n"
-                    + "Por favor selecciona una fecha actual o futura.",
-                    "Fecha inválida",
+                    "Debes iniciar sesión o registrarte antes de agendar una cita.",
+                    "Acceso denegado", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String fecha = jTextFieldFecha1.getText().trim();
+        String hora = (String) cbHora.getSelectedItem();
+
+        // ===== VALIDACIÓN DE FECHA VACÍA =====
+        if (fecha == null || fecha.trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this,
+                    "Error: No has seleccionado una fecha para la cita.\n\n"
+                    + "Por favor selecciona una fecha en el calendario antes de confirmar.",
+                    "Fecha requerida",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
-    } catch (java.time.format.DateTimeParseException e) {
-        JOptionPane.showMessageDialog(this,
-                "Error: Formato de fecha inválido.\n\n"
-                + "Fecha: '" + fecha + "'\n"
-                + "Formato requerido: AAAA-MM-DD\n\n"
-                + "Ejemplo: 2025-12-03",
-                "Formato de fecha inválido",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
 
-    // Validación final de bloqueos
-    if (fechaBloqueada(fecha)) {
-        JOptionPane.showMessageDialog(this,
-                "ERROR: Esta fecha está completamente bloqueada.\n\n"
-                + "Motivo: " + obtenerMotivoBloqueo(fecha) + "\n\n"
-                + "Por favor seleccione otra fecha para su cita.",
-                "Fecha Bloqueada",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
+        // ===== VALIDACIÓN DE FECHA PASADA =====
+        try {
+            // Usar LocalDate para comparar solo fecha (sin hora)
+            java.time.LocalDate fechaSeleccionada = java.time.LocalDate.parse(fecha);
+            java.time.LocalDate hoy = java.time.LocalDate.now();
 
-    if (hora == null || hora.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Debes seleccionar una hora para la cita.");
-        return;
-    }
-
-    // Validar que la cliente no tenga ya una cita a la misma hora
-    if (clienteTieneCitaMismaHora(fecha, hora)) {
-        JOptionPane.showMessageDialog(this,
-                "ERROR: Ya tienes una cita agendada para esta fecha y hora.\n\n"
-                + "Puedes agendar múltiples servicios el mismo día, pero deben ser en horas diferentes.",
-                "Hora Ocupada",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // Validar que los servicios no estén ocupados por otras clientas
-    if (horaBloqueada(fecha, hora)) {
-        // Obtener servicios ocupados para mostrar detalles
-        java.util.List<String> serviciosOcupados = obtenerServiciosOcupados(fecha, hora);
-        String mensajeError;
-
-        if (!serviciosOcupados.isEmpty()) {
-            mensajeError = "ERROR: Los siguientes servicios ya están ocupados en esta hora:\n\n";
-            for (String servicio : serviciosOcupados) {
-                mensajeError += "• " + servicio + "\n";
-            }
-            mensajeError += "\nPor favor seleccione otra hora.";
-        } else {
-            mensajeError = "ERROR: Esta hora no está disponible.\n\n"
-                    + "La hora seleccionada (" + hora + ") está bloqueada o ya fue reservada.\n"
-                    + "Por favor seleccione otra hora.";
-        }
-
-        JOptionPane.showMessageDialog(this,
-                mensajeError,
-                "Hora No Disponible",
-                JOptionPane.ERROR_MESSAGE);
-        return;
-    }
-
-    // ===== VALIDACIÓN ADICIONAL: Si la fecha es hoy, verificar la hora =====
-    try {
-        java.time.LocalDate fechaSeleccionada = java.time.LocalDate.parse(fecha);
-        java.time.LocalDate hoy = java.time.LocalDate.now();
-        
-        if (fechaSeleccionada.isEqual(hoy)) {
-            // Si la fecha es hoy, verificar que la hora no sea pasada
-            String horaSeleccionada = hora.split(":")[0]; // Obtener solo la hora (ej: "14" de "14:00")
-            int horaActual = java.time.LocalTime.now().getHour();
-            
-            if (Integer.parseInt(horaSeleccionada) < horaActual) {
+            // Verificar si la fecha es anterior a hoy
+            if (fechaSeleccionada.isBefore(hoy)) {
                 JOptionPane.showMessageDialog(this,
-                        "No puedes agendar una cita en una hora pasada para el día de hoy.\n\n"
-                        + "Hora seleccionada: " + hora + "\n"
-                        + "Hora actual: " + String.format("%02d:00", horaActual) + "\n\n"
-                        + "Por favor selecciona una hora futura.",
-                        "Hora inválida",
-                        JOptionPane.WARNING_MESSAGE);
+                        "Error: No puedes agendar una cita en una fecha pasada.\n\n"
+                        + "Fecha seleccionada: " + fecha + "\n"
+                        + "Fecha actual: " + hoy + "\n\n"
+                        + "Por favor selecciona una fecha actual o futura.",
+                        "Fecha inválida",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
+        } catch (java.time.format.DateTimeParseException e) {
+            JOptionPane.showMessageDialog(this,
+                    "Error: Formato de fecha inválido.\n\n"
+                    + "Fecha: '" + fecha + "'\n"
+                    + "Formato requerido: AAAA-MM-DD\n\n"
+                    + "Ejemplo: 2025-12-03",
+                    "Formato de fecha inválido",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
         }
-    } catch (Exception e) {
-        System.out.println("Advertencia al validar hora para hoy: " + e.getMessage());
-        // Continuar si hay algún error en esta validación secundaria
-    }
 
-    // Si pasa todas las validaciones, proceder con el agendamiento
-    // Calcular monto total y GUARDAR DATOS EN SESION
-    double montoTotal = calcularMontoTotal(serviciosSeleccionados);
-    SesionUsuario.setMontoTotalCita(montoTotal);
-    SesionUsuario.setFechaCita(fecha);
-    SesionUsuario.setHoraCita(hora);
-    SesionUsuario.setServiciosCita(serviciosSeleccionados);
+        // Validación final de bloqueos
+        if (fechaBloqueada(fecha)) {
+            JOptionPane.showMessageDialog(this,
+                    "ERROR: Esta fecha está completamente bloqueada.\n\n"
+                    + "Motivo: " + obtenerMotivoBloqueo(fecha) + "\n\n"
+                    + "Por favor seleccione otra fecha para su cita.",
+                    "Fecha Bloqueada",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    System.out.println("=== DATOS GUARDADOS PARA CITA ===");
-    System.out.println("Monto total: $" + montoTotal);
-    System.out.println("Fecha: " + SesionUsuario.getFechaCita());
-    System.out.println("Hora: " + SesionUsuario.getHoraCita());
-    System.out.println("Servicios: " + serviciosSeleccionados.size());
+        if (hora == null || hora.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Debes seleccionar una hora para la cita.");
+            return;
+        }
 
-    // Abrir ventana de confirmación de cita
-    NewJCitaConf confirmacionWindow = new NewJCitaConf();
-    confirmacionWindow.setVisible(true);
+        // Validar que la cliente no tenga ya una cita a la misma hora
+        if (clienteTieneCitaMismaHora(fecha, hora)) {
+            JOptionPane.showMessageDialog(this,
+                    "ERROR: Ya tienes una cita agendada para esta fecha y hora.\n\n"
+                    + "Puedes agendar múltiples servicios el mismo día, pero deben ser en horas diferentes.",
+                    "Hora Ocupada",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
-    // Cerrar esta ventana
-    this.dispose();
+        // Validar que los servicios no estén ocupados por otras clientas
+        if (horaBloqueada(fecha, hora)) {
+            // Obtener servicios ocupados para mostrar detalles
+            java.util.List<String> serviciosOcupados = obtenerServiciosOcupados(fecha, hora);
+            String mensajeError;
+
+            if (!serviciosOcupados.isEmpty()) {
+                mensajeError = "ERROR: Los siguientes servicios ya están ocupados en esta hora:\n\n";
+                for (String servicio : serviciosOcupados) {
+                    mensajeError += "• " + servicio + "\n";
+                }
+                mensajeError += "\nPor favor seleccione otra hora.";
+            } else {
+                mensajeError = "ERROR: Esta hora no está disponible.\n\n"
+                        + "La hora seleccionada (" + hora + ") está bloqueada o ya fue reservada.\n"
+                        + "Por favor seleccione otra hora.";
+            }
+
+            JOptionPane.showMessageDialog(this,
+                    mensajeError,
+                    "Hora No Disponible",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        // ===== VALIDACIÓN ADICIONAL: Si la fecha es hoy, verificar la hora =====
+        try {
+            java.time.LocalDate fechaSeleccionada = java.time.LocalDate.parse(fecha);
+            java.time.LocalDate hoy = java.time.LocalDate.now();
+
+            if (fechaSeleccionada.isEqual(hoy)) {
+                // Si la fecha es hoy, verificar que la hora no sea pasada
+                String horaSeleccionada = hora.split(":")[0]; // Obtener solo la hora (ej: "14" de "14:00")
+                int horaActual = java.time.LocalTime.now().getHour();
+
+                if (Integer.parseInt(horaSeleccionada) < horaActual) {
+                    JOptionPane.showMessageDialog(this,
+                            "No puedes agendar una cita en una hora pasada para el día de hoy.\n\n"
+                            + "Hora seleccionada: " + hora + "\n"
+                            + "Hora actual: " + String.format("%02d:00", horaActual) + "\n\n"
+                            + "Por favor selecciona una hora futura.",
+                            "Hora inválida",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            System.out.println("Advertencia al validar hora para hoy: " + e.getMessage());
+            // Continuar si hay algún error en esta validación secundaria
+        }
+
+        // Si pasa todas las validaciones, proceder con el agendamiento
+        // Calcular monto total y GUARDAR DATOS EN SESION
+        double montoTotal = calcularMontoTotal(serviciosSeleccionados);
+        SesionUsuario.setMontoTotalCita(montoTotal);
+        SesionUsuario.setFechaCita(fecha);
+        SesionUsuario.setHoraCita(hora);
+        SesionUsuario.setServiciosCita(serviciosSeleccionados);
+
+        System.out.println("=== DATOS GUARDADOS PARA CITA ===");
+        System.out.println("Monto total: $" + montoTotal);
+        System.out.println("Fecha: " + SesionUsuario.getFechaCita());
+        System.out.println("Hora: " + SesionUsuario.getHoraCita());
+        System.out.println("Servicios: " + serviciosSeleccionados.size());
+
+        // Abrir ventana de confirmación de cita
+        NewJCitaConf confirmacionWindow = new NewJCitaConf();
+        confirmacionWindow.setVisible(true);
+
+        // Cerrar esta ventana
+        this.dispose();
 
     }//GEN-LAST:event_jButton4ActionPerformed
 

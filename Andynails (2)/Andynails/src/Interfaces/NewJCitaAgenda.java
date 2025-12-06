@@ -36,7 +36,7 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
         conexion = new ConexionBD();
         dispManager = new DisponibilidadManager(conexion);
 
-        llenarComboRoles(); // ahora solo llena roles
+        llenarComboRoles(); 
 
         CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
             Date fechaSeleccionada = CalCitasAgendadas.getCalendar().getTime();
@@ -158,7 +158,6 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Error al cargar servicios: " + e.getMessage());
         }
 
-        // 🔹 Reagregar listener al combo
         for (ActionListener l : listeners) {
             comboRoles.addActionListener(l);
         }
@@ -551,12 +550,12 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                opciones, // Botones personalizados en español
+                opciones, 
                 opciones[1] // Opción por defecto ("No")
         );
 
         if (confirm != JOptionPane.YES_OPTION) {
-            return; // El usuario eligió "No"
+            return; 
         }
 
         try (Connection con = conexion.conectar()) {

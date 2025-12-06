@@ -32,7 +32,6 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
     ConexionBD conexion;
     private List<CategoriaServicio> categorias = new ArrayList<>();
-//    private javax.swing.JLabel lblCarrusel;
 // Listas separadas por categoría
     private List<CategoriaServicio> francesasList = new ArrayList<>();
     private List<CategoriaServicio> ballerinaList = new ArrayList<>();
@@ -174,24 +173,25 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
         }
     }
-private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
-    if (c.imagen != null) {
-        lblImg.setIcon(c.imagen);
-    }
-    lblDesc.setText(c.descripcion);
-    
-    // Asegurar que el precio tenga formato de dinero
-    if (c.precio != null && !c.precio.trim().isEmpty()) {
-        try {
-            double precioNum = Double.parseDouble(c.precio);
-            lblPrecio.setText(String.format("$%.2f", precioNum));
-        } catch (NumberFormatException e) {
-            lblPrecio.setText("$" + c.precio); // Si ya tiene formato
+
+    private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
+        if (c.imagen != null) {
+            lblImg.setIcon(c.imagen);
         }
-    } else {
-        lblPrecio.setText("$0.00");
+        lblDesc.setText(c.descripcion);
+
+        // Asegurar que el precio tenga formato de dinero
+        if (c.precio != null && !c.precio.trim().isEmpty()) {
+            try {
+                double precioNum = Double.parseDouble(c.precio);
+                lblPrecio.setText(String.format("$%.2f", precioNum));
+            } catch (NumberFormatException e) {
+                lblPrecio.setText("$" + c.precio); // Si ya tiene formato
+            }
+        } else {
+            lblPrecio.setText("$0.00");
+        }
     }
-}
 
     private void iniciarCarrusel() {
         // Carrusel Francesas
@@ -329,13 +329,13 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addGap(345, 345, 345)
+                .addGap(151, 151, 151)
                 .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(167, 167, 167)
+                .addGap(361, 361, 361)
                 .addComponent(jLabel7, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(118, 118, 118)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(jLabel6, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addGap(143, 143, 143))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -531,7 +531,7 @@ private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc
                     .addComponent(txtPrecio2, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txtPrecio3, javax.swing.GroupLayout.PREFERRED_SIZE, 20, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(label11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 40, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 55, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jButton2)
                     .addComponent(jButton3)

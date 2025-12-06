@@ -113,7 +113,6 @@ public class NewGCVEditar extends javax.swing.JFrame {
         btnactualizar = new javax.swing.JButton();
         jLabel8 = new javax.swing.JLabel();
         jLabel10 = new javax.swing.JLabel();
-        btncancelar = new javax.swing.JButton();
         jTextField1descripcion = new javax.swing.JTextField();
         jTextField2nombreservici = new javax.swing.JTextField();
         jLabelImagen = new javax.swing.JLabel();
@@ -188,14 +187,6 @@ public class NewGCVEditar extends javax.swing.JFrame {
 
         jLabel10.setText("Descripción:");
 
-        btncancelar.setBackground(new java.awt.Color(255, 204, 255));
-        btncancelar.setText("Cancelar");
-        btncancelar.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                btncancelarActionPerformed(evt);
-            }
-        });
-
         jTextField1descripcion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextField1descripcionActionPerformed(evt);
@@ -227,24 +218,25 @@ public class NewGCVEditar extends javax.swing.JFrame {
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 121, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jTextField2nombreservici, javax.swing.GroupLayout.PREFERRED_SIZE, 278, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jTextField2nombreservici, javax.swing.GroupLayout.PREFERRED_SIZE, 278, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 94, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(29, 29, 29)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                             .addComponent(btnactualizar)
                             .addComponent(jLabel10))
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(156, 156, 156)
-                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(63, 63, 63)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addGap(156, 156, 156)
+                                        .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 81, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jTextField1descripcion, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                 .addComponent(jButton2)
-                                .addGap(60, 60, 60)
-                                .addComponent(btncancelar))
-                            .addComponent(jTextField1descripcion, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                .addGap(0, 94, Short.MAX_VALUE))
+                                .addGap(62, 62, 62))))))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(131, 131, 131)
                 .addComponent(jLabel2)
@@ -268,7 +260,6 @@ public class NewGCVEditar extends javax.swing.JFrame {
                 .addGap(9, 9, 9)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnactualizar)
-                    .addComponent(btncancelar)
                     .addComponent(jButton2))
                 .addGap(49, 49, 49)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -368,31 +359,31 @@ public class NewGCVEditar extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnactualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnactualizarActionPerformed
-    try (Connection conn = ConexionBD.getConnection()) {
-        String sql = "UPDATE servicios SET Nombre_servicio=?, Descripcion=? WHERE idServicios=?";
-        PreparedStatement ps = conn.prepareStatement(sql);
+        try (Connection conn = ConexionBD.getConnection()) {
+            String sql = "UPDATE servicios SET Nombre_servicio=?, Descripcion=? WHERE idServicios=?";
+            PreparedStatement ps = conn.prepareStatement(sql);
 
-        ps.setString(1, jTextField2nombreservici.getText());
-        ps.setString(2, jTextField1descripcion.getText());
-        ps.setInt(3, idServicio); // Actualizar por ID
+            ps.setString(1, jTextField2nombreservici.getText());
+            ps.setString(2, jTextField1descripcion.getText());
+            ps.setInt(3, idServicio); // Actualizar por ID
 
-        int filas = ps.executeUpdate();
-        if (filas > 0) {
-            JOptionPane.showMessageDialog(this, 
-                "Servicio actualizado correctamente.\n\n" , 
-                "Éxito", JOptionPane.INFORMATION_MESSAGE);
-            
-            // Regresar a la ventana anterior
-            NewGCV ventanaPrincipal = new NewGCV();
-            ventanaPrincipal.setVisible(true);
-            this.dispose();
-        } else {
-            JOptionPane.showMessageDialog(this, "No se encontró el servicio seleccionado.");
+            int filas = ps.executeUpdate();
+            if (filas > 0) {
+                JOptionPane.showMessageDialog(this,
+                        "Servicio actualizado correctamente.\n\n",
+                        "Éxito", JOptionPane.INFORMATION_MESSAGE);
+
+                // Regresar a la ventana anterior
+                NewGCV ventanaPrincipal = new NewGCV();
+                ventanaPrincipal.setVisible(true);
+                this.dispose();
+            } else {
+                JOptionPane.showMessageDialog(this, "No se encontró el servicio seleccionado.");
+            }
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
         }
-
-    } catch (SQLException e) {
-        JOptionPane.showMessageDialog(this, "Error al actualizar: " + e.getMessage());
-    }
     }//GEN-LAST:event_btnactualizarActionPerformed
 
     private void jTextField2nombreserviciActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField2nombreserviciActionPerformed
@@ -402,13 +393,6 @@ public class NewGCVEditar extends javax.swing.JFrame {
     private void jTextField1descripcionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextField1descripcionActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextField1descripcionActionPerformed
-
-    private void btncancelarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarActionPerformed
-        // TODO add your handling code here:
-        this.dispose();
-        NewGCV NewGCV = new NewGCV(); // <-- PASAMOS "this"
-        NewGCV.setVisible(true);
-    }//GEN-LAST:event_btncancelarActionPerformed
 
     private void jMenuItem7ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem7ActionPerformed
         // TODO add your handling code here:
@@ -449,7 +433,7 @@ public class NewGCVEditar extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        NewGCV anterior = new NewGCV();
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed
@@ -500,7 +484,6 @@ public class NewGCVEditar extends javax.swing.JFrame {
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
     private javax.swing.JButton btnactualizar;
-    private javax.swing.JButton btncancelar;
     private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel10;
     private javax.swing.JLabel jLabel2;

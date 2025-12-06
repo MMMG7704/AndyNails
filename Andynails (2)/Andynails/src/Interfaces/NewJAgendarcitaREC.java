@@ -37,7 +37,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         conexion = new ConexionBD();
         this.idCita = idCita;
         configurarCalendario();
-        // Cargar catálogos
         cargarClientes();
         cargarServicios();
         cargarHoras();
@@ -75,7 +74,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         configurarCalendario();
-        // Cargar datos
         cargarClientes();
         cargarServicios();
         cargarHoras();
@@ -347,7 +345,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-    // Método para cargar los datos del cliente cuando se selecciona
 // Método para cargar los datos del cliente cuando se selecciona
     private void cargarDatosCliente(String nombreCliente) {
         try (Connection con = conexion.conectar()) {
@@ -516,7 +513,8 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         return idUsuario;
     }
-
+    
+//pago temporal
     private void insertarServicio(int idCita, String nombreServicio, String nombreCategoria) {
         // Obtener el ID del cliente seleccionado
         String nombreCliente = jComboBoxnombrecliente.getSelectedItem().toString();
@@ -527,7 +525,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             return;
         }
 
-        // Primero crear un pago temporal CON EL CLIENTE Y CATEGORÍA
         int idPago = crearPagoTemporal(idUsuario, nombreServicio, nombreCategoria);
 
         if (idPago == -1) {
@@ -550,7 +547,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 return;
             }
 
-            // Insertar en cita_has_servicios
             String sqlInsert = "INSERT INTO cita_has_servicios (idCita, idServicios, Pago_idPago) VALUES (?, ?, ?)";
             PreparedStatement psInsert = con.prepareStatement(sqlInsert);
             psInsert.setInt(1, idCita);
@@ -558,7 +554,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             psInsert.setInt(3, idPago);
             psInsert.executeUpdate();
 
-            // Ahora también debemos asociar el pago a la cita
             asociarPagoACita(idCita, idPago);
 
             // Actualizar el JLabel con el monto
@@ -727,7 +722,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
     }
 
 // ===== MÉTODOS AUXILIARES PARA VALIDACIÓN DE HORA =====
-// Método para verificar si la fecha seleccionada es hoy
     private boolean esFechaHoy(Date fechaSeleccionada) {
         java.util.Calendar calSeleccionada = java.util.Calendar.getInstance();
         calSeleccionada.setTime(fechaSeleccionada);
@@ -884,7 +878,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
             java.sql.Date fechaSQL = new java.sql.Date(fecha.getTime());
 
-            // 1) Verificar si OTRO cliente ya tiene ese mismo servicio a esa fecha/hora
+            //Verificar si OTRO cliente ya tiene ese mismo servicio a esa fecha/hora
             String sqlServicio = "SELECT c.idCita FROM Cita c "
                     + "JOIN cita_has_servicios cs ON c.idCita = cs.idCita "
                     + "JOIN Servicios s ON cs.idServicios = s.idServicios "
@@ -896,12 +890,11 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 ps.setInt(4, idCitaExcluir);
                 ResultSet rs = ps.executeQuery();
                 if (rs.next()) {
-                    // Otro registro (distinto a la cita que editas) ya ocupa ese servicio
                     return false;
                 }
             }
 
-            // 2) Verificar si el MISMO cliente ya tiene otra cita (distinta) a esa fecha/hora
+            //  Verificar si el MISMO cliente ya tiene otra cita (distinta) a esa fecha/hora
             String sqlCliente = "SELECT idCita FROM Cita WHERE Fecha = ? AND Hora = ? AND idUsuarios = ? AND idCita <> ?";
             try (PreparedStatement ps2 = con.prepareStatement(sqlCliente)) {
                 ps2.setDate(1, fechaSQL);
@@ -915,7 +908,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 }
             }
 
-            // 3) Rango horario
+            // Rango horario
             int hora = Integer.parseInt(horaStr.split(":")[0]);
             if (hora < 9 || hora > 19) {
                 return false;
@@ -930,7 +923,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-// --- 2) Método actualizarCitaEditar() reemplazado (usar en tu clase) ---
     private void actualizarCitaEditar() {
         Date fecha = obtenerFechaSeleccionada();
         if (fecha == null) {
@@ -983,14 +975,13 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             return;
         }
 
-        // Obtener idCliente (si el combo trae "Seleccione..." o está deshabilitado, asegurarse)
         int idCliente = obtenerIdUsuario(jComboBoxnombrecliente.getSelectedItem().toString());
         if (idCliente == -1) {
             JOptionPane.showMessageDialog(this, "No se pudo obtener el cliente.");
             return;
         }
 
-        // Validar disponibilidad excluyendo la cita actual (this.idCita)
+        // Validar disponibilidad 
         if (!fechaHoraDisponibleParaEditar(fecha, horaStr, servicio, this.idCita, idCliente)) {
             JOptionPane.showMessageDialog(this,
                     " No se puede actualizar: la fecha/hora están ocupadas por ese servicio o por el cliente.",
@@ -1018,8 +1009,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 int filas = ps.executeUpdate();
                 if (filas > 0) {
                     JOptionPane.showMessageDialog(this, "Cita actualizada correctamente.");
-                    // Opcional: si necesitas actualizar tabla cita_has_servicios (por ejemplo cambiar servicio),
-                    // lo harías aquí dentro de la misma transacción.
                     limpiarCampos();
                 } else {
                     JOptionPane.showMessageDialog(this, "No se pudo actualizar la cita (id no encontrado).");
@@ -1187,7 +1176,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-    // Método para cargar categorías según el servicio seleccionado
 // Método para cargar categorías según el servicio seleccionado
     private void cargarCategoriasPorServicio(String nombreServicio) {
         try (Connection con = conexion.conectar()) {
@@ -1223,7 +1211,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-// Método para mostrar la imagen de la categoría seleccionada
 // Método para mostrar la imagen de la categoría seleccionada
     private void mostrarImagenCategoria(String nombreServicio, String nombreCategoria) {
         try (Connection con = conexion.conectar()) {
@@ -1455,7 +1442,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(190, 190, 190)
                 .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 230, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(79, 79, 79))
         );
@@ -1559,7 +1546,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(37, 37, 37)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1609,7 +1596,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                                                             .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))
                                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                                         .addGap(18, 18, 18)
-                                                        .addComponent(jComboBoxnombrecliente, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                                                        .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 343, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                                         .addGroup(jPanel1Layout.createSequentialGroup()
                                             .addComponent(jLabel4)
                                             .addGap(33, 33, 33)
@@ -1619,14 +1606,14 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                                         .addGap(18, 18, 18)
                                         .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(280, 280, 280)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(26, 26, 26))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(347, 347, 347)
-                        .addComponent(jLabel2))
-                    .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addComponent(jLabel2)))
                 .addContainerGap(66, Short.MAX_VALUE))
+            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
