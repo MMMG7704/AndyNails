@@ -4,6 +4,7 @@
  */
 package Interfaces;
 
+import Interfaces.NewJAgenC;
 import andynails.ConexionBD;
 import java.sql.*;
 import javax.swing.*;
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.ArrayList;
 import Interfaces.NewJAgendarcita;
 import andynails.DisponibilidadManager;
+import andynails.SesionUsuario;
 
 /**
  *
@@ -36,7 +38,11 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
         conexion = new ConexionBD();
         dispManager = new DisponibilidadManager(conexion);
 
-        llenarComboRoles(); 
+        llenarComboRoles();
+
+        jTablecontenidocitas.getColumnModel().getColumn(0).setMinWidth(0);
+        jTablecontenidocitas.getColumnModel().getColumn(0).setMaxWidth(0);
+        jTablecontenidocitas.getColumnModel().getColumn(0).setWidth(0);
 
         CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
             Date fechaSeleccionada = CalCitasAgendadas.getCalendar().getTime();
@@ -60,6 +66,9 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
         dispManager = new DisponibilidadManager(conexion);
 
         llenarComboRoles(); // llenar roles
+        jTablecontenidocitas.getColumnModel().getColumn(0).setMinWidth(0);
+        jTablecontenidocitas.getColumnModel().getColumn(0).setMaxWidth(0);
+        jTablecontenidocitas.getColumnModel().getColumn(0).setWidth(0);
 
         CalCitasAgendadas.addPropertyChangeListener("calendar", evt -> {
             Date fechaSeleccionada = CalCitasAgendadas.getCalendar().getTime();
@@ -175,25 +184,24 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
                 ? comboRoles.getSelectedItem().toString()
                 : "Todos";
 
-        // ---- CONSULTA BASE ----
         String sql = """
-        SELECT c.idCita,
-               CONCAT(u.Nombre, ' ', IFNULL(u.Paterno, ''), ' ', IFNULL(u.Materno, '')) AS Cliente,
-               u.Telefono, u.Correo,
-               s.Nombre_servicio AS Servicio,
-               c.Fecha, c.Hora,
-               CASE 
-                    WHEN chs.Pago_idPago IS NULL THEN 'Pendiente'
-                    WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
-                    ELSE 'Pendiente'
-               END AS Estado
-        FROM cita c
-        INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios
-        INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita
-        INNER JOIN servicios s ON chs.idServicios = s.idServicios
-        LEFT JOIN pago p ON chs.Pago_idPago = p.idPago
-        WHERE DATE(c.Fecha) = ?
-    """;
+    SELECT c.idCita,
+           CONCAT(u.Nombre, ' ', IFNULL(u.Paterno, ''), ' ', IFNULL(u.Materno, '')) AS Cliente,
+           u.Telefono, u.Correo,
+           s.Nombre_servicio AS Servicio,
+           c.Fecha, c.Hora,
+           CASE 
+                WHEN chs.Pago_idPago IS NULL THEN 'Pendiente'
+                WHEN p.Estado_pago = 'Validado' THEN 'Agendada'
+                ELSE 'Pendiente'
+           END AS Estado
+    FROM cita c
+    INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios
+    INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita
+    INNER JOIN servicios s ON chs.idServicios = s.idServicios
+    LEFT JOIN pago p ON chs.Pago_idPago = p.idPago
+    WHERE DATE(c.Fecha) = ?
+""";
 
         if (!servicioSeleccionado.equals("Todos")) {
             sql += " AND s.Nombre_servicio = ?";
@@ -212,21 +220,29 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     model.addRow(new Object[]{
-                        rs.getInt("idCita"),
-                        rs.getString("Cliente"),
-                        rs.getString("Telefono"),
-                        rs.getString("Correo"),
-                        rs.getString("Servicio"),
-                        rs.getDate("Fecha"),
-                        rs.getString("Hora"),
-                        rs.getString("Estado")
+                        rs.getInt("idCita"), // Columna 0: ID (oculta)
+                        rs.getString("Cliente"), // Columna 1: Nombre
+                        rs.getString("Telefono"), // Columna 2: Teléfono
+                        rs.getString("Correo"), // Columna 3: Correo
+                        rs.getString("Servicio"), // Columna 4: Servicio
+                        rs.getDate("Fecha"), // Columna 5: Fecha
+                        rs.getString("Hora"), // Columna 6: Hora
+                        rs.getString("Estado") // Columna 7: Estado
                     });
                 }
+
+                jTablecontenidocitas.getColumnModel().getColumn(0).setMinWidth(0);
+                jTablecontenidocitas.getColumnModel().getColumn(0).setMaxWidth(0);
+                jTablecontenidocitas.getColumnModel().getColumn(0).setWidth(0);
+
+                jTablecontenidocitas.getTableHeader().getColumnModel().getColumn(0).setHeaderValue("");
+                jTablecontenidocitas.getTableHeader().repaint();
             }
 
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar citas: " + e.getMessage());
         }
+
     }
 
     /**
@@ -550,12 +566,12 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
                 JOptionPane.YES_NO_OPTION,
                 JOptionPane.QUESTION_MESSAGE,
                 null,
-                opciones, 
+                opciones,
                 opciones[1] // Opción por defecto ("No")
         );
 
         if (confirm != JOptionPane.YES_OPTION) {
-            return; 
+            return;
         }
 
         try (Connection con = conexion.conectar()) {
@@ -699,12 +715,25 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
         // TODO add your handling code here:
-
-        // Regresar al panel anterior
-        NewJPanelAdministracionRec anterior = new NewJPanelAdministracionRec();
-        anterior.setVisible(true);
-        this.dispose(); // Cierra la ventana actual
-
+       String nombreUsuario = SesionUsuario.getNombreUsuario();
+    
+    // Heurística simple basada en el nombre
+    if (nombreUsuario != null && 
+        (nombreUsuario.equalsIgnoreCase("admin") || 
+         nombreUsuario.toLowerCase().contains("recepcion") ||
+         nombreUsuario.equalsIgnoreCase("administrador"))) {
+        // Suponer que es staff
+        NewJPanelAdministracion adminPanel = new NewJPanelAdministracion();
+        adminPanel.setVisible(true);
+    } 
+    else {
+        // Suponer que es cliente
+        NewJAgenC agendarCita = new NewJAgenC();
+        agendarCita.setVisible(true);
+    }
+    
+    this.dispose();
+    
     }//GEN-LAST:event_btnRegresarActionPerformed
 
     private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarCitaActionPerformed
@@ -713,7 +742,7 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
         NewJAgendarcitaREC registrar = new NewJAgendarcitaREC();
         registrar.setVisible(true);
 
-        registrar.limpiarCampos(); // <<--- ESTO LIMPIA TODO AL ABRIR
+        registrar.limpiarCampos(); 
 
         this.dispose();
 

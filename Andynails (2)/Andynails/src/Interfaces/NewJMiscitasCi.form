@@ -359,7 +359,7 @@
                 </Property>
                 <Property name="columns" type="int" value="20"/>
                 <Property name="rows" type="int" value="5"/>
-                <Property name="text" type="java.lang.String" value="Si necesitas cancelar o mificar la cita ,contactanos:&#xa;Tel&#xe9;fono&#xa;8123456789&#xa;Email&#xa;AndyNails@gmail.com"/>
+                <Property name="text" type="java.lang.String" value="Si necesitas cancelar o modificar la cita ,contactanos:&#xa;Tel&#xe9;fono&#xa;8123456789&#xa;Email&#xa;AndyNails@gmail.com"/>
               </Properties>
             </Component>
           </SubComponents>

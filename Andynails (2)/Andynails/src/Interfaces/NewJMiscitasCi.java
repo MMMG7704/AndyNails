@@ -26,6 +26,10 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
      */
     public NewJMiscitasCi() {
         initComponents();
+        System.out.println("\n=== DEBUG NewJMiscitasCi CONSTRUCTOR ===");
+        System.out.println("ID Usuario en sesión: " + SesionUsuario.getIdUsuario());
+        System.out.println("Nombre Usuario: " + SesionUsuario.getNombreUsuario());
+        System.out.println("Sesión activa: " + SesionUsuario.sesionActiva());
         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
         conexion = new ConexionBD("andynails");
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -68,73 +72,150 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
     }
 
     private void cargarCitasCliente() {
-        DefaultTableModel model = (DefaultTableModel) jTableCitascl.getModel();
-        model.setRowCount(0); // Limpiar tabla existente
+        System.out.println("\n=== INICIANDO cargarCitasCliente() ===");
 
-        String[] columnNames = {"Fecha", "Hora", "Servicios", "Estado", "Precio"};
-        model.setColumnIdentifiers(columnNames);
+        DefaultTableModel model = (DefaultTableModel) jTableCitascl.getModel();
+        model.setRowCount(0);
 
         int idUsuario = SesionUsuario.getIdUsuario();
+        System.out.println("ID Usuario obtenido de SesionUsuario: " + idUsuario);
 
         if (idUsuario == 0) {
-            System.out.println("DEBUG: No hay usuario logueado");
+            System.out.println("ERROR: ID Usuario es 0. Sesión no activa.");
             return;
         }
 
-        String sql = """
-        SELECT 
-            c.Fecha, 
-            c.Hora, 
-            c.Estado,
-            GROUP_CONCAT(DISTINCT s.Nombre_servicio SEPARATOR ', ') as Servicios,
-            COALESCE(SUM(DISTINCT cs.Monto_anticipo), 0) as Precio_Total
-        FROM cita c
-        LEFT JOIN cita_has_servicios cs ON c.idCita = cs.idCita
-        LEFT JOIN servicios s ON cs.idServicios = s.idServicios
-        WHERE c.idUsuarios = ?
-        GROUP BY c.idCita, c.Fecha, c.Hora, c.Estado
-        ORDER BY c.Fecha DESC, c.Hora DESC
-        """;
+        // CONSULTA MÁS DETALLADA PARA DEBUG
+        String sqlDebug = """
+SELECT 
+    c.idCita,
+    c.Fecha, 
+    c.Hora, 
+    c.Estado,
+    cs.idServicios,
+    s.Nombre_servicio,
+    s.Descripcion,
+    cs.Monto_anticipo
+FROM cita c
+LEFT JOIN cita_has_servicios cs ON c.idCita = cs.idCita
+LEFT JOIN servicios s ON cs.idServicios = s.idServicios
+WHERE c.idUsuarios = ?
+ORDER BY c.Fecha DESC, c.Hora DESC
+""";
 
         Connection conn = null;
         PreparedStatement ps = null;
         ResultSet rs = null;
 
         try {
+            System.out.println("Conectando a la base de datos...");
             conn = conexion.getConexion();
+            System.out.println("Conexión establecida.");
+
+            // PRIMERO: debug detallado
+            System.out.println("\n--- EJECUTANDO CONSULTA 1: DEBUG DETALLADO ---");
+            System.out.println("SQL: " + sqlDebug);
+            System.out.println("Parámetro: idUsuario = " + idUsuario);
+
+            ps = conn.prepareStatement(sqlDebug);
+            ps.setInt(1, idUsuario);
+            rs = ps.executeQuery();
+
+            System.out.println("Consulta ejecutada. Procesando resultados...");
+
+            int contadorDebug = 0;
+            while (rs.next()) {
+                contadorDebug++;
+                int idCita = rs.getInt("idCita");
+                String fecha = rs.getString("Fecha");
+                String hora = rs.getString("Hora");
+                String estado = rs.getString("Estado");
+                int idServicio = rs.getInt("idServicios");
+                String nombreServicio = rs.getString("Nombre_servicio");
+                String descripcion = rs.getString("Descripcion");
+                double monto = rs.getDouble("Monto_anticipo");
+
+                System.out.println("Registro " + contadorDebug + ":");
+                System.out.println("  Cita ID: " + idCita);
+                System.out.println("  Fecha: " + fecha);
+                System.out.println("  Hora: " + hora);
+                System.out.println("  Estado: " + estado);
+                System.out.println("  Servicio ID: " + (rs.wasNull() ? "NULL" : idServicio));
+                System.out.println("  Nombre: " + (nombreServicio != null ? nombreServicio : "NULL"));
+                System.out.println("  Desc: " + (descripcion != null ? descripcion : "NULL"));
+                System.out.println("  Monto: $" + monto);
+            }
+
+            if (contadorDebug == 0) {
+                System.out.println("¡¡¡NO SE ENCONTRARON REGISTROS EN LA CONSULTA DE DEBUG!!!");
+            } else {
+                System.out.println("Total registros en debug: " + contadorDebug);
+            }
+
+            rs.close();
+            ps.close();
+
+            // AHORA: consulta para mostrar en tabla (agrupada)
+            System.out.println("\n--- EJECUTANDO CONSULTA 2: DATOS PARA TABLA ---");
+
+            String sql = """
+SELECT 
+    c.idCita,
+    c.Fecha, 
+    c.Hora, 
+    c.Estado,
+    GROUP_CONCAT(DISTINCT s.Nombre_servicio SEPARATOR ', ') as Servicios,
+    COALESCE(SUM(DISTINCT cs.Monto_anticipo), 0) as Precio_Total
+FROM cita c
+LEFT JOIN cita_has_servicios cs ON c.idCita = cs.idCita
+LEFT JOIN servicios s ON cs.idServicios = s.idServicios
+WHERE c.idUsuarios = ?
+GROUP BY c.idCita, c.Fecha, c.Hora, c.Estado
+ORDER BY c.Fecha DESC, c.Hora DESC
+""";
+
             ps = conn.prepareStatement(sql);
             ps.setInt(1, idUsuario);
             rs = ps.executeQuery();
 
-            System.out.println("=== DEBUG CARGANDO CITAS ===");
+            System.out.println("\n--- DATOS PARA TABLA ---");
 
+            int contadorTabla = 0;
             while (rs.next()) {
+                contadorTabla++;
                 String fecha = rs.getString("Fecha");
                 String hora = rs.getString("Hora");
                 String estado = rs.getString("Estado");
                 String servicios = rs.getString("Servicios");
                 double precio = rs.getDouble("Precio_Total");
 
-                System.out.println("Cita: " + fecha + " " + hora
-                        + " - Servicios: " + servicios
-                        + " - Precio: " + precio);
+                System.out.println("Fila " + contadorTabla + ":");
+                System.out.println("  Fecha: " + fecha);
+                System.out.println("  Hora: " + hora);
+                System.out.println("  Servicios: " + (servicios != null ? servicios : "NULL"));
+                System.out.println("  Precio: $" + precio);
 
                 if (servicios == null) {
                     servicios = "Sin servicios asignados";
+                    System.out.println("  ¡¡¡ADVERTENCIA: Sin servicios asignados!!!");
+
+                    // Mostrar ID de la cita problemática
+                    int idCita = rs.getInt("idCita");
+                    System.out.println("  Cita ID problemática: " + idCita);
                 }
 
                 String precioStr = String.format("$%.2f", precio);
-
                 model.addRow(new Object[]{fecha, hora, servicios, estado, precioStr});
             }
 
-            System.out.println("Total de citas cargadas: " + model.getRowCount());
+            System.out.println("\nTotal de citas en tabla: " + contadorTabla);
+            System.out.println("=== FIN DE cargarCitasCliente() ===\n");
 
         } catch (Exception e) {
+            System.out.println("ERROR EXCEPTION en cargarCitasCliente:");
             e.printStackTrace();
-            System.out.println("ERROR al cargar citas: " + e.getMessage());
+            System.out.println("Mensaje: " + e.getMessage());
         } finally {
-            // Cerrar recursos en el finally
             try {
                 if (rs != null) {
                     rs.close();
@@ -145,8 +226,9 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
                 if (conn != null) {
                     conn.close();
                 }
+                System.out.println("Recursos cerrados.");
             } catch (Exception e) {
-                e.printStackTrace();
+                System.out.println("Error cerrando recursos: " + e.getMessage());
             }
         }
     }
@@ -304,7 +386,7 @@ public class NewJMiscitasCi extends javax.swing.JFrame {
         jTextArea1.setBackground(new java.awt.Color(228, 199, 238));
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
-        jTextArea1.setText("Si necesitas cancelar o mificar la cita ,contactanos:\nTeléfono\n8123456789\nEmail\nAndyNails@gmail.com");
+        jTextArea1.setText("Si necesitas cancelar o modificar la cita ,contactanos:\nTeléfono\n8123456789\nEmail\nAndyNails@gmail.com");
         jScrollPane2.setViewportView(jTextArea1);
 
         jLabel4.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N

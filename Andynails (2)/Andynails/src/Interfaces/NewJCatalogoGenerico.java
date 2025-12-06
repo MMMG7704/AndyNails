@@ -14,6 +14,7 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
 
     private ConexionBD conexion;
     private ArrayList<CategoriaServicio> serviciosList = new ArrayList<>();
+    private ArrayList<ArrayList<CategoriaServicio>> categoriasAgrupadas = new ArrayList<>();
 
     public NewJCatalogoGenerico(ConexionBD conexion) {
         initComponents(); 
@@ -23,7 +24,6 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
 
     // Clase interna para manejar los datos de la tabla categoria_servicio
     private static class CategoriaServicio {
-
         String nombre;
         String descripcion;
         String precio;
@@ -69,20 +69,6 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
         }
     }
 
-    // Para cerrar sesión en cualquier interfaz
-    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
-        andynails.SessionManager.cerrarSesion(this);
-    }
-
-// Para obtener datos del usuario
-    private void mostrarInfoUsuario() {
-        String usuario = andynails.SessionManager.getUsuarioLogueado();
-        String tipo = andynails.SessionManager.getTipoUsuario();
-        int id = andynails.SessionManager.getIdUsuario();
-
-        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
-    }
-
     // Agrupar por categoría y mostrar hasta 3
     private void actualizarVistaPorCategoria() {
         Map<String, ArrayList<CategoriaServicio>> grupos = new HashMap<>();
@@ -91,26 +77,29 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
             grupos.computeIfAbsent(c.nombre, k -> new ArrayList<>()).add(c);
         }
 
-        ArrayList<ArrayList<CategoriaServicio>> categorias = new ArrayList<>(grupos.values());
+        categoriasAgrupadas = new ArrayList<>(grupos.values());
 
-        if (categorias.size() > 0) {
-            mostrarServicio(categorias.get(0).get(0), lblImg1, lblDesc1, txtPrecio1);
+        if (categoriasAgrupadas.size() > 0) {
+            mostrarServicio(categoriasAgrupadas.get(0).get(0), lblImg1, lblDesc1, txtPrecio1);
+            labelCategoria1.setText(categoriasAgrupadas.get(0).get(0).nombre);
         }
-        if (categorias.size() > 1) {
-            mostrarServicio(categorias.get(1).get(0), lblImg2, lblDesc2, txtPrecio2);
+        if (categoriasAgrupadas.size() > 1) {
+            mostrarServicio(categoriasAgrupadas.get(1).get(0), lblImg2, lblDesc2, txtPrecio2);
+            labelCategoria2.setText(categoriasAgrupadas.get(1).get(0).nombre);
         }
-        if (categorias.size() > 2) {
-            mostrarServicio(categorias.get(2).get(0), lblImg3, lblDesc3, txtPrecio3);
+        if (categoriasAgrupadas.size() > 2) {
+            mostrarServicio(categoriasAgrupadas.get(2).get(0), lblImg3, lblDesc3, txtPrecio3);
+            labelCategoria3.setText(categoriasAgrupadas.get(2).get(0).nombre);
         }
 
-        iniciarCarruselPorCategoria(categorias);
+        iniciarCarruselPorCategoria();
     }
 
     // Carrusel automático (sin botones)
-    private void iniciarCarruselPorCategoria(ArrayList<ArrayList<CategoriaServicio>> categorias) {
+    private void iniciarCarruselPorCategoria() {
         javax.swing.Timer timer = new javax.swing.Timer(4000, (ActionEvent e) -> {
-            for (int i = 0; i < categorias.size() && i < 3; i++) {
-                ArrayList<CategoriaServicio> grupo = categorias.get(i);
+            for (int i = 0; i < categoriasAgrupadas.size() && i < 3; i++) {
+                ArrayList<CategoriaServicio> grupo = categoriasAgrupadas.get(i);
                 if (grupo.size() > 1) {
                     CategoriaServicio primero = grupo.remove(0);
                     grupo.add(primero);
@@ -129,42 +118,40 @@ public class NewJCatalogoGenerico extends javax.swing.JFrame {
         timer.start();
     }
 
-    //  Mostrar información en los componentes
+    // Mostrar información en los componentes
     private void mostrarServicio(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
         lblDesc.setText(c.descripcion != null ? c.descripcion : "Sin descripción");
-        lblPrecio.setText(c.precio != null ? "$" + c.precio : "");
+        
+        // Formatear precio
+        if (c.precio != null && !c.precio.trim().isEmpty()) {
+            try {
+                double precioNum = Double.parseDouble(c.precio);
+                lblPrecio.setText(String.format("$%.2f", precioNum));
+            } catch (NumberFormatException e) {
+                lblPrecio.setText(c.precio.startsWith("$") ? c.precio : "$" + c.precio);
+            }
+        } else {
+            lblPrecio.setText("$0.00");
+        }
+        
         lblImg.setIcon(c.imagen != null ? c.imagen : null);
     }
 
     private void abrirVentanaCita(JLabel lblDesc, JLabel lblPrecio, JLabel lblImg) {
         String descripcion = lblDesc.getText();
-        String precio = lblPrecio.getText();
+        String precioTexto = lblPrecio.getText();
         ImageIcon imagen = (ImageIcon) lblImg.getIcon();
 
-        NewJAgenC ventanaCita = new NewJAgenC(imagen, descripcion, precio);
+        // Crear ventana de cita con los datos del servicio seleccionado
+        NewJAgenC ventanaCita = new NewJAgenC(imagen, descripcion, precioTexto);
         ventanaCita.setVisible(true);
         this.dispose();
     }
 
-    
-    private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
-    if (c.imagen != null) {
-        lblImg.setIcon(c.imagen);
+    // Método para cerrar sesión
+    private void cerrarSesion() {
+        andynails.SessionManager.cerrarSesion(this);
     }
-    lblDesc.setText(c.descripcion);
-    
-    // Asegurar que el precio tenga formato de dinero
-    if (c.precio != null && !c.precio.trim().isEmpty()) {
-        try {
-            double precioNum = Double.parseDouble(c.precio);
-            lblPrecio.setText(String.format("$%.2f", precioNum));
-        } catch (NumberFormatException e) {
-            lblPrecio.setText("$" + c.precio); // Si ya tiene formato
-        }
-    } else {
-        lblPrecio.setText("$0.00");
-    }
-}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always

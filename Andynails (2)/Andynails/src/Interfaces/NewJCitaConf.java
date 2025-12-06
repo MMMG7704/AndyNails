@@ -21,41 +21,120 @@ public class NewJCitaConf extends javax.swing.JFrame {
     /**
      * Creates new form NewJCitaConf
      */
-    public NewJCitaConf() {
-        initComponents();
-        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+public NewJCitaConf() {
+    initComponents();
+    RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
-        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
-        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    conexion = new ConexionBD("andynails");
+    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-        String fecha = SesionUsuario.getFechaCita();
-        String hora = SesionUsuario.getHoraCita();
-        String nombreUsuario = SesionUsuario.getNombreUsuario();
-        double montoTotal = SesionUsuario.getMontoTotalCita();
-        java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+    String nombreUsuario = SesionUsuario.getNombreUsuario();
+    double montoTotal = SesionUsuario.getMontoTotalCita();
+    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
 
-        // Construir el texto de detalles de la cita
-        StringBuilder detalles = new StringBuilder();
-        detalles.append("Cliente: ").append(nombreUsuario != null ? nombreUsuario : "Nombre no disponible").append("\n\n");
-        detalles.append("Fecha: ").append(fecha != null ? fecha : "No seleccionada").append("\n");
-        detalles.append("Hora: ").append(hora != null ? hora : "No seleccionada").append("\n\n");
-        detalles.append("Servicios seleccionados:\n");
+    // Construir el texto de detalles de la cita
+    StringBuilder detalles = new StringBuilder();
+    detalles.append("Cliente: ").append(nombreUsuario != null ? nombreUsuario : "Nombre no disponible").append("\n\n");
+    
+    detalles.append("=== DETALLES DE CITAS ===\n\n");
 
-        if (servicios != null && !servicios.isEmpty()) {
-            for (Object[] servicio : servicios) {
-                String descripcion = (String) servicio[1];
-                String precio = (String) servicio[2];
-                detalles.append("• ").append(descripcion).append(" - ").append(precio).append("\n");
+    if (servicios != null && !servicios.isEmpty()) {
+        for (int i = 0; i < servicios.size(); i++) {
+            Object[] servicio = servicios.get(i);
+            String descripcion = (String) servicio[1];
+            String precio = (String) servicio[2];
+            
+            // Obtener fecha y hora específicas de ESTE servicio
+            String fechaServicio = servicio.length > 3 ? (String) servicio[3] : "No seleccionada";
+            String horaServicio = servicio.length > 4 ? (String) servicio[4] : "No seleccionada";
+            
+            detalles.append("CITA ").append(i + 1).append(":\n");
+            detalles.append("  Servicio: ").append(descripcion).append("\n");
+            detalles.append("  Fecha: ").append(fechaServicio).append("\n");
+            detalles.append("  Hora: ").append(horaServicio).append("\n");
+            detalles.append("  Precio: ").append(precio).append("\n");
+            
+            // Mostrar fecha/hora antiguas si son diferentes
+            String fechaGeneral = SesionUsuario.getFechaCita();
+            String horaGeneral = SesionUsuario.getHoraCita();
+            
+            if (!fechaServicio.equals(fechaGeneral) || !horaServicio.equals(horaGeneral)) {
+                detalles.append("  (Este servicio tiene fecha/hora diferente a la general)\n");
             }
-            detalles.append("\nPrecio total: $").append(montoTotal).append("\n");
-            detalles.append("\nPARA CONFIRMAR CITA ES NECESARIO REALIZAR EL PAGO COMPLETO");
-
-            jTextArea1.setText(detalles.toString());
-            jTextArea1.setEditable(false);
-
+            
+            detalles.append("\n");
         }
+        
+        detalles.append("=== RESUMEN ===\n");
+        detalles.append("Total de citas: ").append(servicios.size()).append("\n");
+        detalles.append("Precio total: $").append(String.format("%.2f", montoTotal)).append("\n");
+        detalles.append("\nPARA CONFIRMAR CITAS ES NECESARIO REALIZAR EL PAGO COMPLETO");
+        detalles.append("\n\nNOTA: Cada servicio se registrará como una cita separada.");
 
+        jTextArea1.setText(detalles.toString());
+        jTextArea1.setEditable(false);
+
+    } else {
+        detalles.append("No hay servicios seleccionados.\n");
+        jTextArea1.setText(detalles.toString());
     }
+
+}
+
+
+private void mostrarDetallesAgrupados() {
+    String nombreUsuario = SesionUsuario.getNombreUsuario();
+    double montoTotal = SesionUsuario.getMontoTotalCita();
+    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+
+    // Agrupar servicios por fecha/hora
+    java.util.Map<String, java.util.List<String>> serviciosPorFechaHora = new java.util.HashMap<>();
+    
+    for (Object[] servicio : servicios) {
+        String descripcion = (String) servicio[1];
+        String precio = (String) servicio[2];
+        String fechaServicio = servicio.length > 3 ? (String) servicio[3] : "No seleccionada";
+        String horaServicio = servicio.length > 4 ? (String) servicio[4] : "No seleccionada";
+        
+        String clave = fechaServicio + " " + horaServicio;
+        String infoServicio = "• " + descripcion + " - " + precio;
+        
+        serviciosPorFechaHora.computeIfAbsent(clave, k -> new java.util.ArrayList<>()).add(infoServicio);
+    }
+
+    // Construir texto
+    StringBuilder detalles = new StringBuilder();
+    detalles.append("Cliente: ").append(nombreUsuario).append("\n\n");
+    detalles.append("=== CITAS AGENDADAS ===\n\n");
+    
+    int citaNumero = 1;
+    for (java.util.Map.Entry<String, java.util.List<String>> entry : serviciosPorFechaHora.entrySet()) {
+        String[] partes = entry.getKey().split(" ", 2);
+        String fecha = partes.length > 0 ? partes[0] : "No fecha";
+        String hora = partes.length > 1 ? partes[1] : "No hora";
+        
+        detalles.append("CITA #").append(citaNumero).append(":\n");
+        detalles.append("  Fecha: ").append(fecha).append("\n");
+        detalles.append("  Hora: ").append(hora).append("\n");
+        detalles.append("  Servicios en esta cita:\n");
+        
+        for (String servicio : entry.getValue()) {
+            detalles.append("    ").append(servicio).append("\n");
+        }
+        
+        detalles.append("\n");
+        citaNumero++;
+    }
+    
+    detalles.append("=== RESUMEN ===\n");
+    detalles.append("Citas diferentes: ").append(serviciosPorFechaHora.size()).append("\n");
+    detalles.append("Total servicios: ").append(servicios.size()).append("\n");
+    detalles.append("Precio total: $").append(String.format("%.2f", montoTotal)).append("\n");
+    detalles.append("\nIMPORTANTE: Cada grupo de servicios en la misma fecha/hora\n");
+    detalles.append("se registrará como una cita separada en el sistema.");
+    
+    jTextArea1.setText(detalles.toString());
+}
 
     // Para cerrar sesión en cualquier interfaz
     private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
@@ -361,7 +440,6 @@ public class NewJCitaConf extends javax.swing.JFrame {
 
         // Cerrar la ventana actual
         this.dispose();
-
 
     }//GEN-LAST:event_jButton1ActionPerformed
 

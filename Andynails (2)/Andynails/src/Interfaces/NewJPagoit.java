@@ -301,13 +301,13 @@ private void insertarCitaYServicios(int idPago) {
         mapeoServicios.put("cabello", 3);
         mapeoServicios.put("hair", 3);
 
-        mapeoServicios.put("tatuaje", 4);
-        mapeoServicios.put("tatuajes", 4);
-        mapeoServicios.put("tattoo", 4);
+        mapeoServicios.put("tatuaje", 15);
+        mapeoServicios.put("tatuajes", 15);
+        mapeoServicios.put("tattoo", 15);
 
-        mapeoServicios.put("otros", 13);
-        mapeoServicios.put("otro", 13);
-        mapeoServicios.put("otras", 13);
+        mapeoServicios.put("otros", 16);
+        mapeoServicios.put("otro", 16);
+        mapeoServicios.put("otras", 16);
 
         // Buscar por coincidencia en el texto
         String descripcionLower = descripcion.toLowerCase();
