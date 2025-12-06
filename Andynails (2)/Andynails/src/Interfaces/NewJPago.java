@@ -38,7 +38,6 @@ public class NewJPago extends javax.swing.JFrame {
 
         System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -68,10 +67,12 @@ public class NewJPago extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
+        jMenu19 = new javax.swing.JMenu();
         jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
 
         jPanel4.setBackground(new java.awt.Color(204, 0, 204));
 
@@ -118,7 +119,7 @@ public class NewJPago extends javax.swing.JFrame {
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Método de pago");
 
-        jLabel1.setIcon(new javax.swing.ImageIcon("C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\Andynails\\Andynails\\Img\\logo.jpg")); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Img/logo.jpg"))); // NOI18N
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -227,17 +228,17 @@ public class NewJPago extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -257,9 +258,9 @@ public class NewJPago extends javax.swing.JFrame {
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
         // TODO add your handling code here:
-        //inicio
+      //inicio
         Inicio Inicio = new Inicio();
-        Inicio.setVisible(true);
+        Inicio.setVisible(true); 
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenu4MenuSelected
@@ -293,7 +294,7 @@ public class NewJPago extends javax.swing.JFrame {
 
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
-        //agendar cancelar
+         //agendar cancelar
         NewJCancelarC NewJCancelarC = new NewJCancelarC();
         NewJCancelarC.setVisible(true);
         this.dispose(); // cierra la actual
@@ -302,9 +303,9 @@ public class NewJPago extends javax.swing.JFrame {
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
         // TODO add your handling code here:
-        //boton de contacto
+      //boton de contacto
         NewJContacto NewJContacto = new NewJContacto();
-        NewJContacto.setVisible(true);
+        NewJContacto.setVisible(true);  
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem5ActionPerformed
@@ -343,6 +344,10 @@ public class NewJPago extends javax.swing.JFrame {
         //</editor-fold>
         //</editor-fold>
         //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -359,7 +364,7 @@ public class NewJPago extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel6;
     private javax.swing.JLabel jLabel7;
-    private javax.swing.JMenu jMenu16;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;

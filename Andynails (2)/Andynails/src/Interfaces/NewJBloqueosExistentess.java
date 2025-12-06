@@ -119,7 +119,7 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
         jMenu16 = new javax.swing.JMenu();
-        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+        jMenuItemCerrarSecion3 = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         setAutoRequestFocus(false);
@@ -401,15 +401,15 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
-        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemCerrarSecion3.setText("Cerrar sesión");
+        jMenuItemCerrarSecion3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu16.add(jMenuItemCerrarSecion3);
 
         jMenuBar1.add(jMenu16);
 
@@ -705,6 +705,9 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu11;
     private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
+    private javax.swing.JMenu jMenu19;
+    private javax.swing.JMenu jMenu20;
+    private javax.swing.JMenu jMenu21;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;
@@ -723,6 +726,9 @@ public class NewJBloqueosExistentess extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
     private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion1;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion2;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable tablaBloqueos;

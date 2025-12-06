@@ -470,9 +470,9 @@ public class NewGCVEliminar extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu19.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
@@ -512,51 +512,97 @@ public class NewGCVEliminar extends javax.swing.JFrame {
     }//GEN-LAST:event_jTextField2ActionPerformed
 
     private void btneliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btneliminarActionPerformed
-        // TODO add your handling code here:
-        String nombreServicio = jLabelServicio.getText();
-
+    String nombreServicio = jLabelServicio.getText();
+    
+    try (Connection conn = ConexionBD.getConnection()) {
+        // 🔹 Primero verificar si hay categorías
+        PreparedStatement psVerificar = conn.prepareStatement(
+                "SELECT COUNT(*) FROM categoria_servicio WHERE idServicios = ?");
+        psVerificar.setInt(1, idServicio);
+        ResultSet rs = psVerificar.executeQuery();
+        
+        int totalCategorias = 0;
+        if (rs.next()) {
+            totalCategorias = rs.getInt(1);
+        }
+        
+        String mensajeAdvertencia;
+        if (totalCategorias > 0) {
+            mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?\n\n" +
+                                "️ ADVERTENCIA: Se eliminarán " + totalCategorias + " categorías relacionadas.";
+        } else {
+            mensajeAdvertencia = "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?";
+        }
+        
         int confirm = JOptionPane.showOptionDialog(this,
-                "¿Seguro que deseas eliminar el servicio \"" + nombreServicio + "\"?",
+                mensajeAdvertencia,
                 "Confirmar eliminación",
                 JOptionPane.YES_NO_OPTION,
-                JOptionPane.WARNING_MESSAGE,
+                totalCategorias > 0 ? JOptionPane.WARNING_MESSAGE : JOptionPane.QUESTION_MESSAGE,
                 null,
                 new Object[]{"Sí", "No"},
                 "No");
 
         if (confirm == JOptionPane.YES_OPTION) {
-            try (Connection conn = ConexionBD.getConnection()) {
-
-                // 🔹 Eliminar solo el servicio con ese ID
-                PreparedStatement ps = conn.prepareStatement(
+            conn.setAutoCommit(false); // Iniciar transacción
+            
+            try {
+                // Eliminar categorías relacionadas 
+                if (totalCategorias > 0) {
+                    PreparedStatement psCategorias = conn.prepareStatement(
+                            "DELETE FROM categoria_servicio WHERE idServicios = ?");
+                    psCategorias.setInt(1, idServicio);
+                    psCategorias.executeUpdate();
+                }
+                
+                // Eliminar el servicio
+                PreparedStatement psServicio = conn.prepareStatement(
                         "DELETE FROM servicios WHERE idServicios = ?");
-                ps.setInt(1, idServicio);
-
-                int filas = ps.executeUpdate();
+                psServicio.setInt(1, idServicio);
+                int filas = psServicio.executeUpdate();
+                
                 if (filas > 0) {
+                    conn.commit(); 
+                    
+                    String mensajeExito = "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.";
+                    if (totalCategorias > 0) {
+                        mensajeExito += "\nSe eliminaron " + totalCategorias + " categorías relacionadas.";
+                    }
+                    
                     JOptionPane.showMessageDialog(this,
-                            "El servicio \"" + nombreServicio + "\" fue eliminado correctamente.");
+                            mensajeExito,
+                            "Éxito",
+                            JOptionPane.INFORMATION_MESSAGE);
+                    
+                    // Regresar a la ventana anterior
+                    NewGCV vista = new NewGCV();
+                    vista.setVisible(true);
+                    this.dispose();
+                    
                 } else {
+                    conn.rollback();
                     JOptionPane.showMessageDialog(this,
                             "El servicio ya no existe en la base de datos.");
                 }
-
-                // 🔹 Regresar a la ventana anterior
-                NewGCV vista = new NewGCV();
-                vista.setVisible(true);
-                this.dispose();
-
+                
             } catch (SQLException e) {
-                JOptionPane.showMessageDialog(this, "Error al eliminar el servicio: " + e.getMessage());
+                conn.rollback();
+                throw e;
             }
         }
-
-
+        
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, 
+                "Error al eliminar el servicio: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        e.printStackTrace();
+    }
     }//GEN-LAST:event_btneliminarActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        NewGCVCategoriaServicio anterior = new NewGCVCategoriaServicio();
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed

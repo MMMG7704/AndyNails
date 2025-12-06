@@ -227,6 +227,7 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
         INS = new javax.swing.JLabel();
         FACE = new javax.swing.JLabel();
         WPP = new javax.swing.JLabel();
+        jButton2 = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu3 = new javax.swing.JMenu();
         jMenu18 = new javax.swing.JMenu();
@@ -489,6 +490,14 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
+        jButton2.setBackground(new java.awt.Color(255, 204, 255));
+        jButton2.setText("Regresar");
+        jButton2.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButton2ActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -506,7 +515,9 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(btneliminar)
                                         .addGap(18, 18, 18)
-                                        .addComponent(btncancelar))
+                                        .addComponent(btncancelar)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                        .addComponent(jButton2))
                                     .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(35, 35, 35)
@@ -541,13 +552,14 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
                     .addComponent(jLabel13)
                     .addComponent(jComboCategoria, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(18, 18, 18)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 160, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(30, 30, 30)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(18, 18, 18)
                 .addComponent(jTextField2, javax.swing.GroupLayout.PREFERRED_SIZE, 45, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btneliminar)
-                    .addComponent(btncancelar))
+                    .addComponent(btncancelar)
+                    .addComponent(jButton2))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 88, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -617,9 +629,9 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu19.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
@@ -766,6 +778,13 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
         andynails.SessionManager.cerrarSesion(this);
     }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
+    private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
+        // TODO add your handling code here:
+        NewGCVCategoriaServicio anterior = new NewGCVCategoriaServicio();
+        anterior.setVisible(true);
+        this.dispose(); // Cierra la ventana actual
+    }//GEN-LAST:event_jButton2ActionPerformed
+
     /**
      * @param args the command line arguments
      */
@@ -815,6 +834,7 @@ public class NewGCVEliminarCategoriaServicio extends javax.swing.JFrame {
     private javax.swing.JButton btncancelar;
     private javax.swing.JButton btneliminar;
     private javax.swing.JTable cargarTabla;
+    private javax.swing.JButton jButton2;
     private javax.swing.JComboBox<String> jComboCategoria;
     private javax.swing.JComboBox<String> jComboServicios;
     private javax.swing.JDialog jDialog1;

@@ -401,6 +401,7 @@ private void insertarCitaYServicios(int idPago) {
         jLabel2 = new javax.swing.JLabel();
         btnEnviarComprobante = new javax.swing.JButton();
         btnsubirdocumento = new javax.swing.JButton();
+        btnRegresar = new javax.swing.JButton();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
@@ -416,7 +417,7 @@ private void insertarCitaYServicios(int idPago) {
         jMenuItem8 = new javax.swing.JMenuItem();
         jMenu5 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
+        jMenu19 = new javax.swing.JMenu();
         jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -481,6 +482,14 @@ private void insertarCitaYServicios(int idPago) {
             }
         });
 
+        btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
+        btnRegresar.setText("Regresar");
+        btnRegresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegresarActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -489,8 +498,8 @@ private void insertarCitaYServicios(int idPago) {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(59, 59, 59)
@@ -499,14 +508,16 @@ private void insertarCitaYServicios(int idPago) {
                                 .addGap(132, 132, 132)
                                 .addComponent(jLabel2)))
                         .addGap(0, 85, Short.MAX_VALUE))
-                    .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnEnviarComprobante)
-                        .addGap(17, 17, 17))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                         .addGap(138, 138, 138)
                         .addComponent(btnsubirdocumento)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))))
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(72, 72, 72)
+                        .addComponent(btnRegresar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnEnviarComprobante)
+                        .addGap(17, 17, 17))))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -522,7 +533,9 @@ private void insertarCitaYServicios(int idPago) {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(btnsubirdocumento)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(btnEnviarComprobante)))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(btnEnviarComprobante)
+                            .addComponent(btnRegresar))))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
                 .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
@@ -618,17 +631,17 @@ private void insertarCitaYServicios(int idPago) {
 
         jMenuBar1.add(jMenu5);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -659,76 +672,153 @@ private void insertarCitaYServicios(int idPago) {
     }//GEN-LAST:event_btnsubirdocumentoActionPerformed
 
     private void btnEnviarComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarComprobanteActionPerformed
-        if (archivoSeleccionado == null) {
-            JOptionPane.showMessageDialog(this, "Primero selecciona un archivo.");
-            return;
+    if (archivoSeleccionado == null) {
+        JOptionPane.showMessageDialog(this, 
+            "Primero selecciona un archivo de comprobante.",
+            "Archivo requerido", 
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // VERIFICAR DATOS DE CITA ANTES DE PROCESAR PAGO
+    String fechaCita = SesionUsuario.getFechaCita();
+    String horaCita = SesionUsuario.getHoraCita();
+    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+    
+    System.out.println("\n=== VERIFICACION ANTES DE PAGO ===");
+    System.out.println("Fecha en sesion: '" + (fechaCita != null ? fechaCita : "null") + "'");
+    System.out.println("Hora en sesion: '" + (horaCita != null ? horaCita : "null") + "'");
+    System.out.println("Servicios en sesion: " + (servicios != null ? servicios.size() : "null"));
+    System.out.println("Monto total: $" + SesionUsuario.getMontoTotalCita());
+    System.out.println("=================================\n");
+    
+    // Validacion exhaustiva de datos de cita
+    StringBuilder errores = new StringBuilder();
+    
+    if (fechaCita == null || fechaCita.trim().isEmpty()) {
+        errores.append("• No se ha programado fecha para la cita\n");
+    }
+    
+    if (horaCita == null || horaCita.trim().isEmpty()) {
+        errores.append("• No se ha programado hora para la cita\n");
+    }
+    
+    if (servicios == null || servicios.isEmpty()) {
+        errores.append("• No hay servicios seleccionados\n");
+    }
+    
+    double montoTotal = SesionUsuario.getMontoTotalCita();
+    if (montoTotal <= 0) {
+        errores.append("• El monto total debe ser mayor a cero\n");
+    }
+    
+    // Si hay errores, mostrar mensaje y cancelar
+    if (errores.length() > 0) {
+        JOptionPane.showMessageDialog(this, 
+            "Datos de cita incompletos:\n\n" + errores.toString() + 
+            "\nPor favor regrese a 'Agendar Cita' para completar la informacion.",
+            "Cita incompleta", 
+            JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // Obtener el monto total
+    montoTotal = SesionUsuario.getMontoTotalCita();
+    
+    String carpetaDestino = "comprobantes";
+    File carpeta = new File(carpetaDestino);
+    if (!carpeta.exists()) {
+        boolean creada = carpeta.mkdirs();
+        if (creada) {
+            System.out.println("Carpeta 'comprobantes' creada");
         }
+    }
 
-        // Obtener el monto total
-        double montoTotal = SesionUsuario.getMontoTotalCita();
+    try {
+        // Generar nombre unico para el archivo
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String nombreArchivo = usuarioActual() + "_" + timestamp + "_" + archivoSeleccionado.getName();
+        
+        System.out.println("Guardando comprobante: " + nombreArchivo);
 
-        String carpetaDestino = "comprobantes";
-        File carpeta = new File(carpetaDestino);
-        if (!carpeta.exists()) {
-            carpeta.mkdirs();
-        }
+        Path destino = Paths.get(carpetaDestino, nombreArchivo);
+        Files.copy(archivoSeleccionado.toPath(), destino, StandardCopyOption.REPLACE_EXISTING);
+        System.out.println("Comprobante guardado en: " + destino.toString());
 
-        try {
-            String nombreArchivo = usuarioActual() + "_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())
-                    + "_" + archivoSeleccionado.getName();
+        // INSERTAR PAGO Y OBTENER EL ID GENERADO
+        try (java.sql.Connection conn = ConexionBD.getConnection()) {
+            String sql = "INSERT INTO pago (idMetodo_Pago, fecha_pago, Estado_pago, Comprobante, Monto, idUsuarios) VALUES (?, ?, ?, ?, ?, ?)";
+            java.sql.PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
 
-            Path destino = Paths.get(carpetaDestino, nombreArchivo);
-            Files.copy(archivoSeleccionado.toPath(), destino, StandardCopyOption.REPLACE_EXISTING);
+            ps.setInt(1, 4); // ID metodo de pago (Transferencia bancaria)
+            ps.setDate(2, new java.sql.Date(System.currentTimeMillis()));
+            ps.setString(3, "Pendiente");
+            ps.setString(4, nombreArchivo);
+            ps.setDouble(5, montoTotal);
+            ps.setInt(6, obtenerIdUsuarioActual());
 
-            // INSERTAR PAGO Y OBTENER EL ID GENERADO
-            try (java.sql.Connection conn = ConexionBD.getConnection()) {
-                String sql = "INSERT INTO pago (idMetodo_Pago, fecha_pago, Estado_pago, Comprobante, Monto, idUsuarios) VALUES (?, ?, ?, ?, ?, ?)";
-                java.sql.PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
+            int affectedRows = ps.executeUpdate();
+            System.out.println("Pago insertado en BD, filas afectadas: " + affectedRows);
 
-                ps.setInt(1, 4); // ID método de pago (Transferencia bancaria)
-                ps.setDate(2, new java.sql.Date(System.currentTimeMillis()));
-                ps.setString(3, "Pendiente");
-                ps.setString(4, nombreArchivo);
-                ps.setDouble(5, montoTotal);
-                ps.setInt(6, obtenerIdUsuarioActual());
-
-                int affectedRows = ps.executeUpdate();
-
-                if (affectedRows == 0) {
-                    throw new java.sql.SQLException("Columnas no afectadas");
-                }
-
-                // OBTENER EL ID DEL PAGO RECIÉN INSERTADO
-                java.sql.ResultSet generatedKeys = ps.getGeneratedKeys();
-                int idPago = 0;
-                if (generatedKeys.next()) {
-                    idPago = generatedKeys.getInt(1);
-
-                    // GUARDAR EL ID DEL PAGO EN LA SESIÓN
-                    SesionUsuario.setIdPagoActual(idPago);
-
-                    JOptionPane.showMessageDialog(this, "Comprobante enviado correctamente. ");
-
-                    //  AHORA INSERTAR LA CITA Y SERVICIOS DESPUÉS DEL PAGO
-                    insertarCitaYServicios(idPago);
-                    SesionUsuario.limpiarDatosCita();
-
-                    // Cerrar esta ventana
-                    NewJMiscitasCi cliWindow = new NewJMiscitasCi();
-                    cliWindow.setVisible(true);
-                    this.dispose();
-
-                } else {
-                    throw new java.sql.SQLException("comnprobante no obtenido");
-                }
-
+            if (affectedRows == 0) {
+                throw new java.sql.SQLException("No se pudo insertar el pago en la base de datos");
             }
 
-        } catch (IOException | java.sql.SQLException e) {
-            e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+            // OBTENER EL ID DEL PAGO RECIEN INSERTADO
+            java.sql.ResultSet generatedKeys = ps.getGeneratedKeys();
+            int idPago = 0;
+            if (generatedKeys.next()) {
+                idPago = generatedKeys.getInt(1);
+                
+                // GUARDAR EL ID DEL PAGO EN LA SESION
+                SesionUsuario.setIdPagoActual(idPago);
+                
+                System.out.println("Pago creado con ID: " + idPago);
+
+                // Mostrar confirmacion al usuario
+                JOptionPane.showMessageDialog(this, 
+                    "Comprobante enviado correctamente.\n\n" +
+                    "Archivo: " + nombreArchivo + "\n" +
+                    "Monto: $" + String.format("%.2f", montoTotal) + "\n" +
+                    "Procesando cita...",
+                    "Comprobante Aceptado", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                insertarCitaYServicios(idPago);
+                
+
+                // Cerrar esta ventana y abrir Mis Citas
+                NewJMiscitasCi cliWindow = new NewJMiscitasCi();
+                cliWindow.setVisible(true);
+                this.dispose();
+                System.out.println("Ventana de pago cerrada, abriendo Mis Citas");
+
+            } else {
+                throw new java.sql.SQLException("No se pudo obtener el ID del pago generado");
+            }
         }
 
+    } catch (IOException e) {
+        System.err.println("Error al guardar archivo: " + e.getMessage());
+        JOptionPane.showMessageDialog(this, 
+            "Error al guardar el comprobante:\n\n" + e.getMessage(),
+            "Error de Archivo", 
+            JOptionPane.ERROR_MESSAGE);
+    } catch (java.sql.SQLException e) {
+        System.err.println("Error en base de datos: " + e.getMessage());
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, 
+            "Error al procesar el pago:\n\n" + e.getMessage(),
+            "Error de Base de Datos", 
+            JOptionPane.ERROR_MESSAGE);
+    } catch (Exception e) {
+        System.err.println("Error inesperado: " + e.getMessage());
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, 
+            "Error inesperado:\n\n" + e.getMessage(),
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
+    }
     }//GEN-LAST:event_btnEnviarComprobanteActionPerformed
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
@@ -794,6 +884,13 @@ private void insertarCitaYServicios(int idPago) {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem12ActionPerformed
 
+    private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
+        // TODO add your handling code here:
+          NewJCitaConf NewJAgendarcita = new NewJCitaConf();
+        NewJAgendarcita.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_btnRegresarActionPerformed
+
     private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
@@ -854,12 +951,13 @@ private void insertarCitaYServicios(int idPago) {
     private javax.swing.JLabel INS;
     private javax.swing.JLabel WPP;
     private javax.swing.JButton btnEnviarComprobante;
+    private javax.swing.JButton btnRegresar;
     private javax.swing.JButton btnsubirdocumento;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenu jMenu10;
-    private javax.swing.JMenu jMenu16;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;

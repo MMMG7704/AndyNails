@@ -539,8 +539,8 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jMenuItem11 = new javax.swing.JMenuItem();
         jMenu6 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
-        jMenu17 = new javax.swing.JMenu();
-        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+        jMenu19 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion6 = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -1011,17 +1011,17 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu6);
 
-        jMenu17.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
-        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemCerrarSecion6.setText("Cerrar sesión");
+        jMenuItemCerrarSecion6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCerrarSecionActionPerformed(evt);
+                jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu17.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion6);
 
-        jMenuBar1.add(jMenu17);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -1085,7 +1085,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
         // TODO add your handling code here:
         //agendar cita
-        NewJAgendarcita NewJAgendarcita = new NewJAgendarcita();
+        NewJAgendarcitaREC NewJAgendarcita = new NewJAgendarcitaREC();
         NewJAgendarcita.setVisible(true);
         this.dispose(); // cierra la actual
 
@@ -1193,10 +1193,10 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_cmbservicioActionPerformed
 
-    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+    private void jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
-    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+    }//GEN-LAST:event_jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1259,7 +1259,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu13;
     private javax.swing.JMenu jMenu14;
     private javax.swing.JMenu jMenu15;
-    private javax.swing.JMenu jMenu17;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu2;
     private javax.swing.JMenu jMenu3;
     private javax.swing.JMenu jMenu4;
@@ -1283,7 +1283,7 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion6;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel4;

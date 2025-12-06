@@ -436,9 +436,9 @@ public class NewGCVCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);

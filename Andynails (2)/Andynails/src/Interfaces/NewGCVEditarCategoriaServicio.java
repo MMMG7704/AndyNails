@@ -446,9 +446,9 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
@@ -621,7 +621,7 @@ public class NewGCVEditarCategoriaServicio extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
         // TODO add your handling code here:
-        NewJPanelAdministracion anterior = new NewJPanelAdministracion();
+        NewGCVCategoriaServicio anterior = new NewGCVCategoriaServicio();
         anterior.setVisible(true);
         this.dispose(); // Cierra la ventana actual
     }//GEN-LAST:event_jButton2ActionPerformed

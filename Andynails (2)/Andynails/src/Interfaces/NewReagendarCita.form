@@ -75,17 +75,17 @@
             </MenuItem>
           </SubComponents>
         </Menu>
-        <Menu class="javax.swing.JMenu" name="jMenu16">
+        <Menu class="javax.swing.JMenu" name="jMenu19">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CERRAR SECION"/>
+            <Property name="text" type="java.lang.String" value="CERRAR SESI&#xd3;N"/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="jMenuItemCerrarSecion">
+            <MenuItem class="javax.swing.JMenuItem" name="jMenuItemCerrarSecion6">
               <Properties>
-                <Property name="text" type="java.lang.String" value="cerrar secion"/>
+                <Property name="text" type="java.lang.String" value="Cerrar sesi&#xf3;n"/>
               </Properties>
               <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jMenuItemCerrarSecionActionPerformed"/>
+                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed"/>
               </Events>
             </MenuItem>
           </SubComponents>
@@ -130,6 +130,11 @@
   </Layout>
   <SubComponents>
     <Container class="javax.swing.JPanel" name="jPanel1">
+      <Properties>
+        <Property name="background" type="java.awt.Color" editor="org.netbeans.beaninfo.editors.ColorEditor">
+          <Color blue="ff" green="e0" red="f3" type="rgb"/>
+        </Property>
+      </Properties>
 
       <Layout>
         <DimensionLayout dim="0">

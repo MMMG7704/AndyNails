@@ -613,9 +613,9 @@ public class NewGCV extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
@@ -652,11 +652,9 @@ public class NewGCV extends javax.swing.JFrame {
     }//GEN-LAST:event_jComboBox1ActionPerformed
 
     private void btnAgregarserviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAgregarserviciosActionPerformed
-        NewGCVInsertar insertar = new NewGCVInsertar(this); // <-- PASAMOS "this"
+        NewGCVInsertar insertar = new NewGCVInsertar(this); 
         insertar.setVisible(true);
         // this.dispose(); // NO cierres la ventana principal
-
-
     }//GEN-LAST:event_btnAgregarserviciosActionPerformed
 
     private void btnEditar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditar1ActionPerformed
@@ -673,12 +671,12 @@ public class NewGCV extends javax.swing.JFrame {
         NewGCVEditar ventanaEditar = new NewGCVEditar(servicioSeleccionado);
         ventanaEditar.setVisible(true);
         this.dispose();
+        
 
     }//GEN-LAST:event_btnEditar1ActionPerformed
 
     private void btnEliminar1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminar1ActionPerformed
         // TODO add your handling code here:
-        // 🔹 Obtener el nombre del servicio seleccionado en el ComboBox
         String servicioSeleccionado = (String) jComboBox1.getSelectedItem();
 
         if (servicioSeleccionado == null || servicioSeleccionado.trim().isEmpty()) {

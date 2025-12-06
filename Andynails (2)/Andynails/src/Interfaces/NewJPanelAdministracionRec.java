@@ -576,8 +576,8 @@ private javax.swing.JMenuItem jMenuItemCerrarSesion;
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu14 = new javax.swing.JMenu();
         jMenuItem11 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
-        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+        jMenu19 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion6 = new javax.swing.JMenuItem();
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("Iniciar sesión");
@@ -983,17 +983,17 @@ private javax.swing.JMenuItem jMenuItemCerrarSesion;
 
         jMenuBar1.add(jMenu14);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
-        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemCerrarSecion6.setText("Cerrar sesión");
+        jMenuItemCerrarSecion6.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCerrarSecionActionPerformed(evt);
+                jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion6);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -1107,10 +1107,10 @@ private javax.swing.JMenuItem jMenuItemCerrarSesion;
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem8ActionPerformed
 
-    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+    private void jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
-    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+    }//GEN-LAST:event_jMenuItemCerrarSecion6jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -1211,7 +1211,7 @@ private javax.swing.JMenuItem jMenuItemCerrarSesion;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
     private javax.swing.JMenu jMenu14;
-    private javax.swing.JMenu jMenu16;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;
     private javax.swing.JMenu jMenu8;
@@ -1225,7 +1225,7 @@ private javax.swing.JMenuItem jMenuItemCerrarSesion;
     private javax.swing.JMenuItem jMenuItem11;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem8;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion6;
     private javax.swing.JMenu jMenuLogin;
     private javax.swing.JMenu jMenuPagos;
     private javax.swing.JPanel jPanel1;

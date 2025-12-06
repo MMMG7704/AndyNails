@@ -162,7 +162,7 @@ public class NewJBloqueoHorario extends javax.swing.JFrame {
         jMenuItem9 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
+        jMenu19 = new javax.swing.JMenu();
         jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -512,17 +512,17 @@ public class NewJBloqueoHorario extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -819,8 +819,8 @@ public class NewJBloqueoHorario extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel9;
     private javax.swing.JMenu jMenu10;
     private javax.swing.JMenu jMenu11;
-    private javax.swing.JMenu jMenu16;
     private javax.swing.JMenu jMenu18;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu6;
     private javax.swing.JMenu jMenu7;

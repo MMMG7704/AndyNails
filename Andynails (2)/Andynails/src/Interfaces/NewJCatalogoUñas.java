@@ -174,14 +174,24 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
         }
     }
-
-    private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
-        if (c.imagen != null) {
-            lblImg.setIcon(c.imagen);
-        }
-        lblDesc.setText(c.descripcion);
-        lblPrecio.setText("$" + c.precio);
+private void mostrarCategoria(CategoriaServicio c, JLabel lblImg, JLabel lblDesc, JLabel lblPrecio) {
+    if (c.imagen != null) {
+        lblImg.setIcon(c.imagen);
     }
+    lblDesc.setText(c.descripcion);
+    
+    // Asegurar que el precio tenga formato de dinero
+    if (c.precio != null && !c.precio.trim().isEmpty()) {
+        try {
+            double precioNum = Double.parseDouble(c.precio);
+            lblPrecio.setText(String.format("$%.2f", precioNum));
+        } catch (NumberFormatException e) {
+            lblPrecio.setText("$" + c.precio); // Si ya tiene formato
+        }
+    } else {
+        lblPrecio.setText("$0.00");
+    }
+}
 
     private void iniciarCarrusel() {
         // Carrusel Francesas
@@ -292,7 +302,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         jMenu8 = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
         jMenu16 = new javax.swing.JMenu();
-        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+        jMenuItemCerrarSecion3 = new javax.swing.JMenuItem();
 
         jMenu5.setText("File");
         jMenuBar2.add(jMenu5);
@@ -615,15 +625,15 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu8);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
-        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemCerrarSecion3.setText("Cerrar sesión");
+        jMenuItemCerrarSecion3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCerrarSecionActionPerformed(evt);
+                jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu16.add(jMenuItemCerrarSecion3);
 
         jMenuBar1.add(jMenu16);
 
@@ -730,10 +740,10 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
-    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+    private void jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
-    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+    }//GEN-LAST:event_jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -803,7 +813,7 @@ public class NewJCatalogoUñas extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem5;
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel3;
     private javax.swing.JPanel jPanel4;

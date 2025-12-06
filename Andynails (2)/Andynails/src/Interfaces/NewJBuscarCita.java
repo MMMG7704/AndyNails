@@ -130,8 +130,8 @@ public class NewJBuscarCita extends javax.swing.JFrame {
         jMenuItem17 = new javax.swing.JMenuItem();
         jMenu26 = new javax.swing.JMenu();
         jMenuItem18 = new javax.swing.JMenuItem();
-        jMenu20 = new javax.swing.JMenu();
-        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+        jMenu23 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion3 = new javax.swing.JMenuItem();
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
@@ -555,17 +555,17 @@ public class NewJBuscarCita extends javax.swing.JFrame {
 
         jMenuBar5.add(jMenu26);
 
-        jMenu20.setText("CERRAR SECION");
+        jMenu23.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
-        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+        jMenuItemCerrarSecion3.setText("Cerrar sesión");
+        jMenuItemCerrarSecion3.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jMenuItemCerrarSecionActionPerformed(evt);
+                jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu20.add(jMenuItemCerrarSecion);
+        jMenu23.add(jMenuItemCerrarSecion3);
 
-        jMenuBar5.add(jMenu20);
+        jMenuBar5.add(jMenu23);
 
         setJMenuBar(jMenuBar5);
 
@@ -812,10 +812,10 @@ public class NewJBuscarCita extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
     }//GEN-LAST:event_jMenuItem23ActionPerformed
 
-    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+    private void jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
-    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+    }//GEN-LAST:event_jMenuItemCerrarSecion3jMenuItemCerrarSecionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -891,9 +891,9 @@ public class NewJBuscarCita extends javax.swing.JFrame {
     private javax.swing.JMenu jMenu17;
     private javax.swing.JMenu jMenu18;
     private javax.swing.JMenu jMenu19;
-    private javax.swing.JMenu jMenu20;
     private javax.swing.JMenu jMenu21;
     private javax.swing.JMenu jMenu22;
+    private javax.swing.JMenu jMenu23;
     private javax.swing.JMenu jMenu25;
     private javax.swing.JMenu jMenu26;
     private javax.swing.JMenu jMenu5;
@@ -918,7 +918,7 @@ public class NewJBuscarCita extends javax.swing.JFrame {
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItem8;
     private javax.swing.JMenuItem jMenuItem9;
-    private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion3;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

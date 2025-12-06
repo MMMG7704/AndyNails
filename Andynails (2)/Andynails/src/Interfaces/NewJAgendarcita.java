@@ -35,7 +35,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         conexion = new ConexionBD();
         this.idCita = idCita;
         jLabel1.setText("EDITAR CITA");
-
+        configurarCalendario();
         // Cargar datos
         cargarClientes();
         cargarServicios();
@@ -51,7 +51,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         this.ventanaAnterior = ventanaAnterior;
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
-
+        configurarCalendario();
         // Cargar datos
         cargarClientes();
         cargarServicios();
@@ -64,6 +64,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         jLabel1.setText("REGISTRAR NUEVA CITA");
+        configurarCalendario();
 
         if (lblTelefono == null) {
             System.out.println("ADVERTENCIA: lblTelefono no está inicializado");
@@ -494,6 +495,20 @@ public class NewJAgendarcita extends javax.swing.JFrame {
             }
 
             Date fechaSeleccionada = cal.getTime();
+            java.util.Calendar hoy = java.util.Calendar.getInstance();
+            hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            hoy.set(java.util.Calendar.MINUTE, 0);
+            hoy.set(java.util.Calendar.SECOND, 0);
+            hoy.set(java.util.Calendar.MILLISECOND, 0);
+
+            if (fechaSeleccionada.before(hoy.getTime())) {
+                JOptionPane.showMessageDialog(this,
+                        "No puedes agendar una cita en una fecha pasada.\n"
+                        + "Por favor selecciona una fecha actual o futura.",
+                        "Fecha inválida",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
 
             // Verificar si la fecha está bloqueada
             if (verificarFechaBloqueada(fechaSeleccionada)) {
@@ -709,6 +724,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         conexion = new ConexionBD();
         this.idCita = idCita;
         jLabel1.setText("EDITAR CITA");
+        configurarCalendario();
 
         cargarClientes();
         cargarServicios();
@@ -754,6 +770,69 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         } catch (Exception e) {
             System.out.println("Error al asignar fecha: " + e.getMessage());
             CalCitas.setCalendar(java.util.Calendar.getInstance());
+        }
+    }
+
+    private void configurarCalendario() {
+        // Configurar fecha mínima como hoy
+        java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
+        fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        fechaMinima.set(java.util.Calendar.MINUTE, 0);
+        fechaMinima.set(java.util.Calendar.SECOND, 0);
+        fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
+
+        // Aplicar fecha mínima al JCalendar
+        CalCitas.setMinSelectableDate(fechaMinima.getTime());
+        CalCitas.setMaxSelectableDate(null); // Sin límite máximo
+
+        System.out.println("DEBUG - Fecha mínima establecida: "
+                + new java.text.SimpleDateFormat("yyyy-MM-dd").format(fechaMinima.getTime()));
+
+        // Agregar listener para detectar cambios en la fecha seleccionada
+        CalCitas.addPropertyChangeListener("calendar", evt -> {
+            if ("calendar".equals(evt.getPropertyName())) {
+                validarFechaSeleccionada();
+            }
+        });
+    }
+
+    private void validarFechaSeleccionada() {
+        try {
+            java.util.Calendar calSeleccionada = CalCitas.getCalendar();
+            if (calSeleccionada != null) {
+                java.util.Date fechaSeleccionada = calSeleccionada.getTime();
+
+                // Obtener fecha actual sin hora
+                java.util.Calendar hoy = java.util.Calendar.getInstance();
+                hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                hoy.set(java.util.Calendar.MINUTE, 0);
+                hoy.set(java.util.Calendar.SECOND, 0);
+                hoy.set(java.util.Calendar.MILLISECOND, 0);
+
+                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                String fechaFormateada = formato.format(fechaSeleccionada);
+                String hoyFormateado = formato.format(hoy.getTime());
+
+                // Verificar si la fecha es pasada
+                if (fechaSeleccionada.before(hoy.getTime())) {
+                    JOptionPane.showMessageDialog(this,
+                            "No puedes seleccionar una fecha pasada.\n\n"
+                            + "Fecha seleccionada: " + fechaFormateada + "\n"
+                            + "Fecha actual: " + hoyFormateado + "\n\n"
+                            + "Por favor selecciona una fecha actual o futura.",
+                            "Fecha inválida",
+                            JOptionPane.WARNING_MESSAGE);
+
+                    // Restablecer a la fecha de hoy
+                    CalCitas.setCalendar(hoy);
+                    System.out.println("DEBUG - Fecha corregida a hoy: " + hoyFormateado);
+                }
+
+                // También verificar si la fecha está bloqueada
+                mostrarInfoBloqueo(fechaSeleccionada);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -803,7 +882,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
+        jMenu19 = new javax.swing.JMenu();
         jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -943,10 +1022,12 @@ public class NewJAgendarcita extends javax.swing.JFrame {
                                     .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addComponent(jLabel13, javax.swing.GroupLayout.Alignment.LEADING)
+                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                    .addComponent(jLabel13)
+                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                    .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                                 .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                         .addComponent(jLabel1)
@@ -1086,17 +1167,17 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -1160,10 +1241,10 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         } else {
             registrarCitaNueva();
         }
-          NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
         NewJPanelAdministracion.setVisible(true);
         this.dispose(); // cierra la actual
-        
+
 
     }//GEN-LAST:event_jButton2ActionPerformed
 
@@ -1287,7 +1368,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JMenu jMenu16;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu6;

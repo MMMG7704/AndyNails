@@ -57,14 +57,14 @@
             </MenuItem>
           </SubComponents>
         </Menu>
-        <Menu class="javax.swing.JMenu" name="jMenu16">
+        <Menu class="javax.swing.JMenu" name="jMenu19">
           <Properties>
-            <Property name="text" type="java.lang.String" value="CERRAR SECION"/>
+            <Property name="text" type="java.lang.String" value="CERRAR SESI&#xd3;N"/>
           </Properties>
           <SubComponents>
             <MenuItem class="javax.swing.JMenuItem" name="jMenuItemCerrarSecion">
               <Properties>
-                <Property name="text" type="java.lang.String" value="cerrar secion"/>
+                <Property name="text" type="java.lang.String" value="Cerrar sesi&#xf3;n"/>
               </Properties>
               <Events>
                 <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="jMenuItemCerrarSecionActionPerformed"/>
@@ -136,12 +136,15 @@
                                       <EmptySpace max="32767" attributes="0"/>
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="txtnumerocita" min="-2" pref="364" max="-2" attributes="0"/>
-                                          <Component id="jComboBox1diseñoselecionado" alignment="0" min="-2" max="-2" attributes="0"/>
                                           <Component id="CalCitas" alignment="0" min="-2" pref="355" max="-2" attributes="0"/>
                                           <Component id="jComboBox1servicios" min="-2" max="-2" attributes="0"/>
                                       </Group>
                                   </Group>
-                                  <Component id="jLabel13" alignment="0" min="-2" max="-2" attributes="0"/>
+                                  <Group type="102" alignment="0" attributes="0">
+                                      <Component id="jLabel13" min="-2" max="-2" attributes="0"/>
+                                      <EmptySpace type="unrelated" max="-2" attributes="0"/>
+                                      <Component id="jComboBox1diseñoselecionado" min="-2" max="-2" attributes="0"/>
+                                  </Group>
                                   <Group type="102" alignment="0" attributes="0">
                                       <Group type="103" groupAlignment="0" attributes="0">
                                           <Component id="jLabel1" alignment="0" min="-2" max="-2" attributes="0"/>

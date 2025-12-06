@@ -17,6 +17,8 @@ import java.util.Date;
 import java.sql.Statement;
 import java.sql.Time;
 import javax.swing.DefaultComboBoxModel;
+import java.awt.Image;
+import javax.swing.ImageIcon;
 
 /**
  *
@@ -34,7 +36,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         conexion = new ConexionBD();
         this.idCita = idCita;
-
+        configurarCalendario();
         // Cargar catálogos
         cargarClientes();
         cargarServicios();
@@ -43,8 +45,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         // Cargar datos desde BD
         cargarDatosCita(idCita);
 
-        // === IMPORTANTE ===
-        // Ahora sí se carga y bloquea el ID
         txtnumerocita.setText(String.valueOf(idCita));
         txtnumerocita.setEditable(false);
 
@@ -74,7 +74,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
-
+        configurarCalendario();
         // Cargar datos
         cargarClientes();
         cargarServicios();
@@ -87,6 +87,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         setLocationRelativeTo(null);
 
         conexion = new ConexionBD();
+        configurarCalendario();
 
         cargarClientes();
         cargarServicios();
@@ -96,6 +97,9 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         // Campos activos para cita nueva
         CalCitas.setEnabled(true);
         jComboBox3hora.setEnabled(true);
+        jLabelImagen.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelImagen.setVerticalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelImagen.setText("Seleccione un servicio y categoría");
 
     }
 
@@ -161,7 +165,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             java.sql.Date fechaSQL = new java.sql.Date(fecha.getTime());
             int idCliente = obtenerIdUsuario(jComboBoxnombrecliente.getSelectedItem().toString());
 
-            // 1. Verificar si OTRO cliente ya tiene ese servicio a esa hora
+            // Verificar si OTRO cliente ya tiene ese servicio a esa hora
             String sqlServicio = "SELECT c.idCita FROM Cita c "
                     + "JOIN cita_has_servicios cs ON c.idCita = cs.idCita "
                     + "JOIN Servicios s ON cs.idServicios = s.idServicios "
@@ -185,7 +189,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 }
             }
 
-            // 2. Verificar si el MISMO cliente tiene ya cita a esa hora
+            // Verificar si el MISMO cliente tiene ya cita a esa hora
             String sqlCliente = "SELECT idCita FROM Cita WHERE Fecha = ? AND Hora = ? AND idUsuarios = ?";
 
             if (idCitaExcluir > 0) {
@@ -202,11 +206,11 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
                 ResultSet rs2 = ps2.executeQuery();
                 if (rs2.next()) {
-                    return false; // el cliente ya tiene una cita a esa hora
+                    return false;
                 }
             }
 
-            // 3. Validar rango horario
+            // Validar rango horario
             int hora = Integer.parseInt(horaStr.split(":")[0]);
             return hora >= 9 && hora <= 19;
 
@@ -403,11 +407,14 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             String sql = "SELECT c.Fecha, c.Hora, "
                     + "u.Nombre, u.Materno, u.Paterno, "
                     + "s.Nombre_servicio AS Servicio, "
-                    + "c.Estado "
+                    + "c.Estado, "
+                    + "cs.Nombre_categoria as Categoria, "
+                    + "cs.Imagen_Archivo as ImagenArchivo " // CORRECCIÓN: Imagen_Archivo
                     + "FROM Cita c "
                     + "JOIN Usuarios u ON c.idUsuarios = u.idUsuarios "
                     + "LEFT JOIN cita_has_servicios chs ON c.idCita = chs.idCita "
                     + "LEFT JOIN Servicios s ON chs.idServicios = s.idServicios "
+                    + "LEFT JOIN categoria_Servicio cs ON s.idServicios = cs.idServicios "
                     + "WHERE c.idCita = ?";
 
             PreparedStatement ps = con.prepareStatement(sql);
@@ -415,7 +422,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             ResultSet rs = ps.executeQuery();
 
             if (rs.next()) {
-
                 // Cliente
                 String nombreCliente = rs.getString("Nombre") + " "
                         + rs.getString("Paterno") + " "
@@ -445,10 +451,29 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 String servicio = rs.getString("Servicio");
                 if (servicio != null) {
                     jComboBox1servicios.setSelectedItem(servicio);
-                }
-                jComboBox1servicios.setEnabled(false);
 
-                // ❌ Eliminado todo lo de categoría
+                    // Cargar categorías para este servicio
+                    cargarCategoriasPorServicio(servicio);
+
+                    // Categoría
+                    String categoria = rs.getString("Categoria");
+                    if (categoria != null) {
+                        jComboBox1diseñoselecionado.setSelectedItem(categoria);
+
+                        // Mostrar imagen de la categoría
+                        String imagenArchivo = rs.getString("ImagenArchivo");
+                        if (imagenArchivo != null && !imagenArchivo.trim().isEmpty()) {
+                            cargarImagenDesdeRuta(imagenArchivo);
+                        } else {
+                            jLabelImagen.setIcon(null);
+                            jLabelImagen.setText("Sin imagen disponible");
+                        }
+                    }
+                }
+
+                jComboBox1servicios.setEnabled(false);
+                jComboBox1diseñoselecionado.setEnabled(false);
+
                 // Estado
                 String estado = rs.getString("Estado");
                 chksi.setSelected("Sí".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado));
@@ -459,17 +484,14 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al cargar cita: " + e.getMessage());
+            e.printStackTrace();
         }
+
         jComboBox1servicios.setEnabled(false);
-        // mostrar y bloquear número de cita (asegura que siempre se ponga al cargar desde BD)
         txtnumerocita.setText(String.valueOf(idCita));
         txtnumerocita.setEditable(false);
-// también por seguridad deshabilitamos el campo (opcional visual)
         txtnumerocita.setEnabled(false);
-
-// reforzar bloqueo del combo de servicios
         jComboBox1servicios.setEnabled(false);
-
     }
 
     private int obtenerIdUsuario(String nombreCompleto) {
@@ -495,8 +517,19 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         return idUsuario;
     }
 
-    private void insertarServicio(int idCita, String nombreServicio) {
-        int idPago = crearPagoTemporal();
+    private void insertarServicio(int idCita, String nombreServicio, String nombreCategoria) {
+        // Obtener el ID del cliente seleccionado
+        String nombreCliente = jComboBoxnombrecliente.getSelectedItem().toString();
+        int idUsuario = obtenerIdUsuario(nombreCliente);
+
+        if (idUsuario == -1) {
+            JOptionPane.showMessageDialog(this, "Error: No se pudo obtener el ID del cliente");
+            return;
+        }
+
+        // Primero crear un pago temporal CON EL CLIENTE Y CATEGORÍA
+        int idPago = crearPagoTemporal(idUsuario, nombreServicio, nombreCategoria);
+
         if (idPago == -1) {
             JOptionPane.showMessageDialog(this, "Error al crear pago temporal para el servicio");
             return;
@@ -525,8 +558,16 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             psInsert.setInt(3, idPago);
             psInsert.executeUpdate();
 
+            // Ahora también debemos asociar el pago a la cita
+            asociarPagoACita(idCita, idPago);
+
+            // Actualizar el JLabel con el monto
+            double monto = obtenerPrecioCategoria(nombreServicio, nombreCategoria);
+            jLabel18.setText("$" + String.format("%.2f", monto) + " MXN");
+
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al insertar servicio: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
@@ -537,15 +578,17 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 return;
             }
 
-            // Validar campos obligatorios
+            // Validar campos obligatorios (AHORA INCLUYE CATEGORÍA)
             if (jComboBoxnombrecliente.getSelectedIndex() == 0
                     || jComboBox3hora.getSelectedIndex() == 0
-                    || jComboBox1servicios.getSelectedIndex() == 0) {
+                    || jComboBox1servicios.getSelectedIndex() == 0
+                    || jComboBox1diseñoselecionado.getSelectedIndex() == 0) {
 
                 JOptionPane.showMessageDialog(this,
                         "Por favor complete todos los campos:\n"
                         + "- Seleccione un cliente\n"
                         + "- Seleccione un servicio\n"
+                        + "- Seleccione una categoría\n"
                         + "- Seleccione una hora");
                 return;
             }
@@ -558,14 +601,21 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             }
 
             Date fechaSeleccionada = cal.getTime();
+            // ===== VALIDACIÓN: VERIFICAR QUE LA FECHA NO SEA PASADA =====
+            java.util.Calendar hoy = java.util.Calendar.getInstance();
+            hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            hoy.set(java.util.Calendar.MINUTE, 0);
+            hoy.set(java.util.Calendar.SECOND, 0);
+            hoy.set(java.util.Calendar.MILLISECOND, 0);
 
-            // Verificar si la fecha está bloqueada
-            if (verificarFechaBloqueada(fechaSeleccionada)) {
-                JOptionPane.showMessageDialog(this, "No se puede agendar cita en una fecha bloqueada. Por favor seleccione otra fecha.");
+            if (fechaSeleccionada.before(hoy.getTime())) {
+                JOptionPane.showMessageDialog(this,
+                        "No puedes agendar una cita en una fecha pasada.\n"
+                        + "Por favor selecciona una fecha actual o futura.",
+                        "Fecha inválida",
+                        JOptionPane.ERROR_MESSAGE);
                 return;
             }
-
-            java.sql.Date fechaSQL = new java.sql.Date(fechaSeleccionada.getTime());
 
             // Procesar hora
             String horaStr = jComboBox3hora.getSelectedItem().toString();
@@ -586,14 +636,36 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 return;
             }
 
-            // Obtener servicio y verificar disponibilidad
-            // Obtener servicio y verificar disponibilidad
-            String servicio = jComboBox1servicios.getSelectedItem().toString();
+            // ===== NUEVA VALIDACIÓN: VERIFICAR QUE LA HORA NO SEA PASADA PARA HOY =====
+            if (esFechaHoy(fechaSeleccionada)) {
+                if (esHoraPasada(horaStr)) {
+                    JOptionPane.showMessageDialog(this,
+                            "No puedes agendar una cita en una hora pasada.\n"
+                            + "Hora seleccionada: " + horaStr.substring(0, 5) + "\n"
+                            + "Hora actual: " + obtenerHoraActual() + "\n\n"
+                            + "Por favor selecciona una hora futura.",
+                            "Hora inválida",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+            }
 
-// ✅ Validar si la fecha, hora y servicio están disponibles
+            // Verificar si la fecha está bloqueada
+            if (verificarFechaBloqueada(fechaSeleccionada)) {
+                JOptionPane.showMessageDialog(this, "No se puede agendar cita en una fecha bloqueada. Por favor seleccione otra fecha.");
+                return;
+            }
+
+            java.sql.Date fechaSQL = new java.sql.Date(fechaSeleccionada.getTime());
+
+            // Obtener servicio y categoría
+            String servicio = jComboBox1servicios.getSelectedItem().toString();
+            String categoria = jComboBox1diseñoselecionado.getSelectedItem().toString(); // ¡AQUÍ ESTÁ LA CORRECCIÓN!
+
+            // Verificar disponibilidad del servicio
             if (!fechaHoraServicioDisponible(fechaSeleccionada, horaStr, servicio, -1)) {
                 JOptionPane.showMessageDialog(this,
-                        "❌ Esta hora ya está ocupada o no está disponible para el cliente/servicio.",
+                        " Esta hora ya está ocupada o no está disponible para el cliente/servicio.",
                         "Hora ocupada",
                         JOptionPane.WARNING_MESSAGE);
                 return;
@@ -629,17 +701,22 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                         }
                     }
 
-                    // Insertar servicio seleccionado
-                    insertarServicio(idCitaGenerada, servicio);
+                    // Insertar servicio y categoría seleccionados
+                    insertarServicio(idCitaGenerada, servicio, categoria); // ¡PASAR CATEGORÍA!
 
                     JOptionPane.showMessageDialog(this,
                             "Cita registrada exitosamente\n"
                             + "Número de cita: " + idCitaGenerada + "\n"
                             + "Cliente: " + nombreCliente + "\n"
+                            + "Servicio: " + servicio + " - " + categoria + "\n" // Mostrar categoría
                             + "Fecha: " + fechaSQL + "\n"
                             + "Hora: " + horaStr);
 
                     limpiarCampos();
+                    // Regresar a la agenda
+                    NewJCitaAgenda agenda = new NewJCitaAgenda();
+                    agenda.setVisible(true);
+                    this.dispose();
                 }
             }
 
@@ -649,24 +726,108 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-    private int crearPagoTemporal() {
+// ===== MÉTODOS AUXILIARES PARA VALIDACIÓN DE HORA =====
+// Método para verificar si la fecha seleccionada es hoy
+    private boolean esFechaHoy(Date fechaSeleccionada) {
+        java.util.Calendar calSeleccionada = java.util.Calendar.getInstance();
+        calSeleccionada.setTime(fechaSeleccionada);
+
+        java.util.Calendar hoy = java.util.Calendar.getInstance();
+
+        return calSeleccionada.get(java.util.Calendar.YEAR) == hoy.get(java.util.Calendar.YEAR)
+                && calSeleccionada.get(java.util.Calendar.MONTH) == hoy.get(java.util.Calendar.MONTH)
+                && calSeleccionada.get(java.util.Calendar.DAY_OF_MONTH) == hoy.get(java.util.Calendar.DAY_OF_MONTH);
+    }
+
+// Método para verificar si la hora es pasada
+    private boolean esHoraPasada(String horaStr) {
+        try {
+            // Obtener la hora actual
+            java.util.Calendar ahora = java.util.Calendar.getInstance();
+            int horaActual = ahora.get(java.util.Calendar.HOUR_OF_DAY);
+            int minutoActual = ahora.get(java.util.Calendar.MINUTE);
+
+            // Parsear la hora seleccionada
+            String[] partesHora = horaStr.split(":");
+            int horaSeleccionada = Integer.parseInt(partesHora[0]);
+            int minutoSeleccionado = Integer.parseInt(partesHora[1]);
+
+            // Comparar horas
+            if (horaSeleccionada < horaActual) {
+                return true; // Hora pasada
+            } else if (horaSeleccionada == horaActual && minutoSeleccionado < minutoActual) {
+                return true; // Misma hora pero minutos pasados
+            }
+
+            return false; // Hora futura
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+// Método para obtener la hora actual formateada
+    private String obtenerHoraActual() {
+        java.util.Calendar ahora = java.util.Calendar.getInstance();
+        int hora = ahora.get(java.util.Calendar.HOUR_OF_DAY);
+        int minuto = ahora.get(java.util.Calendar.MINUTE);
+
+        return String.format("%02d:%02d", hora, minuto);
+    }
+
+    private void asociarPagoACita(int idCita, int idPago) {
+        Connection con = conexion.conectar();
+        if (con == null) {
+            return;
+        }
+
+        try {
+            // Actualizar la cita para que tenga referencia al pago
+            String sql = "UPDATE Cita SET Pago_idPago = ? WHERE idCita = ?";
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, idPago);
+            ps.setInt(2, idCita);
+            ps.executeUpdate();
+
+            System.out.println("Pago #" + idPago + " asociado a cita #" + idCita);
+
+        } catch (SQLException e) {
+            System.out.println("Error al asociar pago a cita: " + e.getMessage());
+        } finally {
+            try {
+                con.close();
+            } catch (SQLException ex) {
+                /* ignorar */ }
+        }
+    }
+
+    private int crearPagoTemporal(int idUsuario, String servicio, String categoria) {
         Connection con = conexion.conectar();
         if (con == null) {
             return -1;
         }
 
         try {
-            // Usar las columnas correctas de tu tabla Pago
-            String sql = "INSERT INTO Pago (Estado_pago, fecha_pago, Monto) VALUES ('Pendiente', CURDATE(), 0)";
+            // Obtener el precio de la categoría seleccionada
+            double monto = obtenerPrecioCategoria(servicio, categoria);
+
+            // Crear pago CON el cliente asignado y el monto correcto
+            String sql = "INSERT INTO Pago (Estado_pago, fecha_pago, Monto, idUsuarios) VALUES ('Pendiente', CURDATE(), ?, ?)";
             PreparedStatement ps = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+            ps.setDouble(1, monto);
+            ps.setInt(2, idUsuario);
             ps.executeUpdate();
 
             ResultSet generatedKeys = ps.getGeneratedKeys();
             if (generatedKeys.next()) {
-                return generatedKeys.getInt(1);
+                int idPago = generatedKeys.getInt(1);
+                System.out.println("Pago creado #" + idPago + " con monto: $" + monto);
+                return idPago;
             }
         } catch (SQLException e) {
             System.out.println("Error al crear pago temporal: " + e.getMessage());
+            e.printStackTrace();
         } finally {
             try {
                 con.close();
@@ -676,7 +837,36 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         return -1;
     }
 
-// --- 1) Método que valida disponibilidad AL EDITAR (excluye la propia cita) ---
+    private double obtenerPrecioCategoria(String servicio, String categoria) {
+        Connection con = conexion.conectar();
+        if (con == null) {
+            return 0.0;
+        }
+
+        try {
+            String sql = "SELECT cs.Precio FROM categoria_Servicio cs "
+                    + "JOIN Servicios s ON cs.idServicios = s.idServicios "
+                    + "WHERE s.Nombre_servicio = ? AND cs.Nombre_categoria = ?";
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, servicio);
+            ps.setString(2, categoria);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getDouble("Precio");
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al obtener precio: " + e.getMessage());
+        } finally {
+            try {
+                con.close();
+            } catch (SQLException ex) {
+                /* ignorar */ }
+        }
+        return 250.00; // Precio por defecto si no se encuentra
+    }
+
     private boolean fechaHoraDisponibleParaEditar(Date fecha, String horaStr, String servicio, int idCitaExcluir, int idCliente) {
         if (fecha == null || horaStr == null || servicio == null) {
             return false;
@@ -747,6 +937,20 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Selecciona una fecha válida.");
             return;
         }
+        java.util.Calendar hoy = java.util.Calendar.getInstance();
+        hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        hoy.set(java.util.Calendar.MINUTE, 0);
+        hoy.set(java.util.Calendar.SECOND, 0);
+        hoy.set(java.util.Calendar.MILLISECOND, 0);
+
+        if (fecha.before(hoy.getTime())) {
+            JOptionPane.showMessageDialog(this,
+                    "No puedes agendar una cita en una fecha pasada.\n"
+                    + "Por favor selecciona una fecha actual o futura.",
+                    "Fecha inválida",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
 
         String horaStr = jComboBox3hora.getSelectedItem() == null ? ""
                 : jComboBox3hora.getSelectedItem().toString();
@@ -754,6 +958,19 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Selecciona una hora válida.");
             return;
         }
+
+        // Validar hora pasada si la fecha es hoy
+        if (esFechaHoy(fecha) && esHoraPasada(horaStr + ":00")) {
+            JOptionPane.showMessageDialog(this,
+                    "No puedes agendar una cita en una hora pasada.\n"
+                    + "Hora seleccionada: " + horaStr + "\n"
+                    + "Hora actual: " + obtenerHoraActual() + "\n\n"
+                    + "Por favor selecciona una hora futura.",
+                    "Hora inválida",
+                    JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // Normalizar a HH:mm:ss
         if (horaStr.length() == 5) {
             horaStr += ":00";
@@ -776,7 +993,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         // Validar disponibilidad excluyendo la cita actual (this.idCita)
         if (!fechaHoraDisponibleParaEditar(fecha, horaStr, servicio, this.idCita, idCliente)) {
             JOptionPane.showMessageDialog(this,
-                    "❌ No se puede actualizar: la fecha/hora están ocupadas por ese servicio o por el cliente.",
+                    " No se puede actualizar: la fecha/hora están ocupadas por ese servicio o por el cliente.",
                     "Hora ocupada",
                     JOptionPane.WARNING_MESSAGE);
             return;
@@ -825,6 +1042,11 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         CalCitas.setCalendar(java.util.Calendar.getInstance());
         jComboBox1servicios.setSelectedIndex(0);
 
+        // Limpiar categorías
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        model.addElement("Seleccione una categoría");
+        jComboBox1diseñoselecionado.setModel(model);
+
         chksi.setSelected(false);
         chkno.setSelected(false);
         generarNumeroCitaAutomatico();
@@ -835,6 +1057,13 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         if (lblCorreo != null) {
             lblCorreo.setText("Correo: ");
         }
+
+        // Limpiar imagen
+        jLabelImagen.setIcon(null);
+        jLabelImagen.setText("Seleccione un servicio y categoría");
+
+        // Resetear monto
+        jLabel18.setText("$100 MXN");
     }
 
 // Constructor para editar cita
@@ -845,6 +1074,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         this.idCita = idCita;
+        configurarCalendario();
         jLabel1.setText("EDITAR CITA");
 
         cargarClientes();
@@ -894,6 +1124,266 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
+    private void configurarCalendario() {
+        // Configurar fecha mínima como hoy
+        java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
+        fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
+        fechaMinima.set(java.util.Calendar.MINUTE, 0);
+        fechaMinima.set(java.util.Calendar.SECOND, 0);
+        fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
+
+        // Aplicar fecha mínima al JCalendar
+        CalCitas.setMinSelectableDate(fechaMinima.getTime());
+        CalCitas.setMaxSelectableDate(null); // Sin límite máximo
+
+        System.out.println("DEBUG - Fecha mínima establecida: "
+                + new java.text.SimpleDateFormat("yyyy-MM-dd").format(fechaMinima.getTime()));
+
+        // Agregar listener para detectar cambios en la fecha seleccionada
+        CalCitas.addPropertyChangeListener("calendar", evt -> {
+            if ("calendar".equals(evt.getPropertyName())) {
+                validarFechaSeleccionada();
+            }
+        });
+    }
+
+    private void validarFechaSeleccionada() {
+        try {
+            java.util.Calendar calSeleccionada = CalCitas.getCalendar();
+            if (calSeleccionada != null) {
+                java.util.Date fechaSeleccionada = calSeleccionada.getTime();
+
+                // Obtener fecha actual sin hora
+                java.util.Calendar hoy = java.util.Calendar.getInstance();
+                hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+                hoy.set(java.util.Calendar.MINUTE, 0);
+                hoy.set(java.util.Calendar.SECOND, 0);
+                hoy.set(java.util.Calendar.MILLISECOND, 0);
+
+                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                String fechaFormateada = formato.format(fechaSeleccionada);
+                String hoyFormateado = formato.format(hoy.getTime());
+
+                // Verificar si la fecha es pasada
+                if (fechaSeleccionada.before(hoy.getTime())) {
+                    JOptionPane.showMessageDialog(this,
+                            "No puedes seleccionar una fecha pasada.\n\n"
+                            + "Fecha seleccionada: " + fechaFormateada + "\n"
+                            + "Fecha actual: " + hoyFormateado + "\n\n"
+                            + "Por favor selecciona una fecha actual o futura.",
+                            "Fecha inválida",
+                            JOptionPane.WARNING_MESSAGE);
+
+                    // Restablecer a la fecha de hoy
+                    CalCitas.setCalendar(hoy);
+                    System.out.println("DEBUG - Fecha corregida a hoy: " + hoyFormateado);
+                }
+
+                // También verificar si la fecha está bloqueada
+                mostrarInfoBloqueo(fechaSeleccionada);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Método para cargar categorías según el servicio seleccionado
+// Método para cargar categorías según el servicio seleccionado
+    private void cargarCategoriasPorServicio(String nombreServicio) {
+        try (Connection con = conexion.conectar()) {
+            if (con == null) {
+                JOptionPane.showMessageDialog(this, "No se pudo conectar a la base de datos.");
+                return;
+            }
+
+            // CORRECCIÓN: Usar Imagen_Archivo en lugar de Imagen_url
+            String sql = "SELECT DISTINCT cs.Nombre_categoria, cs.Imagen_Archivo "
+                    + "FROM categoria_Servicio cs "
+                    + "JOIN Servicios s ON cs.idServicios = s.idServicios "
+                    + "WHERE s.Nombre_servicio = ? "
+                    + "ORDER BY cs.Nombre_categoria";
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombreServicio);
+            ResultSet rs = ps.executeQuery();
+
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("Seleccione una categoría");
+
+            while (rs.next()) {
+                String categoria = rs.getString("Nombre_categoria");
+                model.addElement(categoria);
+            }
+
+            jComboBox1diseñoselecionado.setModel(model);
+
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al cargar categorías: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+// Método para mostrar la imagen de la categoría seleccionada
+// Método para mostrar la imagen de la categoría seleccionada
+    private void mostrarImagenCategoria(String nombreServicio, String nombreCategoria) {
+        try (Connection con = conexion.conectar()) {
+            if (con == null) {
+                return;
+            }
+
+            // CORRECCIÓN: Usar Imagen_Archivo en lugar de Imagen_url
+            String sql = "SELECT cs.Imagen_Archivo FROM categoria_Servicio cs "
+                    + "JOIN Servicios s ON cs.idServicios = s.idServicios "
+                    + "WHERE s.Nombre_servicio = ? AND cs.Nombre_categoria = ?";
+
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setString(1, nombreServicio);
+            ps.setString(2, nombreCategoria);
+            ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                String imagenArchivo = rs.getString("Imagen_Archivo");
+
+                if (imagenArchivo != null && !imagenArchivo.trim().isEmpty()) {
+                    cargarImagenDesdeRuta(imagenArchivo);
+                } else {
+                    jLabelImagen.setIcon(null);
+                    jLabelImagen.setText("Sin imagen disponible");
+                }
+            } else {
+                jLabelImagen.setIcon(null);
+                jLabelImagen.setText("Categoría sin imagen");
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al cargar imagen: " + e.getMessage());
+            e.printStackTrace();
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Error al cargar imagen");
+        }
+    }
+
+// Método para cargar imagen desde una ruta - VERSIÓN MEJORADA
+    private void cargarImagenDesdeRuta(String nombreArchivo) {
+        try {
+            // Limpiar primero
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Cargando imagen...");
+            jLabelImagen.repaint();
+
+            // Verificar si el nombre del archivo está vacío
+            if (nombreArchivo == null || nombreArchivo.trim().isEmpty()) {
+                jLabelImagen.setText("Sin imagen");
+                return;
+            }
+
+            // Lista de carpetas posibles donde buscar la imagen
+            String[] carpetasPosibles = {
+                "imagenes/",
+                "imagenes/categorias/",
+                "src/imagenes/",
+                "src/imagenes/categorias/",
+                "categorias/",
+                ""
+            };
+
+            java.io.File archivoImagen = null;
+
+            // Buscar en todas las carpetas posibles
+            for (String carpeta : carpetasPosibles) {
+                java.io.File temp = new java.io.File(carpeta + nombreArchivo);
+                System.out.println("Buscando imagen en: " + temp.getAbsolutePath());
+
+                if (temp.exists() && temp.isFile()) {
+                    archivoImagen = temp;
+                    System.out.println("✓ Imagen encontrada en: " + temp.getAbsolutePath());
+                    break;
+                }
+            }
+
+            // Si no se encontró el archivo
+            if (archivoImagen == null) {
+                jLabelImagen.setText("Imagen no encontrada");
+                System.out.println("✗ Imagen no encontrada: " + nombreArchivo);
+
+                // Verificar si la carpeta 'imagenes' existe
+                java.io.File carpetaImagenes = new java.io.File("imagenes");
+                if (!carpetaImagenes.exists()) {
+                    System.out.println("ADVERTENCIA: La carpeta 'imagenes' no existe");
+                }
+                return;
+            }
+
+            // Cargar la imagen
+            javax.swing.ImageIcon icono = new javax.swing.ImageIcon(archivoImagen.getPath());
+
+            // Verificar que la imagen se cargó correctamente
+            if (icono.getIconWidth() <= 0 || icono.getIconHeight() <= 0) {
+                jLabelImagen.setText("Imagen inválida");
+                System.out.println("✗ Imagen inválida o corrupta: " + nombreArchivo);
+                return;
+            }
+
+            // Tamaño máximo para la imagen (200x200 píxeles)
+            int maxAncho = 200;
+            int maxAlto = 200;
+
+            int anchoOriginal = icono.getIconWidth();
+            int altoOriginal = icono.getIconHeight();
+
+            // Calcular nuevo tamaño manteniendo la proporción
+            double proporcion = (double) anchoOriginal / altoOriginal;
+
+            int nuevoAncho, nuevoAlto;
+
+            if (anchoOriginal > maxAncho || altoOriginal > maxAlto) {
+                if (proporcion > 1) {
+                    // Imagen más ancha que alta
+                    nuevoAncho = maxAncho;
+                    nuevoAlto = (int) (maxAncho / proporcion);
+                } else {
+                    // Imagen más alta que ancha
+                    nuevoAlto = maxAlto;
+                    nuevoAncho = (int) (maxAlto * proporcion);
+                }
+            } else {
+                // La imagen ya es más pequeña que el máximo, usar tamaño original
+                nuevoAncho = anchoOriginal;
+                nuevoAlto = altoOriginal;
+            }
+
+            // Escalar la imagen suavemente
+            java.awt.Image imagenEscalada = icono.getImage().getScaledInstance(
+                    nuevoAncho,
+                    nuevoAlto,
+                    java.awt.Image.SCALE_SMOOTH
+            );
+
+            // Crear nuevo ImageIcon y establecerlo
+            jLabelImagen.setIcon(new javax.swing.ImageIcon(imagenEscalada));
+            jLabelImagen.setText("");
+
+            System.out.println("✓ Imagen cargada: " + nombreArchivo
+                    + " (" + anchoOriginal + "x" + altoOriginal
+                    + " -> " + nuevoAncho + "x" + nuevoAlto + ")");
+
+        } catch (Exception e) {
+            System.out.println("ERROR al cargar imagen: " + e.getMessage());
+            e.printStackTrace();
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Error de carga");
+        }
+    }
+
+//private void debugInformacion() {
+    //  System.out.println("=== DEBUG ===");
+    //System.out.println("Cliente seleccionado: " + jComboBoxnombrecliente.getSelectedItem());
+    //System.out.println("Servicio seleccionado: " + jComboBox1servicios.getSelectedItem());
+    //System.out.println("Categoría seleccionada: " + jComboBox1diseñoselecionado.getSelectedItem());
+    //System.out.println("Categoría guardada: " + categoriaSeleccionada);
+    //System.out.println("ID Cita: " + idCita);
+    //System.out.println("=== FIN DEBUG ===");
+//}
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -930,6 +1420,9 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         jComboBoxnombrecliente = new javax.swing.JComboBox<>();
         lblTelefono = new javax.swing.JLabel();
         lblCorreo = new javax.swing.JLabel();
+        jLabel13 = new javax.swing.JLabel();
+        jComboBox1diseñoselecionado = new javax.swing.JComboBox<>();
+        jLabelImagen = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -938,7 +1431,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         menuAgendarCita = new javax.swing.JMenuItem();
         jMenu7 = new javax.swing.JMenu();
         jMenuItem5 = new javax.swing.JMenuItem();
-        jMenu16 = new javax.swing.JMenu();
+        jMenu19 = new javax.swing.JMenu();
         jMenuItemCerrarSecion = new javax.swing.JMenuItem();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
@@ -1049,63 +1542,91 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             }
         });
 
+        jLabel13.setText("Diseño selecionado");
+
+        jComboBox1diseñoselecionado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBox1diseñoselecionado.setToolTipText("Hora");
+        jComboBox1diseñoselecionado.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jComboBox1diseñoselecionadoActionPerformed(evt);
+            }
+        });
+
+        jLabelImagen.setText("jLabel3");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(45, 45, 45)
+                        .addGap(37, 37, 37)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel16)
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                .addGroup(jPanel1Layout.createSequentialGroup()
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jLabel8)
-                                        .addComponent(jLabel5))
-                                    .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 355, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jLabel1)
-                                        .addComponent(jLabel11)
-                                        .addComponent(jLabel12))
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                            .addGap(74, 74, 74)
-                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                        .addGroup(jPanel1Layout.createSequentialGroup()
-                                            .addGap(18, 18, 18)
-                                            .addComponent(jComboBoxnombrecliente, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
                             .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(8, 8, 8)
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                    .addComponent(jLabel15)
-                                    .addComponent(jLabel17))
-                                .addGap(88, 88, 88)
-                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel16)
                                     .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(chksi)
-                                        .addGap(18, 18, 18)
-                                        .addComponent(chkno))
-                                    .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addComponent(jLabel15)
+                                            .addComponent(jLabel17))
+                                        .addGap(88, 88, 88)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addComponent(chksi)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(chkno))
+                                            .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addComponent(jLabel18)
+                                                .addGap(133, 133, 133)
+                                                .addComponent(btnRegresar)
+                                                .addGap(18, 18, 18)
+                                                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jLabel8)
+                                                    .addComponent(jLabel5))
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                    .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addComponent(jLabel1)
+                                                    .addComponent(jLabel11)
+                                                    .addComponent(jLabel12))
+                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                                        .addGap(74, 74, 74)
+                                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                            .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                            .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                                        .addGap(18, 18, 18)
+                                                        .addComponent(jComboBoxnombrecliente, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))))
+                                        .addGroup(jPanel1Layout.createSequentialGroup()
+                                            .addComponent(jLabel4)
+                                            .addGap(33, 33, 33)
+                                            .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
                                     .addGroup(jPanel1Layout.createSequentialGroup()
-                                        .addComponent(jLabel18)
-                                        .addGap(133, 133, 133)
-                                        .addComponent(btnRegresar)
+                                        .addComponent(jLabel13)
                                         .addGap(18, 18, 18)
-                                        .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))))
-                            .addComponent(jLabel4)))
+                                        .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(280, 280, 280)))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(26, 26, 26))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(347, 347, 347)
                         .addComponent(jLabel2))
                     .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(95, Short.MAX_VALUE))
+                .addContainerGap(66, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1129,19 +1650,29 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel8)
                     .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(27, 27, 27)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jLabel5)
-                    .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(65, 65, 65)
+                        .addGap(27, 27, 27)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel5)
+                            .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel13)
+                            .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(72, 72, 72)
                         .addComponent(jLabel4)
                         .addGap(0, 0, Short.MAX_VALUE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(56, 56, 56)
-                        .addComponent(CalCitas, javax.swing.GroupLayout.DEFAULT_SIZE, 208, Short.MAX_VALUE)
-                        .addGap(18, 18, 18)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(41, 41, 41)
+                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 58, Short.MAX_VALUE)))
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel15)
                             .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -1212,17 +1743,17 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu19.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
             }
         });
-        jMenu16.add(jMenuItemCerrarSecion);
+        jMenu19.add(jMenuItemCerrarSecion);
 
-        jMenuBar1.add(jMenu16);
+        jMenuBar1.add(jMenu19);
 
         setJMenuBar(jMenuBar1);
 
@@ -1272,7 +1803,29 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     private void jComboBox1serviciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1serviciosActionPerformed
         // TODO add your handling code here:
+        if (jComboBox1servicios.getSelectedIndex() > 0) {
+            String servicioSeleccionado = jComboBox1servicios.getSelectedItem().toString();
 
+            // Cargar categorías para este servicio
+            cargarCategoriasPorServicio(servicioSeleccionado);
+
+            // Limpiar la imagen cuando cambia el servicio
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Seleccione una categoría");
+
+            // Si estamos editando una cita, no permitir cambiar el servicio
+            if (idCita > 0) {
+                jComboBox1servicios.setEnabled(false);
+            }
+        } else {
+            // Limpiar el comboBox de categorías si no hay servicio seleccionado
+            DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+            model.addElement("Seleccione una categoría");
+            jComboBox1diseñoselecionado.setModel(model);
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Seleccione un servicio");
+
+        }
     }//GEN-LAST:event_jComboBox1serviciosActionPerformed
 
     private void jComboBoxnombreclienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBoxnombreclienteActionPerformed
@@ -1329,6 +1882,25 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         // TODO add your handling code here:
         andynails.SessionManager.cerrarSesion(this);
     }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
+    private void jComboBox1diseñoselecionadoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox1diseñoselecionadoActionPerformed
+        // TODO add your handling code here:
+        if (jComboBox1servicios.getSelectedIndex() > 0
+                && jComboBox1diseñoselecionado.getSelectedIndex() > 0) {
+
+            String servicio = jComboBox1servicios.getSelectedItem().toString();
+            String categoria = jComboBox1diseñoselecionado.getSelectedItem().toString();
+
+            // Mostrar la imagen de la categoría seleccionada
+            mostrarImagenCategoria(servicio, categoria);
+
+            // Guardar la categoría seleccionada
+            categoriaSeleccionada = categoria;
+        } else {
+            jLabelImagen.setIcon(null);
+            jLabelImagen.setText("Seleccione una categoría");
+        }
+    }//GEN-LAST:event_jComboBox1diseñoselecionadoActionPerformed
 
     private void CalCitasPropertyChange(java.beans.PropertyChangeEvent evt) {
         if ("calendar".equals(evt.getPropertyName())) {
@@ -1390,12 +1962,14 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
     private javax.swing.JCheckBox chkno;
     private javax.swing.JCheckBox chksi;
     private javax.swing.JButton jButton2;
+    private javax.swing.JComboBox<String> jComboBox1diseñoselecionado;
     private javax.swing.JComboBox<String> jComboBox1servicios;
     private javax.swing.JComboBox<String> jComboBox3hora;
     private javax.swing.JComboBox<String> jComboBoxnombrecliente;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel12;
+    private javax.swing.JLabel jLabel13;
     private javax.swing.JLabel jLabel15;
     private javax.swing.JLabel jLabel16;
     private javax.swing.JLabel jLabel17;
@@ -1404,7 +1978,8 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel5;
     private javax.swing.JLabel jLabel8;
-    private javax.swing.JMenu jMenu16;
+    private javax.swing.JLabel jLabelImagen;
+    private javax.swing.JMenu jMenu19;
     private javax.swing.JMenu jMenu4;
     private javax.swing.JMenu jMenu5;
     private javax.swing.JMenu jMenu7;

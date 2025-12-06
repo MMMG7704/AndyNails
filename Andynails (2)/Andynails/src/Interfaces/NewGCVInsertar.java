@@ -54,14 +54,11 @@ public class NewGCVInsertar extends javax.swing.JFrame {
         return jTextField1.getText().trim();
     }
 
-    public String getPrecioServicio() {
-        return jTextFieldPrecio.getText().trim();
-    }
+
 
     public void llenarCampos(String nombre, String descripcion, String precio) {
         jTextFieldNombreservicio.setText(nombre);
         jTextField1.setText(descripcion);
-        jTextFieldPrecio.setText(precio);
     }
 
 // Para cerrar sesión en cualquier interfaz
@@ -99,8 +96,6 @@ public class NewGCVInsertar extends javax.swing.JFrame {
         btncancelar = new javax.swing.JButton();
         jTextField1 = new javax.swing.JTextField();
         jTextFieldNombreservicio = new javax.swing.JTextField();
-        jLabel12 = new javax.swing.JLabel();
-        jTextFieldPrecio = new javax.swing.JTextField();
         jPanel5 = new javax.swing.JPanel();
         INS1 = new javax.swing.JLabel();
         FACE1 = new javax.swing.JLabel();
@@ -173,7 +168,7 @@ public class NewGCVInsertar extends javax.swing.JFrame {
         jLabel10.setText("Descripción:");
 
         btncancelar.setBackground(new java.awt.Color(255, 204, 255));
-        btncancelar.setText("Cancelar");
+        btncancelar.setText("Regresar");
         btncancelar.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btncancelarActionPerformed(evt);
@@ -183,14 +178,6 @@ public class NewGCVInsertar extends javax.swing.JFrame {
         jTextFieldNombreservicio.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jTextFieldNombreservicioActionPerformed(evt);
-            }
-        });
-
-        jLabel12.setText("Precio:");
-
-        jTextFieldPrecio.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                jTextFieldPrecioActionPerformed(evt);
             }
         });
 
@@ -242,19 +229,13 @@ public class NewGCVInsertar extends javax.swing.JFrame {
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGap(91, 91, 91)
                                 .addComponent(btnGuardar))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                .addGroup(jPanel1Layout.createSequentialGroup()
-                                    .addGap(82, 82, 82)
-                                    .addComponent(jLabel10))
-                                .addComponent(jLabel12, javax.swing.GroupLayout.Alignment.TRAILING)))
-                        .addGap(6, 6, 6)
-                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(6, 6, 6)
-                                .addComponent(jTextFieldPrecio, javax.swing.GroupLayout.PREFERRED_SIZE, 175, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                .addComponent(btncancelar)
-                                .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                .addGap(82, 82, 82)
+                                .addComponent(jLabel10)))
+                        .addGap(6, 6, 6)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(btncancelar)
+                            .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 275, javax.swing.GroupLayout.PREFERRED_SIZE))))
                 .addGap(0, 74, Short.MAX_VALUE))
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(139, 139, 139)
@@ -278,11 +259,7 @@ public class NewGCVInsertar extends javax.swing.JFrame {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jTextField1, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(jLabel10))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jTextFieldPrecio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel12))
-                .addGap(22, 22, 22)
+                .addGap(50, 50, 50)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(btnGuardar)
                     .addComponent(btncancelar))
@@ -355,9 +332,9 @@ public class NewGCVInsertar extends javax.swing.JFrame {
 
         jMenuBar1.add(jMenu7);
 
-        jMenu16.setText("CERRAR SECION");
+        jMenu16.setText("CERRAR SESIÓN");
 
-        jMenuItemCerrarSecion.setText("cerrar secion");
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
         jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jMenuItemCerrarSecionActionPerformed(evt);
@@ -387,88 +364,74 @@ public class NewGCVInsertar extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
-        String nombre = jTextFieldNombreservicio.getText().trim();
-        String descripcion = jTextField1.getText().trim();
-        String precioText = jTextFieldPrecio.getText().trim();
+    String nombre = jTextFieldNombreservicio.getText().trim();
+    String descripcion = jTextField1.getText().trim();
 
-        if (nombre.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Debe ingresar un nombre de servicio", "Advertencia", JOptionPane.WARNING_MESSAGE);
+    if (nombre.isEmpty()) {
+        JOptionPane.showMessageDialog(this, "Debe ingresar un nombre de servicio", "Advertencia", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    try {
+        Class.forName("org.mariadb.jdbc.Driver");
+        Connection con = DriverManager.getConnection(
+                "jdbc:mariadb://localhost:3307/andynails", "root", "mora"
+        );
+
+        // Verificar si el servicio ya existe
+        String sqlCheck = "SELECT COUNT(*) FROM servicios WHERE Nombre_servicio = ?";
+        PreparedStatement psCheck = con.prepareStatement(sqlCheck);
+        psCheck.setString(1, nombre);
+        ResultSet rs = psCheck.executeQuery();
+
+        boolean existe = false;
+        if (rs.next()) {
+            existe = rs.getInt(1) > 0;
+        }
+        rs.close();
+        psCheck.close();
+
+        if (existe) {
+            JOptionPane.showMessageDialog(this, "El servicio '" + nombre + "' ya existe.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            con.close();
             return;
         }
 
-        try {
-            Class.forName("org.mariadb.jdbc.Driver");
-            Connection con = DriverManager.getConnection(
-                    "jdbc:mariadb://localhost:3307/andynails", "root", "mora"
-            );
+        // Insertar nuevo servicio SIN PRECIO (el precio está en categoria_servicio)
+        String sql = "INSERT INTO servicios (Nombre_servicio, Descripcion) VALUES (?, ?)";
+        PreparedStatement ps = con.prepareStatement(sql);
+        ps.setString(1, nombre);
+        ps.setString(2, descripcion.isEmpty() ? null : descripcion);
 
-            // erificar si el servicio ya existe
-            String sqlCheck = "SELECT COUNT(*) FROM servicios WHERE Nombre_servicio = ?";
-            PreparedStatement psCheck = con.prepareStatement(sqlCheck);
-            psCheck.setString(1, nombre);
-            ResultSet rs = psCheck.executeQuery();
+        int filas = ps.executeUpdate();
+        if (filas > 0) {
+            JOptionPane.showMessageDialog(this, "¡Servicio guardado correctamente!", 
+                    "Éxito", JOptionPane.INFORMATION_MESSAGE);
+            jTextFieldNombreservicio.setText("");
+            jTextField1.setText("");
 
-            boolean existe = false;
-            if (rs.next()) {
-                existe = rs.getInt(1) > 0;
-            }
-            rs.close();
-            psCheck.close();
-
-            if (existe) {
-                JOptionPane.showMessageDialog(this, "El servicio '" + nombre + "' ya existe.", "Advertencia", JOptionPane.WARNING_MESSAGE);
-                con.close();
-                return;
+            if (principal != null) {
+                principal.actualizarComboServicios();
             }
 
-            // Insertar nuevo servicio
-            String sql = "INSERT INTO servicios (Nombre_servicio, Descripcion, Precio) VALUES (?, ?, ?)";
-            PreparedStatement ps = con.prepareStatement(sql);
-            ps.setString(1, nombre);
-            ps.setString(2, descripcion.isEmpty() ? null : descripcion);
-
-            if (precioText.isEmpty()) {
-                ps.setNull(3, java.sql.Types.DECIMAL);
-            } else {
-                ps.setDouble(3, Double.parseDouble(precioText));
-            }
-
-            int filas = ps.executeUpdate();
-            if (filas > 0) {
-                JOptionPane.showMessageDialog(this, "¡Servicio guardado correctamente!");
-                jTextFieldNombreservicio.setText("");
-                jTextField1.setText("");
-                jTextFieldPrecio.setText("");
-
-                if (principal != null) {
-                    principal.actualizarComboServicios();
-                }
-
-                this.dispose(); // cerrar ventana de inserción
-            }
-
-            ps.close();
-            con.close();
-
-        } catch (ClassNotFoundException e) {
-            JOptionPane.showMessageDialog(this, "Driver no encontrado: " + e.getMessage());
-        } catch (SQLException e) {
-            JOptionPane.showMessageDialog(this, "Error al guardar: " + e.getMessage());
-        } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Precio inválido", "Error", JOptionPane.ERROR_MESSAGE);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+            this.dispose(); // cerrar ventana de inserción
         }
 
+        ps.close();
+        con.close();
+
+    } catch (ClassNotFoundException e) {
+        JOptionPane.showMessageDialog(this, "Driver no encontrado: " + e.getMessage());
+    } catch (SQLException e) {
+        JOptionPane.showMessageDialog(this, "Error al guardar: " + e.getMessage());
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(this, "Error: " + e.getMessage());
+    }
     }//GEN-LAST:event_btnGuardarActionPerformed
 
     private void jTextFieldNombreservicioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldNombreservicioActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_jTextFieldNombreservicioActionPerformed
-
-    private void jTextFieldPrecioActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldPrecioActionPerformed
-        // TODO add your handling code here:
-    }//GEN-LAST:event_jTextFieldPrecioActionPerformed
 
     private void btncancelarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btncancelarActionPerformed
         // TODO add your handling code here:
@@ -566,7 +529,6 @@ public class NewGCVInsertar extends javax.swing.JFrame {
     private javax.swing.JButton btnGuardar;
     private javax.swing.JButton btncancelar;
     private javax.swing.JLabel jLabel10;
-    private javax.swing.JLabel jLabel12;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JMenu jMenu16;
@@ -589,6 +551,5 @@ public class NewGCVInsertar extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel5;
     private javax.swing.JTextField jTextField1;
     private javax.swing.JTextField jTextFieldNombreservicio;
-    private javax.swing.JTextField jTextFieldPrecio;
     // End of variables declaration//GEN-END:variables
 }
