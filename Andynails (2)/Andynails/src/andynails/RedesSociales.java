@@ -103,14 +103,14 @@ public class RedesSociales {
      * Método para configurar label con icono - CON RUTAS CORREGIDAS
      */
     private static void configurarLabelConIcono(JLabel label, String url, String tooltip, String nombreArchivo) {
-        System.out.println("🔄 Configurando: " + tooltip + " con archivo: " + nombreArchivo);
+        System.out.println("Configurando: " + tooltip + " con archivo: " + nombreArchivo);
         
         // Intentar cargar la imagen desde la carpeta img
         boolean imagenCargada = cargarImagenDesdeImg(label, nombreArchivo, tooltip);
         
         // Si no se cargó, usar texto
         if (!imagenCargada) {
-            System.out.println("❌ No se pudo cargar imagen para: " + tooltip);
+            System.out.println("No se pudo cargar imagen para: " + tooltip);
             establecerTextoFallback(label, tooltip);
         }
         
@@ -128,14 +128,14 @@ public class RedesSociales {
         try {
             // Ruta corregida: desde la carpeta img en src
             String ruta = "/img/" + nombreArchivo;
-            System.out.println("🔍 Intentando cargar desde: " + ruta);
+            System.out.println(" Intentando cargar desde: " + ruta);
             
             URL imgURL = RedesSociales.class.getResource(ruta);
-            System.out.println("🔍 URL encontrada: " + imgURL);
+            System.out.println(" URL encontrada: " + imgURL);
             
             if (imgURL != null) {
                 ImageIcon iconoOriginal = new ImageIcon(imgURL);
-                System.out.println("📏 Tamaño original: " + iconoOriginal.getIconWidth() + "x" + iconoOriginal.getIconHeight());
+                System.out.println(" Tamaño original: " + iconoOriginal.getIconWidth() + "x" + iconoOriginal.getIconHeight());
                 
                 // Redimensionar a tamaño pequeño (16x16)
                 ImageIcon iconoRedimensionado = new ImageIcon(iconoOriginal.getImage()
@@ -143,17 +143,17 @@ public class RedesSociales {
                 
                 label.setIcon(iconoRedimensionado);
                 label.setText(""); // Limpiar texto
-                System.out.println("✅ Imagen cargada exitosamente: " + ruta);
+                System.out.println(" Imagen cargada exitosamente: " + ruta);
                 return true;
             } else {
-                System.out.println("❌ No se encontró en: " + ruta);
+                System.out.println(" No se encontró en: " + ruta);
                 
                 // Intentar alternativa: desde sistema de archivos
                 return cargarImagenDesdeSistemaArchivos(label, nombreArchivo, tooltip);
             }
             
         } catch (Exception e) {
-            System.out.println("❌ Error cargando imagen: " + e.getMessage());
+            System.out.println(" Error cargando imagen: " + e.getMessage());
             return false;
         }
     }
@@ -167,27 +167,27 @@ public class RedesSociales {
             String rutaProyecto = System.getProperty("user.dir");
             String rutaImagen = rutaProyecto + "/src/img/" + nombreArchivo;
             
-            System.out.println("🔍 Intentando cargar desde sistema: " + rutaImagen);
+            System.out.println(" Intentando cargar desde sistema: " + rutaImagen);
             
             java.io.File archivo = new java.io.File(rutaImagen);
             if (archivo.exists()) {
                 ImageIcon iconoOriginal = new ImageIcon(rutaImagen);
-                System.out.println("📏 Tamaño desde sistema: " + iconoOriginal.getIconWidth() + "x" + iconoOriginal.getIconHeight());
+                System.out.println(" Tamaño desde sistema: " + iconoOriginal.getIconWidth() + "x" + iconoOriginal.getIconHeight());
                 
                 ImageIcon iconoRedimensionado = new ImageIcon(iconoOriginal.getImage()
                         .getScaledInstance(16, 16, java.awt.Image.SCALE_SMOOTH));
                 
                 label.setIcon(iconoRedimensionado);
                 label.setText("");
-                System.out.println("✅ Imagen cargada desde sistema: " + rutaImagen);
+                System.out.println(" Imagen cargada desde sistema: " + rutaImagen);
                 return true;
             } else {
-                System.out.println("❌ Archivo no existe en sistema: " + rutaImagen);
+                System.out.println(" Archivo no existe en sistema: " + rutaImagen);
                 return false;
             }
             
         } catch (Exception e) {
-            System.out.println("❌ Error cargando desde sistema: " + e.getMessage());
+            System.out.println(" Error cargando desde sistema: " + e.getMessage());
             return false;
         }
     }
@@ -222,7 +222,7 @@ public class RedesSociales {
                 break;
         }
         label.setText(texto);
-        System.out.println("📝 Usando texto como fallback: " + texto);
+        System.out.println(" Usando texto como fallback: " + texto);
         
         // Aplicar también la alineación al texto
         configurarAlineacion(label);

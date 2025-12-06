@@ -298,7 +298,7 @@ public class ReportePagos {
         agregarPiePagina(document);
 
         document.close();
-        System.out.println("📄 PDF generado: " + rutaPDF);
+        System.out.println(" PDF generado: " + rutaPDF);
     }
 
     //  ENCABEZADO DEL REPORTE

@@ -14,50 +14,56 @@ public class SessionManager {
         System.out.println("SessionManager - Sesión iniciada: " + usuario + " (" + tipo + ")");
     }
     
-    // MÉTODO MODIFICADO PARA CERRAR SESIÓN CON RECORDATORIO
-    public static void cerrarSesion(JFrame ventanaActual) {
-        // Crear opciones personalizadas en español
-        Object[] opciones = {"Sí", "No"};
-        
-        int confirmacion = JOptionPane.showOptionDialog(
-            ventanaActual,
-            "¿Estás seguro de que deseas cerrar sesión?",
-            "Confirmar cierre de sesión",
-            JOptionPane.YES_NO_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            opciones,
-            opciones[1]
-        );
-        
-        if (confirmacion == JOptionPane.YES_OPTION) {
-            try {
-                // ✅ ENVIAR RECORDATORIOS ANTES DE CERRAR SESIÓN
-                System.out.println("🔄 Enviando recordatorios de citas...");
-                RecordatorioCita.enviarRecordatoriosCierreSesion();
-                System.out.println("✅ Recordatorios enviados correctamente");
-                
-            } catch (Exception e) {
-                System.err.println("⚠️ Error al enviar recordatorios: " + e.getMessage());
-                // No impedimos el cierre de sesión por error en recordatorios
-            }
-            
-            // Limpiar todos los datos usando tu método existente
-            SesionUsuario.cerrarSesion();
-            SesionUsuario.limpiarDatosCita();
-            tipoUsuario = null;
-            
-            // Cerrar ventana actual
-            ventanaActual.dispose();
-            
-            // Abrir ventana de login
-            Interfaces.NewJLogin login = new Interfaces.NewJLogin();
-            login.setVisible(true);
-            
-            JOptionPane.showMessageDialog(null, "Sesión cerrada correctamente");
-        }
-    }
+// MÉTODO MODIFICADO PARA CERRAR SESIÓN CON RECORDATORIO Y CIERRE COMPLETO
+public static void cerrarSesion(JFrame ventanaActual) {
+    // Crear opciones personalizadas en español
+    Object[] opciones = {"Sí", "No"};
     
+    int confirmacion = JOptionPane.showOptionDialog(
+        ventanaActual,
+        "¿Estás seguro de que deseas cerrar sesión?",
+        "Confirmar cierre de sesión",
+        JOptionPane.YES_NO_OPTION,
+        JOptionPane.QUESTION_MESSAGE,
+        null,
+        opciones,
+        opciones[1]
+    );
+    
+    if (confirmacion == JOptionPane.YES_OPTION) {
+        try {
+            // ENVIAR RECORDATORIOS ANTES DE CERRAR SESIÓN
+            System.out.println("Enviando recordatorios de citas...");
+            RecordatorioCita.enviarRecordatoriosCierreSesion();
+            System.out.println("Recordatorios enviados correctamente");
+            
+        } catch (Exception e) {
+            System.err.println("Error al enviar recordatorios: " + e.getMessage());
+        }
+        
+        // ===== NUEVO: Guardar referencia a la ventana de Login =====
+        Interfaces.NewJLogin login = new Interfaces.NewJLogin();
+        
+        // ===== CERRAR TODAS LAS VENTANAS MENOS LA NUEVA DE LOGIN =====
+        java.awt.Window[] windows = java.awt.Window.getWindows();
+        for (java.awt.Window window : windows) {
+            // No cerrar la nueva ventana de login que acabamos de crear
+            if (window != login && window.isDisplayable()) {
+                window.dispose();
+            }
+        }
+        
+        // Limpiar todos los datos usando tu método existente
+        SesionUsuario.cerrarSesion();
+        SesionUsuario.limpiarDatosCita();
+        tipoUsuario = null;
+        
+        // Mostrar la nueva ventana de login
+        login.setVisible(true);
+        
+        JOptionPane.showMessageDialog(login, "Sesión cerrada correctamente");
+    }
+}    
     // Los demás métodos permanecen igual...
     public static int getIdUsuario() {
         return SesionUsuario.getIdUsuario();

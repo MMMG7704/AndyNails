@@ -21,7 +21,7 @@ public class DisponibilidadManager {
         this.conexion = conexion;
     }
 
-    // ✅ Obtiene servicios o roles disponibles en la BD
+    // Obtiene servicios o roles disponibles en la BD
     public Map<Integer, String> obtenerServicios() {
         Map<Integer, String> servicios = new HashMap<>();
         String sql = "SELECT idServicios, Nombre FROM Servicios";
@@ -40,7 +40,7 @@ public class DisponibilidadManager {
         return servicios;
     }
 
-    // ✅ Verifica si un servicio está disponible en una fecha y hora
+    //Verifica si un servicio está disponible en una fecha y hora
     public boolean estaDisponible(int idServicio, Date fecha, String hora) {
         String sql = "SELECT COUNT(*) FROM Cita c " +
                      "INNER JOIN Cita_has_Servicios cs ON c.idCita = cs.idCita " +
