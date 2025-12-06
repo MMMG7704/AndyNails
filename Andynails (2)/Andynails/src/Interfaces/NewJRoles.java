@@ -18,7 +18,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import javax.swing.JOptionPane;
-import Interfaces.NewJCatalogoGenerico; // o el paquete correcto
+import Interfaces.NewJCatalogoGenerico;
 
 public class NewJRoles extends javax.swing.JFrame {
 
@@ -27,7 +27,6 @@ public class NewJRoles extends javax.swing.JFrame {
     PreparedStatement ps;
     ResultSet rs;
     private javax.swing.JMenuItem jMenuItemCerrarSesion;
-
 
     /**
      * Creates new form NewJRoles
@@ -65,7 +64,6 @@ public class NewJRoles extends javax.swing.JFrame {
             }
             tablaRoles.setModel(model);
 
-            // 🔹 Ocultar columna "ID"
             tablaRoles.getColumnModel().getColumn(0).setMinWidth(0);
             tablaRoles.getColumnModel().getColumn(0).setMaxWidth(0);
             tablaRoles.getColumnModel().getColumn(0).setWidth(0);
@@ -138,6 +136,36 @@ public class NewJRoles extends javax.swing.JFrame {
         int id = andynails.SessionManager.getIdUsuario();
 
         System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
+    private boolean nombreRolExiste(String nombre, int idExcluir) {
+        try {
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT COUNT(*) FROM tipo_usuario WHERE Nombre = ? AND idTipo_Usuario != ?");
+            ps.setString(1, nombre);
+            ps.setInt(2, idExcluir);
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            return rs.getInt(1) > 0;
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error en validación: " + e.getMessage());
+            return true;
+        }
+    }
+
+    private String obtenerNombreActual(int id) {
+        try {
+            PreparedStatement ps = conn.prepareStatement(
+                    "SELECT Nombre FROM tipo_usuario WHERE idTipo_Usuario = ?");
+            ps.setInt(1, id);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getString("Nombre");
+            }
+        } catch (SQLException e) {
+            JOptionPane.showMessageDialog(this, "Error al obtener nombre actual: " + e.getMessage());
+        }
+        return "";
     }
 
     /**
@@ -430,19 +458,14 @@ public class NewJRoles extends javax.swing.JFrame {
                 return;
             }
 
-            // Verificar si ya existe el nombre del rol
-            PreparedStatement psVerificar = conn.prepareStatement(
-                    "SELECT COUNT(*) FROM tipo_usuario WHERE Nombre = ?");
-            psVerificar.setString(1, nombre);
-            ResultSet rs = psVerificar.executeQuery();
-            rs.next();
-
-            if (rs.getInt(1) > 0) {
-                JOptionPane.showMessageDialog(this, "Ese rol ya existe.");
+            // Usar método auxiliar con idExcluir = 0 (nuevo registro)
+            if (nombreRolExiste(nombre, 0)) {
+                JOptionPane.showMessageDialog(this,
+                        "El rol '" + nombre + "' ya existe. Por favor, elige otro nombre.");
                 return;
             }
 
-            // Insertar sin especificar el ID (la base de datos lo genera automáticamente)
+            // Insertar sin especificar el ID
             PreparedStatement ps = conn.prepareStatement(
                     "INSERT INTO tipo_usuario (Nombre) VALUES (?)",
                     Statement.RETURN_GENERATED_KEYS
@@ -458,7 +481,7 @@ public class NewJRoles extends javax.swing.JFrame {
             }
 
             JOptionPane.showMessageDialog(this,
-                    "Rol agregado correctamente con nombre " + nombre);
+                    "Rol agregado correctamente con nombre: " + nombre);
 
             mostrarDatos();
             txtNombre.setText("");
@@ -468,11 +491,9 @@ public class NewJRoles extends javax.swing.JFrame {
                     "Error al insertar: " + e.getMessage());
         }
 
-
     }//GEN-LAST:event_btnAgregarActionPerformed
 
     private void btnActualizarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnActualizarActionPerformed
-        // TODO add your handling code here:
         try {
             int fila = tablaRoles.getSelectedRow();
             if (fila == -1) {
@@ -488,6 +509,22 @@ public class NewJRoles extends javax.swing.JFrame {
                 return;
             }
 
+            // VALIDACIÓN: Usar el método auxiliar para verificar duplicados
+            if (nombreRolExiste(nombre, id)) {
+                JOptionPane.showMessageDialog(this,
+                        "El nombre '" + nombre + "' ya existe en otro rol. Por favor, elige otro nombre.");
+                return;
+            }
+
+            //  VALIDACIÓN: Verificar si el nombre no cambió
+            String nombreActual = obtenerNombreActual(id);
+            if (nombreActual.equals(nombre)) {
+                JOptionPane.showMessageDialog(this,
+                        "El nombre no ha cambiado. No es necesario actualizar.");
+                return;
+            }
+
+            // Si pasa las validaciones, proceder con la actualización
             PreparedStatement ps = conn.prepareStatement(
                     "UPDATE tipo_usuario SET Nombre = ? WHERE idTipo_Usuario = ?");
             ps.setString(1, nombre);
@@ -545,7 +582,6 @@ public class NewJRoles extends javax.swing.JFrame {
         } catch (SQLException e) {
             JOptionPane.showMessageDialog(this, "Error al eliminar: " + e.getMessage());
         }
-
     }//GEN-LAST:event_btnEliminarActionPerformed
 
     private void btnLimpiarCamposActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnLimpiarCamposActionPerformed
