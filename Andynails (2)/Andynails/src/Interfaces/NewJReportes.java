@@ -10,9 +10,8 @@ import andynails.ReporteEstadistico;
 import andynails.ReportePagos;
 import andynails.ReporteServicios;
 import andynails.SessionManager;
-import java.util.HashMap;
-import java.util.Map;
 import javax.swing.JFrame;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -26,26 +25,16 @@ public class NewJReportes extends javax.swing.JFrame {
      * Creates new form NewJReportes
      */
     public NewJReportes() {
-            initComponents();
-    RedesSociales.configurarRedesSociales(INS, WPP, FACE);
-    conexion = new ConexionBD("andynails");
-    this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        initComponents();
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+        conexion = new ConexionBD("andynails");
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
-    // Configurar ComboBox de fechas con opciones predefinidas
-    configurarComboBoxFechas();
-    
-    // INICIALIZAR EL COMBOBOX CON UN TIPO DE REPORTE VÁLIDO
-    btnServiciosActionPerformed(null); // Iniciar con servicios por defecto
+        // Configurar ComboBox de fechas con opciones predefinidas
+        configurarComboBoxFechas();
 
-    // Configurar tooltips
-    btnEstadisticos.setToolTipText("Generar reportes estadísticos y gráficos");
-    btnPagos.setToolTipText("Reportes de estado de pagos e ingresos");
-    btnServicios.setToolTipText("Catálogo y información de servicios");
-    jButton3.setToolTipText("Cargar datos en la tabla antes de exportar");
-    jButton1.setToolTipText("Exportar a PDF los datos mostrados");
-    jComboBox1.setToolTipText("Seleccione el tipo específico de reporte");
-    comboxRangoinicio.setToolTipText("Seleccione fecha inicial");
-    comboxRangofin.setToolTipText("Seleccione fecha final");
+        // INICIALIZAR EL COMBOBOX CON UN TIPO DE REPORTE VÁLIDO
+        btnServiciosActionPerformed(null); // Iniciar con servicios por defecto
     }
 
     private void configurarComboBoxFechas() {
@@ -53,7 +42,7 @@ public class NewJReportes extends javax.swing.JFrame {
         comboxRangoinicio.removeAllItems();
         comboxRangofin.removeAllItems();
 
-        // Agregar opciones predefinidas de fechas
+        // Solo opciones de fechas para todos los reportes
         String[] opcionesFechas = {
             "Última semana",
             "Último mes",
@@ -71,27 +60,37 @@ public class NewJReportes extends javax.swing.JFrame {
 
         // Seleccionar opciones por defecto
         comboxRangoinicio.setSelectedItem("Último mes");
-        comboxRangofin.setSelectedItem("Todo el historial");
+        comboxRangofin.setSelectedItem("Última semana");
     }
 
     private void cargarServiciosDesdeBD() {
         try {
-            String sql = "SELECT idServicios, Nombre_servicio, Descripcion, Precio FROM servicios";
+            // Consulta simple - solo nombre, descripción y precio (sin ID)
+            String sql = "SELECT Nombre_servicio, Descripcion, Precio " +
+                         "FROM servicios " +
+                         "ORDER BY Nombre_servicio";
+        
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
-            // Actualizar nombres de columnas para servicios
-            model.setColumnIdentifiers(new String[]{"ID", "Nombre del Servicio", "Descripción", "Precio"});
+            // Solo mostrar nombre, descripción y precio
+            model.setColumnIdentifiers(new String[]{
+                "Nombre del Servicio", 
+                "Descripción", 
+                "Precio"
+            });
 
             while (rs.next()) {
+                double precio = rs.getDouble("Precio");
+                String precioStr = String.format("$%.2f", precio);
+                
                 model.addRow(new Object[]{
-                    rs.getInt("idServicios"),
                     rs.getString("Nombre_servicio"),
                     rs.getString("Descripcion"),
-                    "$" + rs.getDouble("Precio")
+                    precioStr
                 });
             }
 
@@ -101,27 +100,17 @@ public class NewJReportes extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al cargar servicios: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Error al cargar servicios: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
         }
-    }
-
-
-    // Para obtener datos del usuario
-    private void mostrarInfoUsuario() {
-        String usuario = SessionManager.getUsuarioLogueado();
-        String tipo = SessionManager.getTipoUsuario();
-        int id = SessionManager.getIdUsuario();
-
-        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
     }
 
     private void cargarPagosDesdeBD() {
         try {
-            //  CONSULTA CORREGIDA - Verificar la estructura real de tu tabla pago
-            String sql = "SELECT p.idPago, p.Monto, p.Fecha_pago, p.Estado_pago, " +
-                        "u.Nombre as Cliente " +
+            // CONSULTA CORREGIDA para pagos
+            String sql = "SELECT p.idPago, IFNULL(u.Nombre, 'No asignado') as Cliente, " +
+                        "p.Monto, p.Fecha_pago, p.Estado_pago " +
                         "FROM pago p " +
                         "LEFT JOIN cita c ON p.idPago = c.Pago_idPago " +
                         "LEFT JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
@@ -130,17 +119,20 @@ public class NewJReportes extends javax.swing.JFrame {
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
             // Actualizar nombres de columnas para pagos
             model.setColumnIdentifiers(new String[]{"ID Pago", "Cliente", "Monto", "Fecha", "Estado"});
 
             while (rs.next()) {
+                double monto = rs.getDouble("Monto");
+                String montoStr = String.format("$%.2f", monto);
+                
                 model.addRow(new Object[]{
                     rs.getInt("idPago"),
-                    rs.getString("Cliente") != null ? rs.getString("Cliente") : "N/A",
-                    "$" + rs.getDouble("Monto"),
+                    rs.getString("Cliente"),
+                    montoStr,
                     rs.getDate("Fecha_pago"),
                     rs.getString("Estado_pago")
                 });
@@ -152,34 +144,38 @@ public class NewJReportes extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al cargar pagos: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Error al cargar pagos: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void cargarServiciosMasSolicitados() {
         try {
             String sql = "SELECT s.Nombre_servicio, COUNT(chs.idServicios) as Total_Citas, " +
-                    "SUM(s.Precio) as Ingreso_Total " +
-                    "FROM cita_has_servicios chs " +
-                    "INNER JOIN servicios s ON chs.idServicios = s.idServicios " +
-                    "GROUP BY s.Nombre_servicio " +
-                    "ORDER BY Total_Citas DESC";
+                        "SUM(s.Precio) as Ingreso_Total " +
+                        "FROM cita_has_servicios chs " +
+                        "INNER JOIN servicios s ON chs.idServicios = s.idServicios " +
+                        "GROUP BY s.Nombre_servicio " +
+                        "ORDER BY Total_Citas DESC LIMIT 10";
+            
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
             // Actualizar nombres de columnas para estadísticas
             model.setColumnIdentifiers(new String[]{"Servicio", "Total Citas", "Ingreso Total"});
 
             while (rs.next()) {
+                double ingreso = rs.getDouble("Ingreso_Total");
+                String ingresoStr = String.format("$%.2f", ingreso);
+                
                 model.addRow(new Object[]{
                     rs.getString("Nombre_servicio"),
                     rs.getInt("Total_Citas"),
-                    "$" + rs.getDouble("Ingreso_Total")
+                    ingresoStr
                 });
             }
 
@@ -189,24 +185,26 @@ public class NewJReportes extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al cargar servicios más solicitados: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Error al cargar servicios más solicitados: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void cargarClientesFrecuentes() {
         try {
             String sql = "SELECT u.Nombre, u.Telefono, COUNT(c.idCita) as Total_Citas " +
-                    "FROM cita c " +
-                    "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
-                    "GROUP BY u.idUsuarios, u.Nombre, u.Telefono " +
-                    "ORDER BY Total_Citas DESC " +
-                    "LIMIT 10";
+                        "FROM cita c " +
+                        "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
+                        "WHERE u.Tipo_usuario = 'Cliente' " +
+                        "GROUP BY u.idUsuarios, u.Nombre, u.Telefono " +
+                        "ORDER BY Total_Citas DESC " +
+                        "LIMIT 10";
+            
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             java.sql.ResultSet rs = ps.executeQuery();
 
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
 
             // Actualizar nombres de columnas para clientes frecuentes
@@ -226,9 +224,55 @@ public class NewJReportes extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al cargar clientes frecuentes: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Error al cargar clientes frecuentes: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void cargarIngresosPorMes() {
+        try {
+            String fechaInicio = obtenerFechaDesdeOpcion(comboxRangoinicio.getSelectedItem().toString());
+            String fechaFin = obtenerFechaDesdeOpcion(comboxRangofin.getSelectedItem().toString());
+
+            String sql = "SELECT DATE_FORMAT(p.Fecha_pago, '%Y-%m') as Mes, " +
+                        "COUNT(p.idPago) as Total_Pagos, " +
+                        "SUM(p.Monto) as Total_Ingresos " +
+                        "FROM pago p " +
+                        "WHERE p.Fecha_pago BETWEEN ? AND ? " +
+                        "AND p.Estado_pago = 'Completado' " +
+                        "GROUP BY DATE_FORMAT(p.Fecha_pago, '%Y-%m') " +
+                        "ORDER BY Mes DESC";
+
+            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
+            ps.setString(1, fechaInicio);
+            ps.setString(2, fechaFin);
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+            model.setRowCount(0);
+            model.setColumnIdentifiers(new String[]{"Mes", "Total Pagos", "Ingresos Totales"});
+
+            while (rs.next()) {
+                double ingresos = rs.getDouble("Total_Ingresos");
+                String ingresosStr = String.format("$%.2f", ingresos);
+                
+                model.addRow(new Object[]{
+                    rs.getString("Mes"),
+                    rs.getInt("Total_Pagos"),
+                    ingresosStr
+                });
+            }
+
+            rs.close();
+            ps.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "Error al cargar ingresos por mes: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -237,29 +281,31 @@ public class NewJReportes extends javax.swing.JFrame {
             String fechaInicio = obtenerFechaDesdeOpcion(comboxRangoinicio.getSelectedItem().toString());
             String fechaFin = obtenerFechaDesdeOpcion(comboxRangofin.getSelectedItem().toString());
 
-            String sql = "SELECT c.idCita, u.Nombre as Cliente, s.Nombre_servicio as Servicio, " +
-                    "c.Fecha, c.Hora, c.Estado " +
-                    "FROM cita c " +
-                    "INNER JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
-                    "INNER JOIN cita_has_servicios chs ON c.idCita = chs.idCita " +
-                    "INNER JOIN servicios s ON chs.idServicios = s.idServicios " +
-                    "WHERE c.Fecha BETWEEN ? AND ? " +
-                    "ORDER BY c.Fecha, c.Hora";
+            String sql = "SELECT c.idCita, IFNULL(u.Nombre, 'No asignado') as Cliente, " +
+                        "GROUP_CONCAT(DISTINCT s.Nombre_servicio SEPARATOR ', ') as Servicios, " +
+                        "c.Fecha, c.Hora, c.Estado " +
+                        "FROM cita c " +
+                        "LEFT JOIN usuarios u ON c.idUsuarios = u.idUsuarios " +
+                        "LEFT JOIN cita_has_servicios chs ON c.idCita = chs.idCita " +
+                        "LEFT JOIN servicios s ON chs.idServicios = s.idServicios " +
+                        "WHERE c.Fecha BETWEEN ? AND ? " +
+                        "GROUP BY c.idCita " +
+                        "ORDER BY c.Fecha, c.Hora";
 
             java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
             ps.setString(1, fechaInicio);
             ps.setString(2, fechaFin);
             java.sql.ResultSet rs = ps.executeQuery();
 
-            javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
+            DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
             model.setRowCount(0);
-            model.setColumnIdentifiers(new String[]{"ID Cita", "Cliente", "Servicio", "Fecha", "Hora", "Estado"});
+            model.setColumnIdentifiers(new String[]{"ID Cita", "Cliente", "Servicios", "Fecha", "Hora", "Estado"});
 
             while (rs.next()) {
                 model.addRow(new Object[]{
                     rs.getInt("idCita"),
                     rs.getString("Cliente"),
-                    rs.getString("Servicio"),
+                    rs.getString("Servicios") != null ? rs.getString("Servicios") : "Sin servicios",
                     rs.getDate("Fecha"),
                     rs.getTime("Hora"),
                     rs.getString("Estado")
@@ -272,9 +318,9 @@ public class NewJReportes extends javax.swing.JFrame {
         } catch (Exception e) {
             e.printStackTrace();
             javax.swing.JOptionPane.showMessageDialog(this,
-                    "Error al cargar citas: " + e.getMessage(),
-                    "Error",
-                    javax.swing.JOptionPane.ERROR_MESSAGE);
+                "Error al cargar citas: " + e.getMessage(),
+                "Error",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -300,26 +346,6 @@ public class NewJReportes extends javax.swing.JFrame {
                 return hoy.toString();
         }
     }
-
-    private void verificarEstructuraTablas() {
-        try {
-            // Verificar estructura de la tabla pago
-            String sql = "DESCRIBE pago";
-            java.sql.PreparedStatement ps = conexion.conectar().prepareStatement(sql);
-            java.sql.ResultSet rs = ps.executeQuery();
-
-            System.out.println("=== ESTRUCTURA TABLA PAGO ===");
-            while (rs.next()) {
-                System.out.println(rs.getString("Field") + " - " + rs.getString("Type"));
-            }
-            rs.close();
-            ps.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -775,60 +801,66 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void jButton1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton1ActionPerformed
         // TODO add your handling code here:
-    if (jComboBox1.getSelectedItem() == null) {
-        javax.swing.JOptionPane.showMessageDialog(this,
-                "Por favor, seleccione un tipo de reporte antes de exportar",
-                "Selección Requerida", 
-                javax.swing.JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    String tipoReporte = jComboBox1.getSelectedItem().toString();
 
-    try {
-        // Primero generar los datos en la tabla
-        jButton3ActionPerformed(evt);
-        
-        // Luego exportar según el tipo
-        if (tipoReporte.contains("Servicios") || tipoReporte.equals("Todos los servicios")
-                || tipoReporte.equals("Servicios activos") || tipoReporte.equals("Precios de servicios")) {
-
-            String ruta = "Reporte_Servicios_AndyNails.pdf";
-            ReporteServicios.generarPDF(ruta);
+        if (jComboBox1.getSelectedItem() == null) {
             javax.swing.JOptionPane.showMessageDialog(this,
+                "Por favor, seleccione un tipo de reporte antes de exportar",
+                "Selección Requerida",
+                javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String tipoReporte = jComboBox1.getSelectedItem().toString();
+
+        try {
+            // Primero asegurarse de que hay datos en la tabla
+            if (jTable1.getRowCount() == 0) {
+                jButton3ActionPerformed(evt); // Generar datos primero
+            }
+            
+            // Luego exportar según el tipo
+            if (tipoReporte.contains("Servicios") || 
+                tipoReporte.equals("Todos los servicios")) {
+                
+                String ruta = "Reporte_Servicios_AndyNails.pdf";
+                ReporteServicios.generarPDF(ruta);
+                javax.swing.JOptionPane.showMessageDialog(this,
                     "Reporte de servicios generado exitosamente:\n" + ruta,
                     "Reporte Generado",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-        } else if (tipoReporte.contains("más solicitados") || tipoReporte.contains("Estadísticas")
-                || tipoReporte.contains("Ingresos") || tipoReporte.contains("Clientes frecuentes")) {
-
-            ReporteEstadistico.generarPDF();
-            javax.swing.JOptionPane.showMessageDialog(this,
-                    "Reporte estadístico generado exitosamente",
-                    "Reporte Generado",
-                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-        } else if (tipoReporte.contains("Pagos")) {
-            ReportePagos.generarReportePagos();
-            javax.swing.JOptionPane.showMessageDialog(this,
+                    
+            } else if (tipoReporte.contains("Pagos") || 
+                       tipoReporte.equals("Historial de pagos")) {
+                
+                ReportePagos.generarReportePagos();
+                javax.swing.JOptionPane.showMessageDialog(this,
                     "Reporte de pagos generado exitosamente",
                     "Reporte Generado",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
-
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this,
+                    
+            } else if (tipoReporte.contains("Servicios más solicitados") || 
+                       tipoReporte.contains("Clientes frecuentes") || 
+                       tipoReporte.contains("Ingresos por mes")) {
+                
+                ReporteEstadistico.generarPDF();
+                javax.swing.JOptionPane.showMessageDialog(this,
+                    "Reporte estadístico generado exitosamente",
+                    "Reporte Generado",
+                    javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                    
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
                     "Tipo de reporte no soportado para exportación: " + tipoReporte,
                     "Error de Exportación",
                     javax.swing.JOptionPane.ERROR_MESSAGE);
-        }
-    } catch (Exception e) {
-        javax.swing.JOptionPane.showMessageDialog(this,
+            }
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
                 "Error al generar el reporte: " + e.getMessage(),
                 "Error",
                 javax.swing.JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
-    }
+            e.printStackTrace();
+        }
     }//GEN-LAST:event_jButton1ActionPerformed
 
     private void jMenu4MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu4MenuSelected
@@ -907,135 +939,123 @@ public class NewJReportes extends javax.swing.JFrame {
 
     private void btnEstadisticosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEstadisticosActionPerformed
         // TODO add your handling code here:
-       String[] opciones = {
-        "Servicios más solicitados",
-        "Ingresos por mes", 
-        "Clientes frecuentes",
-        "Horarios populares"
-    };
-    
-    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
-    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
+        String[] opciones = {
+            "Servicios más solicitados",
+            "Ingresos por mes",
+            "Clientes frecuentes",
+            "Citas por fecha"
+        };
 
-    // Actualizar etiquetas para estadísticas
-    jLabel9.setText("Tipo de estadística:");
-    jLabel10.setText("Rango de fechas:");
-    
-    // Cargar datos automáticamente
-    cargarServiciosMasSolicitados();
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+        jComboBox1.setSelectedIndex(0);
+
+        // Actualizar etiquetas para estadísticas
+        jLabel9.setText("Tipo de estadística:");
+        jLabel10.setText("Rango de fechas:");
+
+        // Cargar datos automáticamente
+        cargarServiciosMasSolicitados();
     }//GEN-LAST:event_btnEstadisticosActionPerformed
 
     private void btnPagosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnPagosActionPerformed
         // TODO add your handling code here:
-        String[] opciones = {
-        "Pagos pendientes",
-        "Pagos completados", 
-        "Historial de pagos",
-        "Métodos de pago más usados"
-    };
-    
-    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
-    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
+      String[] opciones = {
+            "Historial de pagos"
+        };
 
-    jLabel9.setText("Tipo de pago:");
-    jLabel10.setText("Rango de fechas:");
-    
-    // Cargar datos automáticamente
-    cargarPagosDesdeBD();
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+        jComboBox1.setSelectedIndex(0);
+
+        jLabel9.setText("Tipo de pago:");
+        jLabel10.setText("Rango de fechas:");
+
+        // Cargar datos automáticamente
+        cargarPagosDesdeBD();
     }//GEN-LAST:event_btnPagosActionPerformed
 
     private void btnServiciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnServiciosActionPerformed
         // TODO add your handling code here:
-        String[] opciones = {
-        "Todos los servicios",
-        "Servicios activos", 
-        "Servicios por categoría",
-        "Precios de servicios"
-    };
+      String[] opciones = {
+            "Todos los servicios"
+        };
     
-    jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
-    jComboBox1.setSelectedIndex(0); // ← SELECCIONAR EL PRIMER ÍTEM AUTOMÁTICAMENTE
+        jComboBox1.setModel(new javax.swing.DefaultComboBoxModel<>(opciones));
+        jComboBox1.setSelectedIndex(0);
 
-    jLabel9.setText("Tipo de servicio:");
-    jLabel10.setText("Rango de fechas:");
+        jLabel9.setText("Tipo de reporte:");
+        jLabel10.setText("Rango de fechas:");
     
-    // Cargar datos automáticamente
-    cargarServiciosDesdeBD();
+        // Cargar datos automáticamente
+        cargarServiciosDesdeBD();
     }//GEN-LAST:event_btnServiciosActionPerformed
 
     private void jButton3ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton3ActionPerformed
-    // TODO add your handling code here:
-    if (jComboBox1.getSelectedItem() == null) {
-        javax.swing.JOptionPane.showMessageDialog(this,
+ if (jComboBox1.getSelectedItem() == null) {
+            javax.swing.JOptionPane.showMessageDialog(this,
                 "Por favor, seleccione primero un tipo de reporte",
                 "Selección Requerida",
                 javax.swing.JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    String tipoSeleccionado = jComboBox1.getSelectedItem().toString();
-    javax.swing.table.DefaultTableModel model = (javax.swing.table.DefaultTableModel) jTable1.getModel();
-    model.setRowCount(0); // Limpiar tabla
+            return;
+        }
 
-    try {
-        // Mapeo más específico de opciones
-        switch (tipoSeleccionado) {
-            case "Todos los servicios":
-            case "Servicios activos":
-            case "Servicios por categoría":
-            case "Precios de servicios":
-                cargarServiciosDesdeBD();
-                break;
-                
-            case "Pagos pendientes":
-            case "Pagos completados":
-            case "Historial de pagos":
-            case "Métodos de pago más usados":
-                cargarPagosDesdeBD();
-                break;
-                
-            case "Servicios más solicitados":
-                cargarServiciosMasSolicitados();
-                break;
-                
-            case "Clientes frecuentes":
-                cargarClientesFrecuentes();
-                break;
-                
-            case "Ingresos por mes":
-            case "Horarios populares":
-            case "Citas por fecha":
-                cargarCitasPorFecha();
-                break;
-                
-            default:
-                javax.swing.JOptionPane.showMessageDialog(this,
+        String tipoSeleccionado = jComboBox1.getSelectedItem().toString();
+        DefaultTableModel model = (DefaultTableModel) jTable1.getModel();
+
+        try {
+            // Mapeo simplificado de opciones
+            switch (tipoSeleccionado) {
+                case "Todos los servicios":
+                    cargarServiciosDesdeBD();
+                    break;
+                    
+                case "Servicios más solicitados":
+                    cargarServiciosMasSolicitados();
+                    break;
+                    
+                case "Historial de pagos":
+                    cargarPagosDesdeBD();
+                    break;
+                    
+                case "Clientes frecuentes":
+                    cargarClientesFrecuentes();
+                    break;
+                    
+                case "Ingresos por mes":
+                    cargarIngresosPorMes();
+                    break;
+                    
+                case "Citas por fecha":
+                    cargarCitasPorFecha();
+                    break;
+
+                default:
+                    javax.swing.JOptionPane.showMessageDialog(this,
                         "Tipo de reporte no reconocido: " + tipoSeleccionado,
                         "Error",
                         javax.swing.JOptionPane.ERROR_MESSAGE);
-                return;
-        }
+                    return;
+            }
 
-        // Mostrar mensaje de éxito
-        if (model.getRowCount() > 0) {
-            javax.swing.JOptionPane.showMessageDialog(this,
-                    model.getRowCount() + " registros cargados desde la base de datos",
+            // Mostrar mensaje de éxito
+            if (model.getRowCount() > 0) {
+                javax.swing.JOptionPane.showMessageDialog(this,
+                    model.getRowCount() + " registros cargados exitosamente",
                     "Datos Cargados",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        } else {
-            javax.swing.JOptionPane.showMessageDialog(this,
+            } else {
+                javax.swing.JOptionPane.showMessageDialog(this,
                     "No se encontraron datos para el reporte seleccionado",
                     "Sin Datos",
                     javax.swing.JOptionPane.INFORMATION_MESSAGE);
-        }
+            }
 
-    } catch (Exception e) {
-        javax.swing.JOptionPane.showMessageDialog(this,
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this,
                 "Error al cargar datos: " + e.getMessage(),
                 "Error",
                 javax.swing.JOptionPane.ERROR_MESSAGE);
-        e.printStackTrace();
-    }
+            e.printStackTrace();
+        }
     }//GEN-LAST:event_jButton3ActionPerformed
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed

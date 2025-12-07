@@ -88,12 +88,22 @@ public class NewJAgenC extends javax.swing.JFrame {
                 String hora = (String) cbHora.getSelectedItem();
 
                 if (!fecha.isEmpty() && hora != null) {
-                    if (horaBloqueada(fecha, hora)) {
+                    // CAMBIO AQUÍ: Solo verificar el servicio ACTUAL, no todos
+                    String descripcionServicioActual = "";
+                    if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
+                        Object[] servicioActual = serviciosSeleccionados.get(indiceActual);
+                        descripcionServicioActual = (String) servicioActual[1];
+                    }
+
+                    if (horaBloqueadaParaServicio(fecha, hora, descripcionServicioActual)) {
                         JOptionPane.showMessageDialog(NewJAgenC.this,
-                                "Esta hora está bloqueada o no disponible. Por favor seleccione otra hora.",
+                                "Esta hora no está disponible para el servicio: " + descripcionServicioActual + "\n"
+                                + "Por favor seleccione otra hora.",
                                 "Hora no disponible",
                                 JOptionPane.WARNING_MESSAGE);
                     }
+                    // Actualizar fecha/hora del servicio actual
+                    actualizarFechaHoraServicioActual();
                 }
             }
         });
@@ -127,6 +137,7 @@ public class NewJAgenC extends javax.swing.JFrame {
 
     public NewJAgenC() {
         initComponents();
+        debugComponentesCalendario();
         jTextFieldFecha1.setEditable(false);
         jTextFieldFecha1.setFocusable(false);
 
@@ -135,12 +146,12 @@ public class NewJAgenC extends javax.swing.JFrame {
                 btnRegresarActionPerformed(evt);
             }
         });
+        configurarControlesCarrusel();
         conexion = new ConexionBD("andynails");
 
         this.idUsuario = SesionUsuario.getIdUsuario();
 
         this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        //this.idUsuario = 0; // nadie logueado
 
         cargarServiciosDesdeBD();
         restaurarServiciosDesdeSesion();
@@ -149,7 +160,6 @@ public class NewJAgenC extends javax.swing.JFrame {
         System.out.println("DEBUG - Constructor sin parámetros - ID Usuario: " + idUsuario);
         debugCategoriasServicios();
 
-        //serviciosSeleccionados.clear();
         debugServiciosActuales();
         System.out.println("DEBUG - Servicios limpiados al iniciar NewJAgenC");
 
@@ -173,7 +183,11 @@ public class NewJAgenC extends javax.swing.JFrame {
             label11.setText("No hay servicios seleccionados");
             jLabel8.setText("$0");
         }
+    }
 
+    private String obtenerFechaActual() {
+        java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        return formato.format(new java.util.Date());
     }
 
     private String obtenerMotivoBloqueo(String fecha) {
@@ -197,20 +211,58 @@ public class NewJAgenC extends javax.swing.JFrame {
         for (int i = 0; i < cbHora.getItemCount(); i++) {
             String hora = cbHora.getItemAt(i);
             if (horaBloqueada(fecha, hora)) {
-                // Puedes marcar visualmente las horas no disponibles
                 System.out.println("Hora bloqueada: " + hora + " en fecha: " + fecha);
             }
         }
     }
-
-    // En NewJAgenC, puedes agregar este método para debug
-    private void verificarEstadoSesion() {
-        System.out.println("=== ESTADO DE SESIÓN ===");
-        System.out.println("ID Usuario: " + SesionUsuario.getIdUsuario());
-        System.out.println("Nombre: " + SesionUsuario.getNombreUsuario());
-        System.out.println("Sesión activa: " + SesionUsuario.sesionActiva());
-        System.out.println("=== FIN ESTADO ===");
+    
+    private String obtenerFechaSeleccionada() {
+    if (jCalendar1 != null && jCalendar1.getCalendar() != null) {
+        java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+        try {
+            return formato.format(jCalendar1.getCalendar().getTime());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
+    
+    // Fallback: verificar si jTextFieldFecha1 existe y tiene valor
+    if (jTextFieldFecha1 != null && !jTextFieldFecha1.getText().trim().isEmpty()) {
+        return jTextFieldFecha1.getText().trim();
+    }
+    
+    // Si no hay nada, devolver la fecha actual
+    java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+    return formato.format(new java.util.Date());
+}
+    
+    private void actualizarFechaHoraServicioActual() {
+    if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
+        Object[] servicio = serviciosSeleccionados.get(indiceActual);
+        
+        // Obtener fecha y hora actual del calendario
+        String fechaActual = obtenerFechaSeleccionada(); // Método que creamos anteriormente
+        String horaActual = (String) cbHora.getSelectedItem();
+        
+        // Asegurarnos de que el array tiene espacio para fecha y hora
+        if (servicio.length < 5) {
+            Object[] nuevoArray = new Object[5];
+            System.arraycopy(servicio, 0, nuevoArray, 0, servicio.length);
+            servicio = nuevoArray;
+            serviciosSeleccionados.set(indiceActual, servicio);
+        }
+        
+        // Actualizar fecha y hora
+        servicio[3] = fechaActual;
+        servicio[4] = horaActual;
+        
+        System.out.println("Actualizado servicio " + indiceActual + ": " + servicio[1] 
+            + " - Fecha: " + fechaActual + " - Hora: " + horaActual);
+        
+        // Guardar en sesión
+        SesionUsuario.setServiciosCita(serviciosSeleccionados);
+    }
+}
 
     private void debugServiciosActuales() {
         System.out.println("=== SERVICIOS ACTUALES EN NewJAgenC ===");
@@ -232,69 +284,58 @@ public class NewJAgenC extends javax.swing.JFrame {
         System.out.println("======================================");
     }
 
-// Llamar este método en el constructor después de initComponents()     
-    /**
-     * Constructor con parámetros (ventana desde catálogo)
-     */
-// En el constructor donde se recibe un servicio desde el catálogo:
     public NewJAgenC(ImageIcon imagen, String descripcion, String precio) {
         this(); // Llama al constructor sin parámetros
 
-        System.out.println("=== CONSTRUCTOR DESDE CATÁLOGO ===");
-
-        // Obtener la fecha y hora actuales de la interfaz
+        // Obtener fecha/hora ACTUAL del calendario
         String fechaActual = jTextFieldFecha1.getText().trim();
         String horaActual = (String) cbHora.getSelectedItem();
 
-        System.out.println("Agregando servicio: " + descripcion
-                + " - Fecha: " + fechaActual
-                + " - Hora: " + horaActual);
+        // Crear array con 5 elementos: [imagen, descripcion, precio, fecha, hora]
+        Object[] nuevoServicio = new Object[5];
+        nuevoServicio[0] = imagen;
+        nuevoServicio[1] = descripcion;
+        nuevoServicio[2] = precio;
+        nuevoServicio[3] = fechaActual;  // Fecha específica
+        nuevoServicio[4] = horaActual;   // Hora específica
 
-        boolean servicioExiste = false;
-        for (Object[] servicio : serviciosSeleccionados) {
-            String descExistente = (String) servicio[1];
-            if (descExistente.equals(descripcion)) {
-                servicioExiste = true;
-                break;
-            }
+        this.serviciosSeleccionados.add(nuevoServicio);
+
+        System.out.println("Servicio agregado: " + descripcion
+                + " con fecha/hora: " + fechaActual + " " + horaActual);
+
+        // Mostrar el nuevo servicio
+        if (!serviciosSeleccionados.isEmpty()) {
+            this.indiceActual = this.serviciosSeleccionados.size() - 1;
+            mostrarServiciosSeleccionados();
+            iniciarCarrusel();
         }
+    }
 
-        if (!servicioExiste) {
-            // Crear el array de servicio con 5 elementos: imagen, descripcion, precio, fecha, hora
-            Object[] nuevoServicio = new Object[5];
-            nuevoServicio[0] = imagen;
-            nuevoServicio[1] = descripcion;
-            nuevoServicio[2] = precio;
-            nuevoServicio[3] = fechaActual;
-            nuevoServicio[4] = horaActual;
-
-            this.serviciosSeleccionados.add(nuevoServicio);
-            System.out.println("Servicio agregado con fecha/hora específica");
-
-            if (!serviciosSeleccionados.isEmpty()) {
-                this.indiceActual = this.serviciosSeleccionados.size() - 1;
-                mostrarServiciosSeleccionados();
-                iniciarCarrusel();
+    private void configurarControlesCarrusel() {
+        jLabel4.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                siguienteServicio();
             }
+        });
 
-            // GUARDAR EN SESIÓN con fecha y hora específicas
-            SesionUsuario.setServiciosCita(serviciosSeleccionados);
-            SesionUsuario.setFechaCita(fechaActual);
-            SesionUsuario.setHoraCita(horaActual);
-        } else {
-            System.out.println("Servicio ya existe: " + descripcion);
-            JOptionPane.showMessageDialog(this,
-                    "El servicio '" + descripcion + "' ya está en tu lista.",
-                    "Servicio Duplicado",
-                    JOptionPane.INFORMATION_MESSAGE);
+        label11.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                servicioAnterior();
+            }
+        });
+    }
+
+    private void servicioAnterior() {
+        if (serviciosSeleccionados.size() > 1) {
+            indiceActual = (indiceActual - 1 + serviciosSeleccionados.size()) % serviciosSeleccionados.size();
+            mostrarServiciosSeleccionados();
         }
-
-        System.out.println("Servicios DESPUÉS de agregar:");
-        debugServiciosActuales();
     }
 
     private boolean fechaBloqueada(String fecha) {
-        // Verificar en la tabla bloqueo_horario
         String sqlBloqueo = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha = ?";
 
         try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement psBloqueo = conn.prepareStatement(sqlBloqueo)) {
@@ -302,7 +343,7 @@ public class NewJAgenC extends javax.swing.JFrame {
             psBloqueo.setString(1, fecha);
             try (java.sql.ResultSet rsBloqueo = psBloqueo.executeQuery()) {
                 if (rsBloqueo.next() && rsBloqueo.getInt(1) > 0) {
-                    return true; // La fecha está completamente bloqueada
+                    return true;
                 }
             }
 
@@ -313,10 +354,8 @@ public class NewJAgenC extends javax.swing.JFrame {
     }
 
     private boolean horaBloqueada(String fecha, String hora) {
-        // Convertir la hora a Time para comparaciones
         java.sql.Time horaTime = java.sql.Time.valueOf(hora + ":00");
 
-        // Verificar en bloqueo_horario (rangos de tiempo)
         String sqlBloqueo = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha = ? "
                 + "AND ? BETWEEN Hora_inicio AND Hora_fin";
 
@@ -330,16 +369,14 @@ public class NewJAgenC extends javax.swing.JFrame {
 
         try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement psBloqueo = conn.prepareStatement(sqlBloqueo); java.sql.PreparedStatement psCita = conn.prepareStatement(sqlCita)) {
 
-            // Verificar en bloqueo_horario
             psBloqueo.setString(1, fecha);
             psBloqueo.setTime(2, horaTime);
             try (java.sql.ResultSet rsBloqueo = psBloqueo.executeQuery()) {
                 if (rsBloqueo.next() && rsBloqueo.getInt(1) > 0) {
-                    return true; // La hora está dentro de un rango bloqueado
+                    return true;
                 }
             }
 
-            // Verificar en cita para CADA servicio seleccionado
             for (Object[] servicio : serviciosSeleccionados) {
                 String descripcion = (String) servicio[1];
                 int idServicio = obtenerIdServicioPorDescripcion(descripcion);
@@ -352,7 +389,7 @@ public class NewJAgenC extends javax.swing.JFrame {
                     try (java.sql.ResultSet rsCita = psCita.executeQuery()) {
                         if (rsCita.next() && rsCita.getInt(1) > 0) {
                             System.out.println("Hora ocupada para servicio: " + descripcion + " - ID: " + idServicio);
-                            return true; // Este servicio ya está ocupado a esta hora
+                            return true;
                         }
                     }
                 }
@@ -364,7 +401,60 @@ public class NewJAgenC extends javax.swing.JFrame {
         return false;
     }
 
-    // Llamar este método cuando cambie el combo de categoría
+    // MÉTODO NUEVO: Solo verifica el servicio específico
+    private boolean horaBloqueadaParaServicio(String fecha, String hora, String descripcionServicio) {
+        if (descripcionServicio == null || descripcionServicio.isEmpty()) {
+            return false; // No hay servicio para verificar
+        }
+
+        java.sql.Time horaTime = java.sql.Time.valueOf(hora + ":00");
+
+        // Verificar en bloqueo_horario (rangos de tiempo)
+        String sqlBloqueo = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha = ? "
+                + "AND ? BETWEEN Hora_inicio AND Hora_fin";
+
+        String sqlCita = """
+    SELECT COUNT(*) FROM cita c 
+    JOIN cita_has_servicios chs ON c.idCita = chs.idCita 
+    WHERE c.Fecha = ? AND c.Hora = ? 
+    AND c.Estado IN ('confirmada', 'reservada')
+    AND chs.idServicios = ?
+    """;
+
+        try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement psBloqueo = conn.prepareStatement(sqlBloqueo); java.sql.PreparedStatement psCita = conn.prepareStatement(sqlCita)) {
+
+            // Verificar en bloqueo_horario
+            psBloqueo.setString(1, fecha);
+            psBloqueo.setTime(2, horaTime);
+            try (java.sql.ResultSet rsBloqueo = psBloqueo.executeQuery()) {
+                if (rsBloqueo.next() && rsBloqueo.getInt(1) > 0) {
+                    System.out.println("Hora bloqueada por horario general: " + fecha + " " + hora);
+                    return true;
+                }
+            }
+
+            // Verificar en cita solo para el servicio específico
+            int idServicio = obtenerIdServicioPorDescripcion(descripcionServicio);
+
+            if (idServicio > 0) {
+                psCita.setString(1, fecha);
+                psCita.setTime(2, horaTime);
+                psCita.setInt(3, idServicio);
+
+                try (java.sql.ResultSet rsCita = psCita.executeQuery()) {
+                    if (rsCita.next() && rsCita.getInt(1) > 0) {
+                        System.out.println("Hora ocupada para servicio: " + descripcionServicio + " - ID: " + idServicio);
+                        return true;
+                    }
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     private void cargarServiciosPorCategoria(String categoria) {
         serviciosSeleccionados.clear();
         String sql = """
@@ -415,25 +505,31 @@ public class NewJAgenC extends javax.swing.JFrame {
     }
 
     private void iniciarCarrusel() {
-        // Detener el timer anterior si existe
         if (timer != null) {
             timer.stop();
             timer = null;
         }
 
-        // Solo iniciar carrusel si hay más de un servicio
         if (serviciosSeleccionados.size() > 1) {
-            timer = new Timer(5000, e -> siguienteServicio()); // 5 segundos en lugar de 3
+            timer = new Timer(5000, e -> siguienteServicio());
             timer.start();
             System.out.println("Carrusel iniciado - Cambio cada 5 segundos");
         } else {
-            // Si solo hay un servicio, asegurarse de que se muestre
             mostrarServiciosSeleccionados();
         }
     }
 
     private void siguienteServicio() {
         if (!serviciosSeleccionados.isEmpty() && serviciosSeleccionados.size() > 1) {
+            if (timer != null) {
+                timer.stop();
+                new Timer(10000, e -> {
+                    if (timer != null) {
+                        timer.start();
+                    }
+                }).start();
+            }
+
             indiceActual = (indiceActual + 1) % serviciosSeleccionados.size();
             mostrarServiciosSeleccionados();
             System.out.println("Cambiando a servicio: " + indiceActual);
@@ -465,42 +561,80 @@ public class NewJAgenC extends javax.swing.JFrame {
         return false;
     }
 
-    /**
-     * Muestra el servicio actual según el índice
-     */
-    private void mostrarServiciosSeleccionados() {
-        if (serviciosSeleccionados.isEmpty()) {
-            jLabel4.setIcon(null);
-            label11.setText("No hay servicios seleccionados");
-            jLabel8.setText("$0");
-            return;
-        }
-
-        Object[] servicio = serviciosSeleccionados.get(indiceActual);
-        ImageIcon imagen = (ImageIcon) servicio[0];
-        String descripcion = (String) servicio[1];
-        String precio = (String) servicio[2];
-        String fecha = servicio.length > 3 ? (String) servicio[3] : "Sin fecha";
-        String hora = servicio.length > 4 ? (String) servicio[4] : "Sin hora";
-
-        jLabel4.setIcon(escalarImagen(imagen, jLabel4.getWidth(), jLabel4.getHeight()));
-
-        // Mostrar información completa
-        String info = descripcion + " (" + (indiceActual + 1) + "/" + serviciosSeleccionados.size() + ")";
-        if (!fecha.equals("Sin fecha") && !hora.equals("Sin hora")) {
-            info += "\nFecha: " + fecha + " Hora: " + hora;
-        }
-        label11.setText(info);
-        jLabel8.setText(precio);
-
-        // Mostrar el total
-        double total = calcularMontoTotal(serviciosSeleccionados);
-        System.out.println("Total actual: $" + total);
+private void mostrarServiciosSeleccionados() {
+    if (serviciosSeleccionados.isEmpty()) {
+        jLabel4.setIcon(null);
+        label11.setText("No hay servicios seleccionados");
+        jLabel8.setText("$0");
+        return;
     }
 
-    /**
-     * Método para escalar correctamente la imagen
-     */
+    Object[] servicio = serviciosSeleccionados.get(indiceActual);
+    ImageIcon imagen = (ImageIcon) servicio[0];
+    String descripcion = (String) servicio[1];
+    String precio = (String) servicio[2];
+    String fecha = servicio.length > 3 ? (String) servicio[3] : "Sin fecha";
+    String hora = servicio.length > 4 ? (String) servicio[4] : "Sin hora";
+
+    jLabel4.setIcon(escalarImagen(imagen, jLabel4.getWidth(), jLabel4.getHeight()));
+
+    // Mostrar información completa con fecha/hora específica
+    StringBuilder info = new StringBuilder();
+    info.append(descripcion).append(" (").append(indiceActual + 1).append("/").append(serviciosSeleccionados.size()).append(")");
+    
+    if (!fecha.equals("Sin fecha") && !hora.equals("Sin hora")) {
+        info.append("\nFecha: ").append(fecha).append("\nHora: ").append(hora);
+        
+        // Actualizar el calendario para mostrar la fecha/hora de ESTE servicio
+        if (!fecha.equals(obtenerFechaSeleccionada()) && !fecha.equals("Sin fecha")) {
+            try {
+                // Parsear la fecha del servicio
+                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                java.util.Date fechaServicio = formato.parse(fecha);
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(fechaServicio);
+                
+                // Actualizar el calendario
+                jCalendar1.setCalendar(cal);
+                
+                // Actualizar la hora
+                if (!hora.equals("Sin hora")) {
+                    cbHora.setSelectedItem(hora);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    } else {
+        info.append("\nFecha/Hora: No asignadas (usa el calendario para asignar)");
+    }
+    
+    label11.setText(info.toString());
+    jLabel8.setText(precio);
+
+    // Mostrar el total
+    double total = calcularMontoTotal(serviciosSeleccionados);
+    System.out.println("Total actual: $" + total);
+}
+
+    private void actualizarCalendarioConFechaHora(String fecha, String hora) {
+        try {
+            if (!fecha.equals(jTextFieldFecha1.getText())) {
+                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                java.util.Date fechaObj = formato.parse(fecha);
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(fechaObj);
+                jTextFieldFecha1.setText(fecha);
+            }
+
+            if (hora != null && !hora.equals(cbHora.getSelectedItem())) {
+                cbHora.setSelectedItem(hora);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     private ImageIcon escalarImagen(ImageIcon icon, int ancho, int alto) {
         if (icon == null) {
             return null;
@@ -510,181 +644,36 @@ public class NewJAgenC extends javax.swing.JFrame {
         return new ImageIcon(nueva);
     }
 
-private int obtenerIdServicioPorDescripcion(String descripcion) {
-    // ESTE MÉTODO DEBE SER EL ÚNICO EN TODO EL PROYECTO
-    // Si hay otros, elimínalos o haz que llamen a este
-    
-    // Forzar IDs conocidos
-    String descLower = descripcion.toLowerCase().trim();
-    
-    if (descLower.contains("tatuaje")) {
-        System.out.println("OBTENIENDO ID: Tatuajes -> 15");
-        return 15;
-    }
-    if (descLower.contains("masaje")) {
-        System.out.println("OBTENIENDO ID: Masajes -> 16");
-        return 16;
-    }
-    if (descLower.contains("uña") || descLower.contains("unas")) {
-        System.out.println("OBTENIENDO ID: Uñas -> 1");
-        return 1;
-    }
-    if (descLower.contains("maquillaje")) {
-        System.out.println("OBTENIENDO ID: Maquillaje -> 2");
-        return 2;
-    }
-    if (descLower.contains("peinado")) {
-        System.out.println("OBTENIENDO ID: Peinado -> 3");
-        return 3;
-    }
-    if (descLower.contains("otro")) {
-        System.out.println("OBTENIENDO ID: Otros -> 13");
-        return 13;
-    }
-    
-    System.out.println("OBTENIENDO ID: '" + descripcion + "' -> 13 (por defecto)");
-    return 13;
-}
+    private int obtenerIdServicioPorDescripcion(String descripcion) {
+        String descLower = descripcion.toLowerCase().trim();
 
-private int obtenerIdServicioFallback(String descripcion) {
-        descripcion = descripcion.toLowerCase().trim();
-
-        System.out.println("DEBUG - Fallback buscando para: '" + descripcion + "'");
-
-        // Mapeo completo basado en tu tabla servicios
-        if (descripcion.contains("tatuaje") || descripcion.equals("tatuajes")) {
-            System.out.println("DEBUG - Fallback: 'Tatuajes' -> 15");
+        if (descLower.contains("tatuaje")) {
+            System.out.println("OBTENIENDO ID: Tatuajes -> 15");
             return 15;
         }
-        if (descripcion.contains("uña") || descripcion.contains("uñas") || descripcion.equals("unas")) {
-            System.out.println("DEBUG - Fallback: 'Uñas' -> 1");
-            return 1;
-        }
-        if (descripcion.contains("maquillaje")) {
-            System.out.println("DEBUG - Fallback: 'Maquillaje' -> 2");
-            return 2;
-        }
-        if (descripcion.contains("peinado") || descripcion.contains("peinados")) {
-            System.out.println("DEBUG - Fallback: 'Peinado' -> 3");
-            return 3;
-        }
-        if (descripcion.contains("masaje") || descripcion.contains("masajes")) {
-            System.out.println("DEBUG - Fallback: 'Masajes' -> 16");
+        if (descLower.contains("masaje")) {
+            System.out.println("OBTENIENDO ID: Masajes -> 16");
             return 16;
         }
-        if (descripcion.contains("otro") || descripcion.contains("otros")) {
-            System.out.println("DEBUG - Fallback: 'otros' -> 13");
+        if (descLower.contains("uña") || descLower.contains("unas")) {
+            System.out.println("OBTENIENDO ID: Uñas -> 1");
+            return 1;
+        }
+        if (descLower.contains("maquillaje")) {
+            System.out.println("OBTENIENDO ID: Maquillaje -> 2");
+            return 2;
+        }
+        if (descLower.contains("peinado")) {
+            System.out.println("OBTENIENDO ID: Peinado -> 3");
+            return 3;
+        }
+        if (descLower.contains("otro")) {
+            System.out.println("OBTENIENDO ID: Otros -> 13");
             return 13;
         }
-        if (descripcion.contains("ballerina")) {
-            System.out.println("DEBUG - Fallback: 'Ballerina' -> 1 (Uñas)");
-            return 1;
-        }
-        if (descripcion.contains("francesa")) {
-            System.out.println("DEBUG - Fallback: 'Francesa' -> 1 (Uñas)");
-            return 1;
-        }
-        if (descripcion.contains("cuadrada")) {
-            System.out.println("DEBUG - Fallback: 'Cuadradas' -> 1 (Uñas)");
-            return 1;
-        }
-        if (descripcion.contains("social")) {
-            System.out.println("DEBUG - Fallback: 'Social' -> 2 (Maquillaje) o 3 (Peinado) - usando 2");
-            return 2;
-        }
-        if (descripcion.contains("boda")) {
-            System.out.println("DEBUG - Fallback: 'Boda' -> 2 (Maquillaje) o 3 (Peinado) - usando 2");
-            return 2;
-        }
-        if (descripcion.contains("xv") || descripcion.contains("quinceañera")) {
-            System.out.println("DEBUG - Fallback: 'XV' -> 2 (Maquillaje) o 3 (Peinado) - usando 2");
-            return 2;
-        }
 
-        System.out.println("DEBUG - Fallback por defecto para '" + descripcion + "' -> 13 (otros)");
-        return 13; // Por defecto "otros"
-    }
-
-    private int buscarCategoriaAlternativa(String descripcion) {
-        int id = 0;
-
-        // Mapeo para casos donde el nombre no coincide exactamente
-        java.util.Map<String, String> mapeoCategorias = new java.util.HashMap<>();
-        mapeoCategorias.put("Ballerina", "Ballerina");
-        mapeoCategorias.put("Cuadradas", "Cuadradas");
-        mapeoCategorias.put("Francesa", "Francesa");
-        mapeoCategorias.put("Maquillaje", "Maquillaje Social"); // Ejemplo
-        mapeoCategorias.put("Peinados", "Peinado Social"); // Ejemplo
-
-        String nombreCategoria = mapeoCategorias.get(descripcion);
-        if (nombreCategoria == null) {
-            nombreCategoria = descripcion;
-        }
-
-        String sql = "SELECT idServicios FROM categoria_servicio WHERE Nombre_categoria LIKE ? LIMIT 1";
-
-        try (java.sql.Connection con = conexion.getConexion(); java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, "%" + nombreCategoria + "%");
-            java.sql.ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                id = rs.getInt("idServicios");
-                System.out.println("DEBUG - ID encontrado (búsqueda alternativa) para '" + descripcion + "': " + id);
-            } else {
-                System.out.println("DEBUG - Categoría no encontrada incluso con búsqueda alternativa: " + descripcion);
-                // Si no se encuentra, usar valores por defecto según el tipo
-                if (descripcion.toLowerCase().contains("uña") || descripcion.equals("Ballerina")
-                        || descripcion.equals("Cuadradas") || descripcion.equals("Francesa")) {
-                    id = 1; // Uñas
-                } else if (descripcion.toLowerCase().contains("maquillaje")) {
-                    id = 2; // Maquillaje
-                } else if (descripcion.toLowerCase().contains("peinado")) {
-                    id = 3; // Peinado
-                }
-                System.out.println("DEBUG - Usando ID por defecto para '" + descripcion + "': " + id);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return id;
-    }
-
-    private int buscarServicioAlternativo(String descripcion) {
-        int id = 0;
-
-        // Mapeo entre las descripciones que usas y los nombres en la BD
-        java.util.Map<String, String> mapeoServicios = new java.util.HashMap<>();
-        mapeoServicios.put("Ballerina", "Uñas Ballerina");
-        mapeoServicios.put("Cuadradas", "Uñas Cuadradas");
-        mapeoServicios.put("Francesa", "Uñas Francesa");
-        mapeoServicios.put("Maquillaje", "Maquillaje Social");
-        mapeoServicios.put("Peinados", "Peinado Elegante");
-
-        String nombreReal = mapeoServicios.get(descripcion);
-        if (nombreReal == null) {
-            nombreReal = descripcion; // Si no hay mapeo, usa la original
-        }
-
-        String sql = "SELECT idServicios FROM servicios WHERE Nombre_servicio LIKE ?";
-
-        try (java.sql.Connection con = conexion.getConexion(); java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
-
-            ps.setString(1, "%" + nombreReal + "%");
-            java.sql.ResultSet rs = ps.executeQuery();
-
-            if (rs.next()) {
-                id = rs.getInt("idServicios");
-                System.out.println("DEBUG - ID encontrado (búsqueda alternativa) para '" + descripcion + "': " + id);
-            } else {
-                System.out.println("DEBUG - Servicio no encontrado incluso con búsqueda alternativa: " + descripcion);
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return id;
+        System.out.println("OBTENIENDO ID: '" + descripcion + "' -> 13 (por defecto)");
+        return 13;
     }
 
     private void debugCategoriasServicios() {
@@ -710,276 +699,137 @@ private int obtenerIdServicioFallback(String descripcion) {
     }
 
     private void insertarCitaYServicios(int idPago) {
-        String fecha = SesionUsuario.getFechaCita();
-        String hora = SesionUsuario.getHoraCita();
         java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
-
-        if (fecha == null || fecha.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Error: No se ha seleccionado fecha para la cita.\n\n"
-                    + "Por favor regrese a 'Agendar Cita' y seleccione una fecha válida.",
-                    "Fecha requerida",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-
-        if (hora == null || hora.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "Error: No se ha seleccionado hora para la cita.\n\n"
-                    + "Por favor regrese a 'Agendar Cita' y seleccione una hora.",
-                    "Hora requerida",
-                    JOptionPane.ERROR_MESSAGE);
-            return;
-        }
 
         if (servicios == null || servicios.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Error: No hay servicios seleccionados.\n\n"
-                    + "Por favor regrese a 'Agendar Cita' y seleccione al menos un servicio.",
+                    "Error: No hay servicios seleccionados.",
                     "Servicios requeridos",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // DEBUG: Mostrar lo que se está procesando
-        System.out.println("\n=== DEBUG INSERTAR CITA ===");
-        System.out.println("Fecha recibida: '" + fecha + "'");
-        System.out.println("Hora recibida: '" + hora + "'");
-        System.out.println("Numero de servicios: " + servicios.size());
-        System.out.println("ID Pago recibido: " + idPago);
+        java.util.Map<String, java.util.List<Object[]>> citasAgrupadas = new java.util.HashMap<>();
 
-        for (int i = 0; i < servicios.size(); i++) {
-            Object[] servicio = servicios.get(i);
-            String descripcion = servicio.length > 1 ? (String) servicio[1] : "Sin descripcion";
-            String precio = servicio.length > 2 ? servicio[2].toString() : "N/A";
-            System.out.println("   Servicio " + i + ": " + descripcion + " - Precio: " + precio);
+        for (Object[] servicio : servicios) {
+            String fecha = servicio.length > 3 ? (String) servicio[3] : null;
+            String hora = servicio.length > 4 ? (String) servicio[4] : null;
+
+            if (fecha == null || hora == null) {
+                JOptionPane.showMessageDialog(this,
+                        "Error: Algunos servicios no tienen fecha/hora asignada.",
+                        "Datos incompletos",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            String clave = fecha + "|" + hora;
+            citasAgrupadas.computeIfAbsent(clave, k -> new java.util.ArrayList<>()).add(servicio);
         }
-        System.out.println("===========================\n");
 
+        System.out.println("=== CREANDO " + citasAgrupadas.size() + " CITAS ===");
+
+        int citasCreadas = 0;
+        for (java.util.Map.Entry<String, java.util.List<Object[]>> entrada : citasAgrupadas.entrySet()) {
+            String[] partes = entrada.getKey().split("\\|");
+            String fecha = partes[0];
+            String hora = partes[1];
+            java.util.List<Object[]> serviciosCita = entrada.getValue();
+
+            System.out.println("Creando cita para " + fecha + " " + hora
+                    + " con " + serviciosCita.size() + " servicios");
+
+            if (crearCitaIndividual(fecha, hora, serviciosCita, idPago)) {
+                citasCreadas++;
+            }
+        }
+
+        if (citasCreadas > 0) {
+            JOptionPane.showMessageDialog(this,
+                    "¡" + citasCreadas + " cita(s) agendada(s) exitosamente!",
+                    "Citas Confirmadas",
+                    JOptionPane.INFORMATION_MESSAGE);
+
+            SesionUsuario.limpiarDatosCita();
+        }
+    }
+
+    private boolean crearCitaIndividual(String fecha, String hora,
+            java.util.List<Object[]> servicios, int idPago) {
         java.sql.Connection conn = null;
-        java.sql.PreparedStatement psCita = null;
-        java.sql.PreparedStatement psServicios = null;
-        java.sql.ResultSet rsCita = null;
 
         try {
             conn = ConexionBD.getConnection();
             conn.setAutoCommit(false);
 
-            // 1. INSERTAR CITA
             String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) VALUES (?, ?, ?, ?, ?)";
-            psCita = conn.prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
+            java.sql.PreparedStatement psCita = conn.prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
 
-            // VALIDAR Y FORMATEAR FECHA
-            try {
-                fecha = fecha.trim();
-                // Verificar formato basico de fecha
-                if (!fecha.matches("\\d{4}-\\d{2}-\\d{2}")) {
-                    throw new IllegalArgumentException("Formato de fecha debe ser YYYY-MM-DD");
-                }
-                java.sql.Date fechaSQL = java.sql.Date.valueOf(fecha);
-                psCita.setDate(1, fechaSQL);
-                System.out.println("Fecha valida: " + fecha);
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(this,
-                        "Formato de fecha incorrecto:\n\n"
-                        + "Fecha recibida: '" + fecha + "'\n"
-                        + "Formato requerido: AAAA-MM-DD\n\n"
-                        + "Ejemplo: 2025-12-03",
-                        "Error en formato de fecha",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            // VALIDAR Y FORMATEAR HORA
-            try {
-                hora = hora.trim();
-                // Asegurar formato HH:MM:SS
-                if (!hora.contains(":")) {
-                    hora = hora + ":00:00";
-                } else if (hora.length() == 5) { // HH:MM
-                    hora = hora + ":00";
-                } else if (hora.length() == 4 && hora.contains(":")) { // H:MM
-                    hora = "0" + hora + ":00";
-                }
-
-                // Verificar formato
-                if (!hora.matches("\\d{2}:\\d{2}:\\d{2}")) {
-                    throw new IllegalArgumentException("Formato de hora invalido");
-                }
-
-                java.sql.Time horaSQL = java.sql.Time.valueOf(hora);
-                psCita.setTime(2, horaSQL);
-                System.out.println("Hora valida: " + hora);
-            } catch (IllegalArgumentException e) {
-                JOptionPane.showMessageDialog(this,
-                        "Formato de hora incorrecto:\n\n"
-                        + "Hora recibida: '" + hora + "'\n"
-                        + "Formatos aceptados: HH:MM o HH:MM:SS\n\n"
-                        + "Ejemplos: 09:00, 14:30:00",
-                        "Error en formato de hora",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
+            psCita.setDate(1, java.sql.Date.valueOf(fecha));
+            psCita.setTime(2, java.sql.Time.valueOf(hora + ":00"));
             psCita.setString(3, "Confirmada");
             psCita.setInt(4, SesionUsuario.getIdUsuario());
             psCita.setInt(5, idPago);
 
-            int filasCita = psCita.executeUpdate();
-            System.out.println("Filas afectadas en tabla cita: " + filasCita);
-
-            // OBTENER ID DE LA CITA
-            rsCita = psCita.getGeneratedKeys();
+            psCita.executeUpdate();
+            java.sql.ResultSet rs = psCita.getGeneratedKeys();
             int idCita = 0;
-            if (rsCita.next()) {
-                idCita = rsCita.getInt(1);
-                System.out.println("Cita creada con ID: " + idCita);
-            } else {
-                throw new SQLException("No se pudo obtener el ID de la cita creada");
+            if (rs.next()) {
+                idCita = rs.getInt(1);
             }
 
             String sqlServicios = "INSERT INTO cita_has_servicios (idCita, idServicios, Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
-            psServicios = conn.prepareStatement(sqlServicios);
-
-            // Usar un Set para evitar servicios duplicados por ID
-            java.util.Set<Integer> serviciosInsertados = new java.util.HashSet<>();
-            int serviciosAgregados = 0;
-
-            System.out.println("\n=== PROCESANDO SERVICIOS PARA CITA " + idCita + " ===");
+            java.sql.PreparedStatement psServicios = conn.prepareStatement(sqlServicios);
 
             for (Object[] servicio : servicios) {
                 String descripcion = (String) servicio[1];
                 int idServicio = obtenerIdServicioPorDescripcion(descripcion);
 
-                System.out.println("Procesando servicio: '" + descripcion + "' -> ID: " + idServicio);
-
                 if (idServicio > 0) {
-                    // Verificar que no sea un duplicado
-                    if (!serviciosInsertados.contains(idServicio)) {
-                        serviciosInsertados.add(idServicio);
-
-                        // Calcular precio individual para este servicio
-                        double precioIndividual = 0.0;
-                        if (servicio.length > 2 && servicio[2] != null) {
-                            String precioStr = servicio[2].toString().replace("$", "").replace(",", "").trim();
-                            try {
-                                precioIndividual = Double.parseDouble(precioStr);
-                            } catch (NumberFormatException e) {
-                                System.out.println("Error parseando precio: " + precioStr + ", usando calculo proporcional");
-                                precioIndividual = SesionUsuario.getMontoTotalCita() / servicios.size();
-                            }
-                        } else {
-                            precioIndividual = SesionUsuario.getMontoTotalCita() / servicios.size();
+                    double precio = 0.0;
+                    if (servicio.length > 2 && servicio[2] != null) {
+                        String precioStr = servicio[2].toString().replace("$", "").trim();
+                        try {
+                            precio = Double.parseDouble(precioStr);
+                        } catch (NumberFormatException e) {
+                            precio = obtenerPrecioPorDefecto(descripcion);
                         }
-
-                        // Insertar servicio
-                        psServicios.setInt(1, idCita);
-                        psServicios.setInt(2, idServicio);
-                        psServicios.setInt(3, idPago);
-                        psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(precioIndividual));
-                        psServicios.addBatch();
-
-                        serviciosAgregados++;
-                        System.out.println("Preparado para insertar: cita=" + idCita
-                                + ", servicio=" + idServicio + ", precio=$" + precioIndividual);
-                    } else {
-                        System.out.println("Servicio duplicado omitido: " + descripcion + " (ID: " + idServicio + ")");
                     }
-                } else {
-                    System.out.println("ERROR: No se encontro ID valido para servicio: " + descripcion);
+
+                    psServicios.setInt(1, idCita);
+                    psServicios.setInt(2, idServicio);
+                    psServicios.setInt(3, idPago);
+                    psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(precio));
+                    psServicios.addBatch();
                 }
             }
 
-            // Ejecutar batch solo si hay servicios validos
-            if (serviciosAgregados > 0) {
-                int[] resultados = psServicios.executeBatch();
-                System.out.println("Servicios insertados en cita_has_servicios: " + resultados.length);
+            psServicios.executeBatch();
+            conn.commit();
 
-                conn.commit();
+            System.out.println("Cita " + idCita + " creada para " + fecha + " " + hora);
+            return true;
 
-                // Mostrar resumen al usuario
-                StringBuilder mensaje = new StringBuilder();
-                mensaje.append("¡Cita agendada exitosamente!\n\n");
-                mensaje.append("ID de Cita: ").append(idCita).append("\n");
-                mensaje.append("Fecha: ").append(fecha).append("\n");
-                mensaje.append("Hora: ").append(hora.substring(0, 5)).append("\n");
-                mensaje.append("Servicios: ").append(serviciosAgregados).append("\n");
-                mensaje.append("Total pagado: $").append(String.format("%.2f", SesionUsuario.getMontoTotalCita()));
-
-                JOptionPane.showMessageDialog(this, mensaje.toString(), "Cita Confirmada", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                System.out.println("ERROR: No hay servicios validos para insertar");
-                throw new SQLException("No se pudieron insertar servicios para la cita");
-            }
-
-            // Limpiar datos de la sesion
-            SesionUsuario.limpiarDatosCita();
-            System.out.println("Datos de cita limpiados de la sesion\n");
-
-        } catch (java.sql.SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this,
-                    "Error al agendar cita en la base de datos:\n\n" + e.getMessage(),
-                    "Error de Base de Datos",
-                    JOptionPane.ERROR_MESSAGE);
-
             try {
                 if (conn != null) {
                     conn.rollback();
-                    System.out.println("Transaccion revertida debido a error");
                 }
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+            return false;
         } finally {
-            // Cerrar todos los recursos
             try {
-                if (rsCita != null) {
-                    rsCita.close();
-                }
-                if (psCita != null) {
-                    psCita.close();
-                }
-                if (psServicios != null) {
-                    psServicios.close();
-                }
                 if (conn != null) {
                     conn.setAutoCommit(true);
                     conn.close();
-                    System.out.println("Conexion cerrada");
                 }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
         }
-    }
-
-    private java.util.List<String> obtenerServiciosOcupados(String fecha, String hora) {
-        java.util.List<String> serviciosOcupados = new java.util.ArrayList<>();
-
-        String sql = """
-        SELECT DISTINCT s.Nombre_servicio 
-        FROM cita c 
-        JOIN cita_has_servicios chs ON c.idCita = chs.idCita 
-        JOIN servicios s ON chs.idServicios = s.idServicios 
-        WHERE c.Fecha = ? AND c.Hora = ? AND c.Estado IN ('confirmada', 'reservada')
-        """;
-
-        try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sql)) {
-
-            ps.setString(1, fecha);
-            ps.setTime(2, java.sql.Time.valueOf(hora + ":00"));
-
-            try (java.sql.ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    serviciosOcupados.add(rs.getString("Nombre_servicio"));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return serviciosOcupados;
     }
 
     private double calcularMontoTotal(java.util.List<Object[]> servicios) {
@@ -994,10 +844,8 @@ private int obtenerIdServicioFallback(String descripcion) {
             if (precioStr == null || precioStr.trim().isEmpty() || precioStr.equals("$0")) {
                 System.out.println("ADVERTENCIA: Servicio '" + descripcion + "' sin precio. Buscando en BD...");
 
-                // Obtener precio desde categoria_servicio
                 double precioDesdeBD = obtenerPrecioDesdeCategoria(descripcion);
                 if (precioDesdeBD == 0.0) {
-                    // Si no encuentra en categoria_servicio, usar precios por defecto
                     precioDesdeBD = obtenerPrecioPorDefecto(descripcion);
                     System.out.println("Usando precio por defecto para '" + descripcion + "': $" + precioDesdeBD);
                 } else {
@@ -1005,7 +853,7 @@ private int obtenerIdServicioFallback(String descripcion) {
                 }
 
                 precioStr = "$" + precioDesdeBD;
-                servicio[2] = precioStr; // Actualizar en el array
+                servicio[2] = precioStr;
             }
 
             precioStr = precioStr.replace("$", "").replace(",", "").trim();
@@ -1026,37 +874,34 @@ private int obtenerIdServicioFallback(String descripcion) {
         return total;
     }
 
-// Método para precios por defecto
     private double obtenerPrecioPorDefecto(String descripcion) {
         descripcion = descripcion.toLowerCase().trim();
 
-        // Precios por defecto según tu tabla categoria_servicio
         if (descripcion.contains("tatuaje")) {
-            return 450.00; // Tatuajes cuerpo sol y luna
+            return 450.00;
         }
         if (descripcion.contains("uña") || descripcion.contains("ballerina")
                 || descripcion.contains("francesa") || descripcion.contains("cuadrada")) {
-            return 350.00; // Precio promedio para uñas
+            return 350.00;
         }
         if (descripcion.contains("maquillaje")) {
-            return 500.00; // Precio promedio para maquillaje
+            return 500.00;
         }
         if (descripcion.contains("peinado")) {
-            return 300.00; // Precio promedio para peinado
+            return 300.00;
         }
         if (descripcion.contains("masaje")) {
-            return 1700.00; // Masajes para el cuerpo
+            return 1700.00;
         }
         if (descripcion.contains("boda")) {
-            return 1500.00; // Precio para servicios de boda
+            return 1500.00;
         }
         if (descripcion.contains("social")) {
-            return 500.00; // Precio para servicios sociales
+            return 500.00;
         }
 
-        return 250.00; // Precio por defecto para "otros"
+        return 250.00;
     }
-// Método auxiliar para obtener precio desde categoria_servicio
 
     private double obtenerPrecioDesdeCategoria(String descripcionCategoria) {
         String sql = "SELECT Precio FROM categoria_servicio WHERE Nombre_categoria = ? OR Descripcion LIKE ? LIMIT 1";
@@ -1074,124 +919,97 @@ private int obtenerIdServicioFallback(String descripcion) {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return 0.0; // Precio por defecto
+        return 0.0;
     }
 
-    // MÉTODO NUEVO PARA CONFIGURAR EL CALENDARIO CORRECTAMENTE
     private void configurarCalendario() {
         jTextFieldFecha1.setEditable(false);
         jTextFieldFecha1.setFocusable(false);
 
-        // Configurar fecha mínima como hoy (no se pueden seleccionar fechas pasadas)
-        java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
-        fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        fechaMinima.set(java.util.Calendar.MINUTE, 0);
-        fechaMinima.set(java.util.Calendar.SECOND, 0);
-        fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
+        // Configurar jCalendar1
+        if (jCalendar1 != null) {
+            java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
+            fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            fechaMinima.set(java.util.Calendar.MINUTE, 0);
+            fechaMinima.set(java.util.Calendar.SECOND, 0);
+            fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
 
-        // Aplicar fecha mínima al JDayChooser
-        jDayChooser2.setMinSelectableDate(fechaMinima.getTime());
-        jDayChooser2.setMaxSelectableDate(null); // No hay límite máximo
+            jCalendar1.setMinSelectableDate(fechaMinima.getTime());
 
-        System.out.println("DEBUG - Fecha mínima establecida: "
-                + new java.text.SimpleDateFormat("yyyy-MM-dd").format(fechaMinima.getTime()));
+            jCalendar1.addPropertyChangeListener("calendar", evt -> {
+                actualizarFechaDesdeJCalendar();
+                // Actualizar fecha/hora del servicio actual cuando cambia el calendario
+                actualizarFechaHoraServicioActual();
+            });
 
-        // Actualizar calendario al cambiar el mes
-        jMonthChooser1.addPropertyChangeListener("month", evt -> {
-            int mesSeleccionado = jMonthChooser1.getMonth();
-            java.util.Calendar cal = java.util.Calendar.getInstance();
-            cal.set(java.util.Calendar.MONTH, mesSeleccionado);
-            cal.set(java.util.Calendar.YEAR, java.util.Calendar.getInstance().get(java.util.Calendar.YEAR));
-            jDayChooser2.setMonth(cal.get(java.util.Calendar.MONTH));
-            jDayChooser2.setYear(cal.get(java.util.Calendar.YEAR));
-            actualizarFechaDesdeCalendario(); // Actualizar fecha inmediatamente
-        });
-
-        // Mostrar fecha al seleccionar un día
-        jDayChooser2.addPropertyChangeListener("day", evt -> {
-            actualizarFechaDesdeCalendario();
-        });
-
-        // Inicializar con fecha de hoy
-        java.util.Calendar hoy = java.util.Calendar.getInstance();
-        jDayChooser2.setDay(hoy.get(java.util.Calendar.DAY_OF_MONTH));
-        jMonthChooser1.setMonth(hoy.get(java.util.Calendar.MONTH));
-        actualizarFechaDesdeCalendario();
+            jCalendar1.setCalendar(fechaMinima);
+            actualizarFechaDesdeJCalendar();
+        }
     }
 
-// MÉTODO NUEVO PARA ACTUALIZAR LA FECHA DESDE EL CALENDARIO
-    private void actualizarFechaDesdeCalendario() {
+    private void actualizarFechaDesdeJCalendar() {
         try {
-            int dia = jDayChooser2.getDay();
-            int mes = jMonthChooser1.getMonth();
-            int anio = java.util.Calendar.getInstance().get(java.util.Calendar.YEAR);
+            java.util.Date fechaSeleccionada = jCalendar1.getDate();
 
-            if (dia > 0) {
-                java.util.Calendar cal = java.util.Calendar.getInstance();
-                cal.set(anio, mes, dia);
-                java.util.Date fechaSeleccionada = cal.getTime();
-
-                // Verificar si la fecha es pasada
-                java.util.Calendar hoy = java.util.Calendar.getInstance();
-                hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
-                hoy.set(java.util.Calendar.MINUTE, 0);
-                hoy.set(java.util.Calendar.SECOND, 0);
-                hoy.set(java.util.Calendar.MILLISECOND, 0);
-
-                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
-                String fechaFormateada = formato.format(fechaSeleccionada);
-
-                // Comparar si la fecha seleccionada es anterior a hoy
-                if (fechaSeleccionada.before(hoy.getTime())) {
-                    JOptionPane.showMessageDialog(this,
-                            "No puedes seleccionar una fecha pasada.\n\n"
-                            + "Fecha seleccionada: " + fechaFormateada + "\n"
-                            + "Fecha actual: " + formato.format(hoy.getTime()) + "\n\n"
-                            + "Por favor selecciona una fecha actual o futura.",
-                            "Fecha inválida",
-                            JOptionPane.WARNING_MESSAGE);
-
-                    // Restablecer a la fecha de hoy
-                    jDayChooser2.setDay(hoy.get(java.util.Calendar.DAY_OF_MONTH));
-                    jMonthChooser1.setMonth(hoy.get(java.util.Calendar.MONTH));
-
-                    // Actualizar con fecha de hoy
-                    fechaSeleccionada = hoy.getTime();
-                    fechaFormateada = formato.format(fechaSeleccionada);
-                    System.out.println("DEBUG - Fecha corregida a hoy: " + fechaFormateada);
-                }
-
-                jTextFieldFecha1.setText(fechaFormateada);
-
-                System.out.println("DEBUG - Fecha actualizada: " + fechaFormateada
-                        + " (Día: " + dia + ", Mes: " + mes + ", Año: " + anio + ")");
-
-                // Validar si la fecha está bloqueada
-                if (fechaBloqueada(fechaFormateada)) {
-                    JOptionPane.showMessageDialog(this,
-                            "Esta fecha está completamente bloqueada. No se pueden agendar citas.\n\n"
-                            + "Motivo: " + obtenerMotivoBloqueo(fechaFormateada),
-                            "Fecha no disponible",
-                            JOptionPane.WARNING_MESSAGE);
-                    cbHora.setEnabled(false);
-                    jButton4.setEnabled(false);
-                } else {
-                    cbHora.setEnabled(true);
-                    jButton4.setEnabled(true);
-                    verificarHorasDisponibles(fechaFormateada);
-                }
+            if (fechaSeleccionada == null) {
+                return;
             }
+
+            java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            String fechaFormateada = formato.format(fechaSeleccionada);
+
+            java.util.Calendar hoy = java.util.Calendar.getInstance();
+            hoy.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            hoy.set(java.util.Calendar.MINUTE, 0);
+            hoy.set(java.util.Calendar.SECOND, 0);
+            hoy.set(java.util.Calendar.MILLISECOND, 0);
+
+            String fechaHoy = formato.format(hoy.getTime());
+
+            // Verificar si la fecha seleccionada es pasada
+            if (fechaSeleccionada.before(hoy.getTime())) {
+                JOptionPane.showMessageDialog(this,
+                        "No puedes seleccionar una fecha pasada.\n\n"
+                        + "Fecha seleccionada: " + fechaFormateada + "\n"
+                        + "Fecha actual: " + fechaHoy + "\n\n"
+                        + "Por favor selecciona una fecha actual o futura.",
+                        "Fecha inválida",
+                        JOptionPane.WARNING_MESSAGE);
+
+                // Establecer fecha de hoy
+                jCalendar1.setDate(hoy.getTime());
+                fechaFormateada = fechaHoy;
+                System.out.println("DEBUG - Fecha corregida a hoy: " + fechaFormateada);
+            }
+
+            jTextFieldFecha1.setText(fechaFormateada);
+
+            System.out.println("DEBUG - Fecha actualizada desde jCalendar1: " + fechaFormateada);
+
+            if (fechaBloqueada(fechaFormateada)) {
+                JOptionPane.showMessageDialog(this,
+                        "Esta fecha está completamente bloqueada. No se pueden agendar citas.\n\n"
+                        + "Motivo: " + obtenerMotivoBloqueo(fechaFormateada),
+                        "Fecha no disponible",
+                        JOptionPane.WARNING_MESSAGE);
+                cbHora.setEnabled(false);
+                jButton4.setEnabled(false);
+            } else {
+                cbHora.setEnabled(true);
+                jButton4.setEnabled(true);
+                verificarHorasDisponibles(fechaFormateada);
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
+
     public void finalizarAgendado(int idPago) {
-        // Este método se llama después de que el usuario completa el pago
         insertarCitaYServicios(idPago);
     }
 
-    ////Nuevo que agregue
     private void cargarServiciosDesdeBD() {
         if (conexion == null) {
             System.out.println("ERROR: Conexión es null, inicializando...");
@@ -1201,7 +1019,6 @@ private int obtenerIdServicioFallback(String descripcion) {
         cmbServicios.removeAllItems();
         cmbServicios.addItem("Seleccione un servicio");
 
-        // Solo obtener servicios principales SIN PRECIO
         String sql = "SELECT idServicios, Nombre_servicio FROM servicios WHERE Nombre_servicio IS NOT NULL AND Nombre_servicio != '' ORDER BY Nombre_servicio";
 
         try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sql); java.sql.ResultSet rs = ps.executeQuery()) {
@@ -1242,6 +1059,7 @@ private int obtenerIdServicioFallback(String descripcion) {
         System.out.println("DEBUG - Duplicados eliminados. Servicios únicos: " + serviciosSeleccionados.size());
     }
 
+    
     private void cargarServiciosPorDefecto() {
         cmbServicios.addItem("Uñas");
         cmbServicios.addItem("Maquillaje");
@@ -1256,7 +1074,6 @@ private int obtenerIdServicioFallback(String descripcion) {
         if (serviciosGuardados != null && !serviciosGuardados.isEmpty()) {
             System.out.println("DEBUG - Restaurando " + serviciosGuardados.size() + " servicios desde sesión");
 
-            // Limpiar solo si no hay servicios actuales
             if (serviciosSeleccionados.isEmpty()) {
                 serviciosSeleccionados.clear();
 
@@ -1264,7 +1081,6 @@ private int obtenerIdServicioFallback(String descripcion) {
                     String descripcion = (String) servicio[1];
                     boolean existe = false;
 
-                    // Verificar si ya existe
                     for (Object[] existente : serviciosSeleccionados) {
                         if (((String) existente[1]).equals(descripcion)) {
                             existe = true;
@@ -1273,7 +1089,6 @@ private int obtenerIdServicioFallback(String descripcion) {
                     }
 
                     if (!existe) {
-                        // Asegurar que el servicio tenga los 5 elementos
                         if (servicio.length < 5) {
                             Object[] servicioCompleto = new Object[5];
                             servicioCompleto[0] = servicio.length > 0 ? servicio[0] : null;
@@ -1290,10 +1105,8 @@ private int obtenerIdServicioFallback(String descripcion) {
 
                 System.out.println("DEBUG - Servicios restaurados: " + serviciosSeleccionados.size());
 
-                // Limpiar la sesión después de restaurar
                 SesionUsuario.setServiciosCita(new java.util.ArrayList<>());
 
-                // Actualizar la interfaz
                 if (!serviciosSeleccionados.isEmpty()) {
                     indiceActual = 0;
                     mostrarServiciosSeleccionados();
@@ -1316,7 +1129,6 @@ private int obtenerIdServicioFallback(String descripcion) {
             if (confirmacion == JOptionPane.YES_OPTION) {
                 serviciosSeleccionados.remove(indiceActual);
 
-                // Ajustar el índice actual
                 if (serviciosSeleccionados.isEmpty()) {
                     indiceActual = 0;
                     jLabel4.setIcon(null);
@@ -1333,7 +1145,6 @@ private int obtenerIdServicioFallback(String descripcion) {
                     iniciarCarrusel();
                 }
 
-                // Actualizar sesión
                 SesionUsuario.setServiciosCita(serviciosSeleccionados);
 
                 System.out.println("Servicio eliminado. Total: " + serviciosSeleccionados.size());
@@ -1349,10 +1160,8 @@ private int obtenerIdServicioFallback(String descripcion) {
     @Override
     public void setVisible(boolean visible) {
         if (visible) {
-            // Cuando la ventana se hace visible, restaurar servicios desde sesión
             restaurarServiciosDesdeSesion();
 
-            // También actualizar la interfaz
             if (!serviciosSeleccionados.isEmpty()) {
                 indiceActual = 0;
                 mostrarServiciosSeleccionados();
@@ -1362,6 +1171,16 @@ private int obtenerIdServicioFallback(String descripcion) {
             System.out.println("DEBUG - NewJAgenC se hace visible. Servicios: " + serviciosSeleccionados.size());
         }
         super.setVisible(visible);
+    }
+
+    private void debugComponentesCalendario() {
+        System.out.println("=== DEBUG CALENDARIOS ===");
+        System.out.println("jCalendar1 es null? " + (jCalendar1 == null));
+
+        if (jCalendar1 != null) {
+            System.out.println("Fecha en jCalendar1: " + jCalendar1.getDate());
+        }
+        System.out.println("=== FIN DEBUG ===");
     }
 
     /**
@@ -1398,13 +1217,13 @@ private int obtenerIdServicioFallback(String descripcion) {
         jLabel2 = new javax.swing.JLabel();
         jTextFieldFecha1 = new javax.swing.JTextField();
         cbHora = new javax.swing.JComboBox<>();
-        jDayChooser2 = new com.toedter.calendar.JDayChooser();
-        jMonthChooser1 = new com.toedter.calendar.JMonthChooser();
         jPanel5 = new javax.swing.JPanel();
         INS = new javax.swing.JLabel();
         FACE = new javax.swing.JLabel();
         WPP = new javax.swing.JLabel();
         btnRegresar = new javax.swing.JButton();
+        jCalendar1 = new com.toedter.calendar.JCalendar();
+        jLabel3 = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu1 = new javax.swing.JMenu();
         jMenu12 = new javax.swing.JMenu();
@@ -1512,12 +1331,12 @@ private int obtenerIdServicioFallback(String descripcion) {
                 .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 214, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(33, 33, 33)
                 .addComponent(label11, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 57, Short.MAX_VALUE)
                 .addComponent(label7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
             .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                 .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, panel6Layout.createSequentialGroup()
-                    .addContainerGap(283, Short.MAX_VALUE)
+                    .addContainerGap(330, Short.MAX_VALUE)
                     .addComponent(jLabel8)
                     .addGap(12, 12, 12)))
         );
@@ -1594,6 +1413,8 @@ private int obtenerIdServicioFallback(String descripcion) {
             }
         });
 
+        jLabel3.setText("Agregar otro servicio");
+
         javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
         jPanel3.setLayout(jPanel3Layout);
         jPanel3Layout.setHorizontalGroup(
@@ -1601,29 +1422,37 @@ private int obtenerIdServicioFallback(String descripcion) {
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(71, 71, 71)
                 .addComponent(panel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(52, 52, 52)
                 .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jMonthChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, 103, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jDayChooser2, javax.swing.GroupLayout.PREFERRED_SIZE, 314, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(89, 89, 89)
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(btnRegresar, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(jLabel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jLabel2, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
                         .addGap(41, 41, 41)
                         .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                            .addComponent(cbHora, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(jTextFieldFecha1, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addComponent(cmbServicios, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                    .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(256, 256, Short.MAX_VALUE))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addGap(30, 30, 30)
+                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(cbHora, javax.swing.GroupLayout.PREFERRED_SIZE, 102, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                    .addComponent(jTextFieldFecha1, javax.swing.GroupLayout.PREFERRED_SIZE, 71, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(jPanel3Layout.createSequentialGroup()
+                                .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 136, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(50, 50, 50)
+                                .addComponent(cmbServicios, javax.swing.GroupLayout.PREFERRED_SIZE, 113, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(jPanel3Layout.createSequentialGroup()
+                        .addGap(33, 33, 33)
+                        .addComponent(jCalendar1, javax.swing.GroupLayout.PREFERRED_SIZE, 345, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(177, Short.MAX_VALUE))
             .addGroup(jPanel3Layout.createSequentialGroup()
                 .addGap(160, 160, 160)
                 .addComponent(jLabel11)
                 .addGap(0, 0, Short.MAX_VALUE))
             .addComponent(jPanel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel3Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(btnRegresar, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(95, 95, 95)
+                .addComponent(jButton4, javax.swing.GroupLayout.PREFERRED_SIZE, 172, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(112, 112, 112))
         );
         jPanel3Layout.setVerticalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1635,28 +1464,25 @@ private int obtenerIdServicioFallback(String descripcion) {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addComponent(panel6, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel3Layout.createSequentialGroup()
-                        .addGap(36, 36, 36)
-                        .addComponent(jMonthChooser1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addGap(24, 24, 24)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel1)
                             .addComponent(jTextFieldFecha1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(31, 31, 31)
-                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addComponent(jDayChooser2, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(11, 11, 11))
-                            .addGroup(jPanel3Layout.createSequentialGroup()
-                                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                                    .addComponent(jLabel2)
-                                    .addComponent(cbHora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                                .addGap(29, 29, 29)
-                                .addComponent(cmbServicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 120, Short.MAX_VALUE)
-                                .addComponent(jButton4)
-                                .addGap(39, 39, 39)))
-                        .addComponent(btnRegresar)))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 73, Short.MAX_VALUE)
+                        .addGap(32, 32, 32)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jLabel2)
+                            .addComponent(cbHora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGap(30, 30, 30)
+                        .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(cmbServicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jLabel3))
+                        .addGap(35, 35, 35)
+                        .addComponent(jCalendar1, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 30, Short.MAX_VALUE)
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButton4)
+                    .addComponent(btnRegresar))
+                .addGap(32, 32, 32)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
@@ -1762,9 +1588,7 @@ private int obtenerIdServicioFallback(String descripcion) {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -1777,53 +1601,33 @@ private int obtenerIdServicioFallback(String descripcion) {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // Verificar si hay fecha y hora seleccionadas
-        String fechaSeleccionada = jTextFieldFecha1.getText().trim();
-        String horaSeleccionada = (String) cbHora.getSelectedItem();
-
-        if (fechaSeleccionada.isEmpty() || horaSeleccionada == null) {
-            JOptionPane.showMessageDialog(this,
-                    "Debes seleccionar una fecha y hora para la cita.",
-                    "Datos incompletos",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        // Asignar fecha y hora a TODOS los servicios que no las tengan
         for (Object[] servicio : serviciosSeleccionados) {
-            // Si el servicio no tiene fecha específica, asignarle la actual
-            if (servicio.length < 4 || servicio[3] == null || ((String) servicio[3]).isEmpty()) {
-                Object[] servicioActualizado = new Object[5];
-                servicioActualizado[0] = servicio[0]; // imagen
-                servicioActualizado[1] = servicio[1]; // descripcion
-                servicioActualizado[2] = servicio[2]; // precio
-                servicioActualizado[3] = fechaSeleccionada; // fecha
-                servicioActualizado[4] = horaSeleccionada; // hora
+            String fecha = servicio.length > 3 ? (String) servicio[3] : "";
+            String hora = servicio.length > 4 ? (String) servicio[4] : "";
 
-                // Reemplazar el servicio en la lista
-                int index = serviciosSeleccionados.indexOf(servicio);
-                if (index != -1) {
-                    serviciosSeleccionados.set(index, servicioActualizado);
-                }
+            if (fecha.isEmpty() || hora.isEmpty()) {
+                JOptionPane.showMessageDialog(this,
+                        "ERROR: Hay servicios sin fecha/hora asignada.\n"
+                        + "Por favor, navega con el carrusel y asigna fecha/hora a cada servicio.",
+                        "Fechas/Horas incompletas",
+                        JOptionPane.ERROR_MESSAGE);
+                return;
             }
         }
 
-        // Guardar todo en sesión
-        SesionUsuario.setFechaCita(fechaSeleccionada);
-        SesionUsuario.setHoraCita(horaSeleccionada);
         SesionUsuario.setServiciosCita(serviciosSeleccionados);
 
-        // Calcular monto total
         double montoTotal = calcularMontoTotal(serviciosSeleccionados);
         SesionUsuario.setMontoTotalCita(montoTotal);
 
-        System.out.println("=== DATOS GUARDADOS PARA CITA ===");
-        System.out.println("Fecha general: " + fechaSeleccionada);
-        System.out.println("Hora general: " + horaSeleccionada);
-        System.out.println("Monto total: $" + montoTotal);
-        debugServiciosActuales();
+        System.out.println("=== LISTA FINAL DE CITAS ===");
+        for (int i = 0; i < serviciosSeleccionados.size(); i++) {
+            Object[] servicio = serviciosSeleccionados.get(i);
+            String fecha = (String) servicio[3];
+            String hora = (String) servicio[4];
+            System.out.println("Cita " + i + ": " + servicio[1] + " - " + fecha + " " + hora);
+        }
 
-        // Abrir ventana de confirmación
         NewJCitaConf confirmacionWindow = new NewJCitaConf();
         confirmacionWindow.setVisible(true);
         this.dispose();
@@ -1833,19 +1637,16 @@ private int obtenerIdServicioFallback(String descripcion) {
     private void cmbServiciosActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cmbServiciosActionPerformed
         String servicioSeleccionado = cmbServicios.getSelectedItem().toString();
 
-        // No hacer nada si es la opción por defecto
         if ("Seleccione un servicio".equals(servicioSeleccionado)) {
             return;
         }
 
-        // Guardar los servicios seleccionados actuales en SesionUsuario antes de abrir el catálogo
         SesionUsuario.setServiciosCita(serviciosSeleccionados);
         SesionUsuario.setFechaCita(jTextFieldFecha1.getText().trim());
         SesionUsuario.setHoraCita((String) cbHora.getSelectedItem());
 
         System.out.println("DEBUG - Guardando servicios antes de abrir catálogo: " + serviciosSeleccionados.size());
 
-        // Abrir la interfaz correspondiente según el servicio seleccionado
         try {
             switch (servicioSeleccionado) {
                 case "Uñas":
@@ -1862,23 +1663,18 @@ private int obtenerIdServicioFallback(String descripcion) {
                     break;
                 case "Tatuajes":
                 case "otros":
-                    // Pasar el constructor correcto para que pueda volver con servicios
                     ConexionBD conexionCatalogo = new ConexionBD("andynails");
                     NewJCatalogoGenerico catalogoGenerico = new NewJCatalogoGenerico(conexionCatalogo);
                     catalogoGenerico.setVisible(true);
-
-                    // NO cerrar ni ocultar esta ventana - dejar que el catálogo la use
-                    // cuando el catálogo cierre, se mostrará de nuevo automáticamente
-                    return; // Salir sin ocultar la ventana
+                    return;
 
                 default:
                     ConexionBD conexionDefault = new ConexionBD("andynails");
                     NewJCatalogoGenerico catalogoDefault = new NewJCatalogoGenerico(conexionDefault);
                     catalogoDefault.setVisible(true);
-                    return; // Salir sin ocultar la ventana
+                    return;
             }
 
-            // Ocultar esta ventana solo para catálogos específicos
             this.setVisible(false);
 
         } catch (Exception e) {
@@ -1889,8 +1685,8 @@ private int obtenerIdServicioFallback(String descripcion) {
                     JOptionPane.ERROR_MESSAGE);
         }
 
-        // Resetear el combo a la opción por defecto
         cmbServicios.setSelectedIndex(0);
+
     }//GEN-LAST:event_cmbServiciosActionPerformed
 
     private void cbHoraActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cbHoraActionPerformed
@@ -1899,16 +1695,21 @@ private int obtenerIdServicioFallback(String descripcion) {
         String hora = (String) cbHora.getSelectedItem();
 
         if (!fecha.isEmpty() && hora != null) {
-            // Verificar disponibilidad general
-            if (horaBloqueada(fecha, hora)) {
+            // CAMBIO AQUÍ: Solo verificar el servicio ACTUAL, no todos
+            String descripcionServicioActual = "";
+            if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
+                Object[] servicioActual = serviciosSeleccionados.get(indiceActual);
+                descripcionServicioActual = (String) servicioActual[1];
+            }
+
+            if (horaBloqueadaParaServicio(fecha, hora, descripcionServicioActual)) {
                 JOptionPane.showMessageDialog(this,
-                        "Esta hora no está disponible para uno o más servicios seleccionados.\n"
+                        "Esta hora no está disponible para el servicio: " + descripcionServicioActual + "\n"
                         + "Por favor seleccione otra hora.",
                         "Hora no disponible",
                         JOptionPane.WARNING_MESSAGE);
             }
 
-            // Verificar si la cliente ya tiene cita a esta hora
             if (clienteTieneCitaMismaHora(fecha, hora)) {
                 JOptionPane.showMessageDialog(this,
                         "Ya tienes una cita agendada para esta hora.\n"
@@ -1916,8 +1717,9 @@ private int obtenerIdServicioFallback(String descripcion) {
                         "Hora Ocupada",
                         JOptionPane.WARNING_MESSAGE);
             }
+            // Actualizar fecha/hora del servicio actual
+            actualizarFechaHoraServicioActual();
         }
-
     }//GEN-LAST:event_cbHoraActionPerformed
 
     private void jTextFieldFecha1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jTextFieldFecha1ActionPerformed
@@ -1986,14 +1788,11 @@ private int obtenerIdServicioFallback(String descripcion) {
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
-        // TODO add your handling code here:
-        // Guardar servicios seleccionados actuales en la sesión
         if (serviciosSeleccionados != null && !serviciosSeleccionados.isEmpty()) {
             SesionUsuario.setServiciosCita(serviciosSeleccionados);
             System.out.println("DEBUG - Servicios guardados en sesión al regresar: " + serviciosSeleccionados.size());
         }
 
-        // Guardar fecha y hora actuales si están seleccionadas
         String fecha = jTextFieldFecha1.getText().trim();
         String hora = (String) cbHora.getSelectedItem();
 
@@ -2005,20 +1804,15 @@ private int obtenerIdServicioFallback(String descripcion) {
             SesionUsuario.setHoraCita(hora);
         }
 
-        // Abrir la ventana anterior (Inicio o Mis Citas dependiendo del contexto)
         try {
-            // Verificar si hay usuario logueado
             if (SesionUsuario.sesionActiva() && SesionUsuario.getIdUsuario() > 0) {
-                // Si hay usuario logueado, abrir Mis Citas
                 NewJMiscitasCi misCitas = new NewJMiscitasCi();
                 misCitas.setVisible(true);
             } else {
-                // Si no hay usuario logueado, abrir Inicio
                 Inicio inicio = new Inicio();
                 inicio.setVisible(true);
             }
 
-            // Cerrar esta ventana
             this.dispose();
 
         } catch (Exception e) {
@@ -2062,10 +1856,6 @@ private int obtenerIdServicioFallback(String descripcion) {
             java.util.logging.Logger.getLogger(NewJAgenC.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-        //</editor-fold>
-
 
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(new Runnable() {
@@ -2083,10 +1873,11 @@ private int obtenerIdServicioFallback(String descripcion) {
     private javax.swing.JComboBox<String> cbHora;
     private javax.swing.JComboBox<String> cmbServicios;
     private javax.swing.JButton jButton4;
-    private com.toedter.calendar.JDayChooser jDayChooser2;
+    private com.toedter.calendar.JCalendar jCalendar1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel11;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JLabel jLabel4;
     private javax.swing.JLabel jLabel8;
     private javax.swing.JMenu jMenu1;
@@ -2113,7 +1904,6 @@ private int obtenerIdServicioFallback(String descripcion) {
     private javax.swing.JMenuItem jMenuItem6;
     private javax.swing.JMenuItem jMenuItem7;
     private javax.swing.JMenuItem jMenuItemCerrarSecion;
-    private com.toedter.calendar.JMonthChooser jMonthChooser1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
     private javax.swing.JPanel jPanel3;

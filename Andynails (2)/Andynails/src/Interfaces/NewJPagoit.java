@@ -158,96 +158,117 @@ public class NewJPagoit extends javax.swing.JFrame {
 
     // MÉTODO NUEVO PARA INSERTAR CITA DESPUÉS DEL PAGO
 private void insertarCitaYServicios(int idPago) {
-    String fecha = SesionUsuario.getFechaCita();
-    String hora = SesionUsuario.getHoraCita();
-    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
-
-    System.out.println("=== DEBUG INSERTAR CITA ===");
-    System.out.println("Fecha: " + fecha + ", Hora: " + hora);
-    System.out.println("Servicios a insertar:");
-
-    for (Object[] servicio : servicios) {
-        String descripcion = (String) servicio[1];
-        System.out.println(" - Descripción: " + descripcion);
-    }
-    System.out.println("===========================");
-
-    if (fecha == null || hora == null || servicios.isEmpty()) {
-        JOptionPane.showMessageDialog(this, "Error: No hay datos de cita guardados.");
+    java.util.Map<String, java.util.List<Object[]>> citasAgrupadas = SesionUsuario.getCitasAgrupadas();
+    
+    System.out.println("=== CREANDO CITAS DESDE NewJPagoit ===");
+    System.out.println("Número de citas a crear: " + citasAgrupadas.size());
+    
+    if (citasAgrupadas.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+                "Error: No hay citas válidas para agendar. " +
+                "Verifica que todos los servicios tengan fecha y hora asignadas.",
+                "Citas incompletas",
+                JOptionPane.ERROR_MESSAGE);
         return;
     }
+    
+    int citasCreadas = 0;
+    
+    for (java.util.Map.Entry<String, java.util.List<Object[]>> entrada : citasAgrupadas.entrySet()) {
+        String[] partes = entrada.getKey().split("\\|");
+        String fecha = partes[0];
+        String hora = partes[1];
+        java.util.List<Object[]> serviciosCita = entrada.getValue();
+        
+        System.out.println("Creando cita para " + fecha + " " + hora 
+                + " con " + serviciosCita.size() + " servicios");
+        
+        if (crearCitaIndividual(fecha, hora, serviciosCita, idPago)) {
+            citasCreadas++;
+        }
+    }
+    
+    if (citasCreadas > 0) {
+        JOptionPane.showMessageDialog(this,
+                "¡" + citasCreadas + " cita(s) agendada(s) exitosamente!",
+                "Citas Confirmadas",
+                JOptionPane.INFORMATION_MESSAGE);
+        
+        // Limpiar datos de la sesión
+        SesionUsuario.limpiarDatosCita();
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "No se pudieron crear las citas.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+}
 
+private boolean crearCitaIndividual(String fecha, String hora, 
+                                   java.util.List<Object[]> servicios, int idPago) {
     java.sql.Connection conn = null;
-    java.sql.PreparedStatement psCita = null;
-    java.sql.PreparedStatement psServicios = null;
-    java.sql.ResultSet rsCita = null;
-
+    
     try {
         conn = ConexionBD.getConnection();
         conn.setAutoCommit(false);
-
+        
         // 1. INSERTAR CITA
-        String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) VALUES (?, ?, ?, ?, ?)";
-        psCita = conn.prepareStatement(sqlCita, java.sql.Statement.RETURN_GENERATED_KEYS);
-
+        String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) " +
+                        "VALUES (?, ?, ?, ?, ?)";
+        java.sql.PreparedStatement psCita = conn.prepareStatement(sqlCita, 
+                java.sql.Statement.RETURN_GENERATED_KEYS);
+        
         psCita.setDate(1, java.sql.Date.valueOf(fecha));
         psCita.setTime(2, java.sql.Time.valueOf(hora + ":00"));
         psCita.setString(3, "Confirmada");
         psCita.setInt(4, SesionUsuario.getIdUsuario());
         psCita.setInt(5, idPago);
-
+        
         psCita.executeUpdate();
-
-        // OBTENER ID DE LA CITA
-        rsCita = psCita.getGeneratedKeys();
+        java.sql.ResultSet rs = psCita.getGeneratedKeys();
         int idCita = 0;
-        if (rsCita.next()) {
-            idCita = rsCita.getInt(1);
-            System.out.println("Cita creada con ID: " + idCita);
-        } else {
-            throw new SQLException("No se pudo obtener el ID de la cita creada");
+        if (rs.next()) {
+            idCita = rs.getInt(1);
         }
-
-        // 2. INSERTAR SERVICIOS DE LA CITA - CORREGIDO CON INSERT IGNORE
-        String sqlServicios = "INSERT IGNORE INTO cita_has_servicios (idCita, idServicios, Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
-        psServicios = conn.prepareStatement(sqlServicios);
-
-        int serviciosInsertados = 0;
+        
+        // 2. INSERTAR SERVICIOS DE ESTA CITA
+        String sqlServicios = "INSERT INTO cita_has_servicios (idCita, idServicios, " +
+                             "Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
+        java.sql.PreparedStatement psServicios = conn.prepareStatement(sqlServicios);
+        
+        double montoTotal = SesionUsuario.getMontoTotalCita();
+        
         for (Object[] servicio : servicios) {
             String descripcion = (String) servicio[1];
             int idServicio = obtenerIdServicioPorDescripcion(descripcion);
-
+            
             if (idServicio > 0) {
+                double precio = 0.0;
+                if (servicio.length > 2 && servicio[2] != null) {
+                    String precioStr = servicio[2].toString().replace("$", "").trim();
+                    try {
+                        precio = Double.parseDouble(precioStr);
+                    } catch (NumberFormatException e) {
+                        precio = montoTotal / servicios.size(); // Dividir el total entre servicios
+                    }
+                }
+                
                 psServicios.setInt(1, idCita);
                 psServicios.setInt(2, idServicio);
                 psServicios.setInt(3, idPago);
-                psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(SesionUsuario.getMontoTotalCita()));
+                psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(precio));
                 psServicios.addBatch();
-                serviciosInsertados++;
-                System.out.println(" Insertando servicio: " + descripcion + " -> ID: " + idServicio);
-            } else {
-                System.out.println(" No se encontró ID para servicio: " + descripcion);
             }
         }
-
-        if (serviciosInsertados > 0) {
-            int[] resultados = psServicios.executeBatch();
-            System.out.println(" Servicios insertados: " + resultados.length);
-        } else {
-            System.out.println(" No se insertaron servicios");
-        }
-
+        
+        psServicios.executeBatch();
         conn.commit();
-
-        JOptionPane.showMessageDialog(this, "¡Cita agendada exitosamente!");
-
-        // Limpiar datos de la sesión
-        SesionUsuario.limpiarDatosCita();
-
-    } catch (java.sql.SQLException e) {
+        
+        System.out.println("✓ Cita " + idCita + " creada para " + fecha + " " + hora);
+        return true;
+        
+    } catch (Exception e) {
         e.printStackTrace();
-        JOptionPane.showMessageDialog(this, "Error al agendar cita: " + e.getMessage());
-
         try {
             if (conn != null) {
                 conn.rollback();
@@ -255,28 +276,18 @@ private void insertarCitaYServicios(int idPago) {
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+        return false;
     } finally {
-        // Cerrar todos los recursos
         try {
-            if (rsCita != null) {
-                rsCita.close();
-            }
-            if (psCita != null) {
-                psCita.close();
-            }
-            if (psServicios != null) {
-                psServicios.close();
-            }
             if (conn != null) {
                 conn.setAutoCommit(true);
                 conn.close();
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 }
-
 // Método auxiliar para obtener ID de servicio - CORREGIDO
     private int obtenerIdServicioPorDescripcion(String descripcion) {
         System.out.println("Buscando ID para: " + descripcion);
@@ -680,31 +691,32 @@ private void insertarCitaYServicios(int idPago) {
         return;
     }
 
-    // VERIFICAR DATOS DE CITA ANTES DE PROCESAR PAGO
-    String fechaCita = SesionUsuario.getFechaCita();
-    String horaCita = SesionUsuario.getHoraCita();
+    // VERIFICAR DATOS DE CITAS MÚLTIPLES
     java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
     
     System.out.println("\n=== VERIFICACION ANTES DE PAGO ===");
-    System.out.println("Fecha en sesion: '" + (fechaCita != null ? fechaCita : "null") + "'");
-    System.out.println("Hora en sesion: '" + (horaCita != null ? horaCita : "null") + "'");
-    System.out.println("Servicios en sesion: " + (servicios != null ? servicios.size() : "null"));
-    System.out.println("Monto total: $" + SesionUsuario.getMontoTotalCita());
-    System.out.println("=================================\n");
+    System.out.println("Servicios en sesión: " + (servicios != null ? servicios.size() : "null"));
     
-    // Validacion exhaustiva de datos de cita
+    // Validación exhaustiva
     StringBuilder errores = new StringBuilder();
-    
-    if (fechaCita == null || fechaCita.trim().isEmpty()) {
-        errores.append("• No se ha programado fecha para la cita\n");
-    }
-    
-    if (horaCita == null || horaCita.trim().isEmpty()) {
-        errores.append("• No se ha programado hora para la cita\n");
-    }
+    int serviciosSinFechaHora = 0;
     
     if (servicios == null || servicios.isEmpty()) {
         errores.append("• No hay servicios seleccionados\n");
+    } else {
+        for (int i = 0; i < servicios.size(); i++) {
+            Object[] servicio = servicios.get(i);
+            String descripcion = (String) servicio[1];
+            String fecha = servicio.length > 3 ? (String) servicio[3] : "";
+            String hora = servicio.length > 4 ? (String) servicio[4] : "";
+            
+            if (fecha == null || fecha.trim().isEmpty() || 
+                hora == null || hora.trim().isEmpty()) {
+                serviciosSinFechaHora++;
+                errores.append("• Servicio '").append(descripcion)
+                       .append("' no tiene fecha/hora asignada\n");
+            }
+        }
     }
     
     double montoTotal = SesionUsuario.getMontoTotalCita();
@@ -712,19 +724,55 @@ private void insertarCitaYServicios(int idPago) {
         errores.append("• El monto total debe ser mayor a cero\n");
     }
     
-    // Si hay errores, mostrar mensaje y cancelar
+    // Si hay errores, mostrar mensaje detallado
     if (errores.length() > 0) {
+        String mensaje = "Datos de cita incompletos:\n\n" + errores.toString();
+        if (serviciosSinFechaHora > 0) {
+            mensaje += "\nSolución:\n";
+            mensaje += "1. Regresa a 'Agendar Cita'\n";
+            mensaje += "2. Navega con las flechas del carrusel\n";
+            mensaje += "3. Asigna fecha/hora a cada servicio\n";
+            mensaje += "4. Vuelve a intentar el pago";
+        }
+        
         JOptionPane.showMessageDialog(this, 
-            "Datos de cita incompletos:\n\n" + errores.toString() + 
-            "\nPor favor regrese a 'Agendar Cita' para completar la informacion.",
-            "Cita incompleta", 
+            mensaje,
+            "Citas incompletas", 
             JOptionPane.ERROR_MESSAGE);
         return;
     }
 
-    // Obtener el monto total
-    montoTotal = SesionUsuario.getMontoTotalCita();
+    // Si llegamos aquí, todos los servicios tienen fecha/hora
+    System.out.println("✓ Todos los servicios tienen fecha/hora asignada");
     
+    // Obtener citas agrupadas
+    java.util.Map<String, java.util.List<Object[]>> citasAgrupadas = SesionUsuario.getCitasAgrupadas();
+    System.out.println("Citas a crear: " + citasAgrupadas.size());
+    
+    // Mostrar resumen de citas
+    StringBuilder resumen = new StringBuilder();
+    resumen.append("Resumen de citas a crear:\n\n");
+    int contador = 1;
+    for (String clave : citasAgrupadas.keySet()) {
+        String[] partes = clave.split("\\|");
+        String fecha = partes[0];
+        String hora = partes[1];
+        java.util.List<Object[]> serviciosCita = citasAgrupadas.get(clave);
+        
+        resumen.append("Cita ").append(contador).append(":\n");
+        resumen.append("  Fecha: ").append(fecha).append("\n");
+        resumen.append("  Hora: ").append(hora).append("\n");
+        resumen.append("  Servicios: ").append(serviciosCita.size()).append("\n");
+        for (Object[] servicio : serviciosCita) {
+            resumen.append("    - ").append((String) servicio[1]).append("\n"); // CORRECCIÓN AQUÍ
+        }
+        resumen.append("\n");
+        contador++;
+    }
+    
+    System.out.println(resumen.toString());
+    
+    // Continuar con el proceso de pago...
     String carpetaDestino = "comprobantes";
     File carpeta = new File(carpetaDestino);
     if (!carpeta.exists()) {
@@ -735,7 +783,7 @@ private void insertarCitaYServicios(int idPago) {
     }
 
     try {
-        // Generar nombre unico para el archivo
+        // Generar nombre único para el archivo
         String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String nombreArchivo = usuarioActual() + "_" + timestamp + "_" + archivoSeleccionado.getName();
         
@@ -747,10 +795,12 @@ private void insertarCitaYServicios(int idPago) {
 
         // INSERTAR PAGO Y OBTENER EL ID GENERADO
         try (java.sql.Connection conn = ConexionBD.getConnection()) {
-            String sql = "INSERT INTO pago (idMetodo_Pago, fecha_pago, Estado_pago, Comprobante, Monto, idUsuarios) VALUES (?, ?, ?, ?, ?, ?)";
-            java.sql.PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS);
+            String sql = "INSERT INTO pago (idMetodo_Pago, fecha_pago, Estado_pago, Comprobante, Monto, idUsuarios) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
+            java.sql.PreparedStatement ps = conn.prepareStatement(sql, 
+                    java.sql.Statement.RETURN_GENERATED_KEYS);
 
-            ps.setInt(1, 4); // ID metodo de pago (Transferencia bancaria)
+            ps.setInt(1, 4); // ID método de pago (Transferencia bancaria)
             ps.setDate(2, new java.sql.Date(System.currentTimeMillis()));
             ps.setString(3, "Pendiente");
             ps.setString(4, nombreArchivo);
@@ -764,26 +814,27 @@ private void insertarCitaYServicios(int idPago) {
                 throw new java.sql.SQLException("No se pudo insertar el pago en la base de datos");
             }
 
-            // OBTENER EL ID DEL PAGO RECIEN INSERTADO
+            // OBTENER EL ID DEL PAGO RECIÉN INSERTADO
             java.sql.ResultSet generatedKeys = ps.getGeneratedKeys();
             int idPago = 0;
             if (generatedKeys.next()) {
                 idPago = generatedKeys.getInt(1);
                 
-                // GUARDAR EL ID DEL PAGO EN LA SESION
+                // GUARDAR EL ID DEL PAGO EN LA SESIÓN
                 SesionUsuario.setIdPagoActual(idPago);
                 
                 System.out.println("Pago creado con ID: " + idPago);
 
-                // Mostrar confirmacion al usuario
+                // Mostrar confirmación al usuario
                 JOptionPane.showMessageDialog(this, 
                     "Comprobante enviado correctamente.\n\n" +
                     "Archivo: " + nombreArchivo + "\n" +
                     "Monto: $" + String.format("%.2f", montoTotal) + "\n" +
-                    "Procesando cita...",
+                    "Creando " + citasAgrupadas.size() + " cita(s)...",
                     "Comprobante Aceptado", 
                     JOptionPane.INFORMATION_MESSAGE);
 
+                // Crear las citas
                 insertarCitaYServicios(idPago);
                 
 
@@ -819,6 +870,7 @@ private void insertarCitaYServicios(int idPago) {
             "Error", 
             JOptionPane.ERROR_MESSAGE);
     }
+
     }//GEN-LAST:event_btnEnviarComprobanteActionPerformed
 
     private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
