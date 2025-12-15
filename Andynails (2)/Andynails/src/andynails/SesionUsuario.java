@@ -111,7 +111,13 @@ public class SesionUsuario {
         // NO limpiar serviciosCita, fechaCita, horaCita aquí
         // Solo limpiar montoTotalCita
         montoTotalCita = 0.0;
-        
+         System.out.println("=== LIMPIANDO DATOS DE CITA EN SESIÓN ===");
+        serviciosCita = new java.util.ArrayList<>();
+        fechaCita = null;
+        horaCita = null;
+        montoTotalCita = 0;
+        System.out.println("Datos de cita limpiados de la sesión");
+   
         System.out.println("DEBUG - Datos parciales de cita limpiados (solo monto)");
     }
     
