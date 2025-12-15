@@ -41,7 +41,8 @@ public class ReportePagos {
     
     private static final DecimalFormat df = new DecimalFormat("#,##0.00");
 
-    public static void generarReportePagos() {
+    // MÉTODO MODIFICADO: Ahora acepta ruta como parámetro
+    public static void generarReportePagos(String rutaDestino) {
         ConexionBD conexion = new ConexionBD();
         Connection conn = conexion.conectar();
 
@@ -52,19 +53,19 @@ public class ReportePagos {
             Map<String, Double> ingresosPorMes = obtenerIngresosPorMes(conn);
             Map<String, Integer> pagosPorEstado = obtenerPagosPorEstado(conn);
 
-            //  CREAR GRÁFICOS
+            // CREAR GRÁFICOS
             String rutaGraficoBarras = crearGraficoBarras(ingresosPorMes);
             String rutaGraficoPastel = crearGraficoPastel(pagosPorEstado);
 
-            //  CREAR PDF PROFESIONAL
-            crearPDFCompleto(estadisticas, pagosRecientes, ingresosPorMes, pagosPorEstado, 
-                           rutaGraficoBarras, rutaGraficoPastel);
+            // CREAR PDF PROFESIONAL
+            String rutaPDF = crearPDFCompleto(estadisticas, pagosRecientes, ingresosPorMes, pagosPorEstado, 
+                           rutaGraficoBarras, rutaGraficoPastel, rutaDestino);
 
             // LIMPIAR ARCHIVOS TEMPORALES
             new File(rutaGraficoBarras).delete();
             new File(rutaGraficoPastel).delete();
 
-            System.out.println(" Reporte de pagos generado exitosamente!");
+            System.out.println(" Reporte de pagos generado exitosamente en: " + rutaPDF);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -72,7 +73,68 @@ public class ReportePagos {
         }
     }
 
-    //  OBTENER ESTADÍSTICAS GENERALES
+    // MÉTODO MODIFICADO: Ahora acepta rutaDestino como parámetro y retorna la ruta generada
+    private static String crearPDFCompleto(Map<String, Object> estadisticas, 
+                                       List<Map<String, Object>> pagosRecientes,
+                                       Map<String, Double> ingresosPorMes,
+                                       Map<String, Integer> pagosPorEstado,
+                                       String rutaGraficoBarras,
+                                       String rutaGraficoPastel,
+                                       String rutaDestino) throws Exception {
+        
+        Document document = new Document();
+        
+        // Definir ruta del PDF
+        String nombreArchivo = "Reporte_Pagos_AndyNails_" + 
+                       LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+        
+        String rutaPDF;
+        if (rutaDestino != null && !rutaDestino.trim().isEmpty()) {
+            // Asegurar que la ruta termine con separador de directorio
+            if (!rutaDestino.endsWith(File.separator)) {
+                rutaDestino += File.separator;
+            }
+            rutaPDF = rutaDestino + nombreArchivo;
+        } else {
+            // Ruta por defecto si no se especifica
+            rutaPDF = nombreArchivo;
+        }
+        
+        PdfWriter.getInstance(document, new FileOutputStream(rutaPDF));
+        document.open();
+
+        // FUENTES
+        com.itextpdf.text.Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, 
+            new com.itextpdf.text.BaseColor(COLOR_PRINCIPAL.getRGB()));
+        com.itextpdf.text.Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
+        com.itextpdf.text.Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
+        com.itextpdf.text.Font destacadoFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+
+        // ENCABEZADO
+        agregarEncabezado(document, tituloFont, subtituloFont);
+
+        // RESUMEN EJECUTIVO
+        agregarResumenEjecutivo(document, estadisticas, destacadoFont, normalFont);
+
+        // GRÁFICOS
+        agregarGraficos(document, rutaGraficoBarras, rutaGraficoPastel, destacadoFont);
+
+        // PAGOS RECIENTES
+        agregarPagosRecientes(document, pagosRecientes, destacadoFont, normalFont);
+
+        // ANÁLISIS MENSUAL
+        agregarAnalisisMensual(document, ingresosPorMes, destacadoFont, normalFont);
+
+        // PIE DE PÁGINA
+        agregarPiePagina(document);
+
+        document.close();
+        System.out.println(" PDF generado: " + rutaPDF);
+        
+        return rutaPDF;
+    }
+
+    // Los demás métodos permanecen iguales hasta agregarEncabezado...
     private static Map<String, Object> obtenerEstadisticasGenerales(Connection conn) throws Exception {
         Map<String, Object> stats = new HashMap<>();
 
@@ -104,7 +166,6 @@ public class ReportePagos {
         return stats;
     }
 
-    //  OBTENER PAGOS RECIENTES
     private static List<Map<String, Object>> obtenerPagosRecientes(Connection conn) throws Exception {
         List<Map<String, Object>> pagos = new ArrayList<>();
 
@@ -137,7 +198,6 @@ public class ReportePagos {
         return pagos;
     }
 
-    //  OBTENER INGRESOS POR MES
     private static Map<String, Double> obtenerIngresosPorMes(Connection conn) throws Exception {
         Map<String, Double> ingresos = new HashMap<>();
 
@@ -160,7 +220,6 @@ public class ReportePagos {
         return ingresos;
     }
 
-    //  OBTENER PAGOS POR ESTADO
     private static Map<String, Integer> obtenerPagosPorEstado(Connection conn) throws Exception {
         Map<String, Integer> estados = new HashMap<>();
 
@@ -180,11 +239,9 @@ public class ReportePagos {
         return estados;
     }
 
-    //  CREAR GRÁFICO DE BARRAS - INGRESOS POR MES
     private static String crearGraficoBarras(Map<String, Double> ingresosPorMes) throws Exception {
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
 
-        // Ordenar meses y agregar al dataset
         ingresosPorMes.entrySet().stream()
             .sorted(Map.Entry.<String, Double>comparingByKey().reversed())
             .forEach(entry -> {
@@ -204,7 +261,6 @@ public class ReportePagos {
             false
         );
 
-        // PERSONALIZAR GRÁFICO
         chart.setBackgroundPaint(Color.WHITE);
         chart.setBorderVisible(false);
 
@@ -213,7 +269,6 @@ public class ReportePagos {
         plot.setOutlineVisible(false);
         plot.getRenderer().setSeriesPaint(0, COLOR_PRINCIPAL);
 
-        // Personalizar ejes
         plot.getDomainAxis().setLabelFont(new Font("SansSerif", Font.BOLD, 12));
         plot.getRangeAxis().setLabelFont(new Font("SansSerif", Font.BOLD, 12));
 
@@ -222,7 +277,6 @@ public class ReportePagos {
         return rutaImagen;
     }
 
-    // CREAR GRÁFICO DE PASTEL - ESTADOS DE PAGO
     private static String crearGraficoPastel(Map<String, Integer> pagosPorEstado) throws Exception {
         org.jfree.data.general.DefaultPieDataset dataset = new org.jfree.data.general.DefaultPieDataset();
 
@@ -238,7 +292,6 @@ public class ReportePagos {
             false
         );
 
-        //  PERSONALIZAR GRÁFICO
         chart.setBackgroundPaint(Color.WHITE);
         chart.setBorderVisible(false);
 
@@ -247,7 +300,6 @@ public class ReportePagos {
         plot.setOutlineVisible(false);
         plot.setLabelFont(new Font("SansSerif", Font.BOLD, 11));
 
-        // Asignar colores según estado
         plot.setSectionPaint("Validado (" + pagosPorEstado.getOrDefault("Validado", 0) + ")", COLOR_EXITOSO);
         plot.setSectionPaint("Pendiente (" + pagosPorEstado.getOrDefault("Pendiente", 0) + ")", COLOR_PENDIENTE);
         plot.setSectionPaint("Rechazado (" + pagosPorEstado.getOrDefault("Rechazado", 0) + ")", COLOR_RECHAZADO);
@@ -257,51 +309,6 @@ public class ReportePagos {
         return rutaImagen;
     }
 
-    //  CREAR PDF COMPLETO
-    private static void crearPDFCompleto(Map<String, Object> estadisticas, 
-                                       List<Map<String, Object>> pagosRecientes,
-                                       Map<String, Double> ingresosPorMes,
-                                       Map<String, Integer> pagosPorEstado,
-                                       String rutaGraficoBarras,
-                                       String rutaGraficoPastel) throws Exception {
-        
-        Document document = new Document();
-        String rutaPDF = "Reporte_Pagos_AndyNails_" + 
-                       LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
-        
-        PdfWriter.getInstance(document, new FileOutputStream(rutaPDF));
-        document.open();
-
-        //  FUENTES
-        com.itextpdf.text.Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, 
-            new com.itextpdf.text.BaseColor(COLOR_PRINCIPAL.getRGB()));
-        com.itextpdf.text.Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
-        com.itextpdf.text.Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
-        com.itextpdf.text.Font destacadoFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
-
-        //  ENCABEZADO
-        agregarEncabezado(document, tituloFont, subtituloFont);
-
-        //  RESUMEN EJECUTIVO
-        agregarResumenEjecutivo(document, estadisticas, destacadoFont, normalFont);
-
-        // GRÁFICOS
-        agregarGraficos(document, rutaGraficoBarras, rutaGraficoPastel, destacadoFont);
-
-        //  PAGOS RECIENTES
-        agregarPagosRecientes(document, pagosRecientes, destacadoFont, normalFont);
-
-        //  ANÁLISIS MENSUAL
-        agregarAnalisisMensual(document, ingresosPorMes, destacadoFont, normalFont);
-
-        //  PIE DE PÁGINA
-        agregarPiePagina(document);
-
-        document.close();
-        System.out.println(" PDF generado: " + rutaPDF);
-    }
-
-    //  ENCABEZADO DEL REPORTE
     private static void agregarEncabezado(Document document, 
                                         com.itextpdf.text.Font tituloFont,
                                         com.itextpdf.text.Font subtituloFont) throws Exception {
@@ -325,7 +332,6 @@ public class ReportePagos {
         document.add(fecha);
     }
 
-    //  RESUMEN EJECUTIVO
     private static void agregarResumenEjecutivo(Document document, 
                                               Map<String, Object> estadisticas,
                                               com.itextpdf.text.Font destacadoFont,
@@ -352,13 +358,11 @@ public class ReportePagos {
         document.add(contenido);
     }
 
-    //  AGREGAR GRÁFICOS
     private static void agregarGraficos(Document document, 
                                       String rutaGraficoBarras, 
                                       String rutaGraficoPastel,
                                       com.itextpdf.text.Font destacadoFont) throws Exception {
         
-        // Gráfico de barras - Ingresos mensuales
         Paragraph tituloBarras = new Paragraph("EVOLUCIÓN DE INGRESOS MENSUALES", destacadoFont);
         tituloBarras.setAlignment(Element.ALIGN_CENTER);
         tituloBarras.setSpacingAfter(10);
@@ -371,7 +375,6 @@ public class ReportePagos {
 
         document.add(new Paragraph(" "));
 
-        // Gráfico de pastel - Estados de pago
         Paragraph tituloPastel = new Paragraph("DISTRIBUCIÓN POR ESTADO DE PAGO", destacadoFont);
         tituloPastel.setAlignment(Element.ALIGN_CENTER);
         tituloPastel.setSpacingAfter(10);
@@ -385,7 +388,6 @@ public class ReportePagos {
         document.add(new Paragraph(" "));
     }
 
-    //  PAGOS RECIENTES
     private static void agregarPagosRecientes(Document document, 
                                             List<Map<String, Object>> pagosRecientes,
                                             com.itextpdf.text.Font destacadoFont,
@@ -399,21 +401,18 @@ public class ReportePagos {
         tabla.setWidthPercentage(100);
         tabla.setSpacingBefore(10);
 
-        // Encabezados
         agregarCeldaTabla(tabla, "ID PAGO", true, COLOR_PRINCIPAL);
         agregarCeldaTabla(tabla, "CLIENTE", true, COLOR_PRINCIPAL);
         agregarCeldaTabla(tabla, "MONTO", true, COLOR_PRINCIPAL);
         agregarCeldaTabla(tabla, "ESTADO", true, COLOR_PRINCIPAL);
         agregarCeldaTabla(tabla, "FECHA", true, COLOR_PRINCIPAL);
 
-        // Datos
         SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
         for (Map<String, Object> pago : pagosRecientes) {
             agregarCeldaTabla(tabla, pago.get("id").toString(), false, null);
             agregarCeldaTabla(tabla, (String) pago.getOrDefault("cliente", "N/A"), false, null);
             agregarCeldaTabla(tabla, "$" + df.format(pago.get("monto")), false, null);
             
-            // Color según estado
             String estado = (String) pago.get("estado");
             Color colorEstado = estado.equals("Validado") ? COLOR_EXITOSO : 
                                estado.equals("Pendiente") ? COLOR_PENDIENTE : COLOR_RECHAZADO;
@@ -428,7 +427,6 @@ public class ReportePagos {
         document.add(new Paragraph(" "));
     }
 
-    //  ANÁLISIS MENSUAL
     private static void agregarAnalisisMensual(Document document, 
                                              Map<String, Double> ingresosPorMes,
                                              com.itextpdf.text.Font destacadoFont,
@@ -458,7 +456,6 @@ public class ReportePagos {
         contenido.setSpacingAfter(10);
         document.add(contenido);
 
-        // Tabla de ingresos mensuales
         PdfPTable tablaMeses = new PdfPTable(2);
         tablaMeses.setWidthPercentage(60);
         tablaMeses.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -478,7 +475,6 @@ public class ReportePagos {
         document.add(tablaMeses);
     }
 
-    //  PIE DE PÁGINA
     private static void agregarPiePagina(Document document) throws Exception {
         document.add(new Paragraph(" "));
         Paragraph pie = new Paragraph(
@@ -488,7 +484,6 @@ public class ReportePagos {
         document.add(pie);
     }
 
-    //  MÉTODO AUXILIAR PARA CELDAS DE TABLA
     private static void agregarCeldaTabla(PdfPTable tabla, String texto, boolean isHeader, Color color) {
         PdfPCell celda = new PdfPCell(new Phrase(texto));
         celda.setHorizontalAlignment(Element.ALIGN_CENTER);
@@ -508,8 +503,20 @@ public class ReportePagos {
         tabla.addCell(celda);
     }
 
-    //  MÉTODO PRINCIPAL
+    // MÉTODO PRINCIPAL ACTUALIZADO
     public static void main(String[] args) {
-        generarReportePagos();
+        // Ejemplo de uso con diferentes rutas
+        if (args.length > 0) {
+            // Si se pasa un argumento, usarlo como ruta
+            generarReportePagos(args[0]);
+        } else {
+            // Si no se especifica ruta, usar el directorio actual
+            generarReportePagos("");
+        }
+    }
+    
+    // MÉTODO SOBRECARGADO PARA MANTENER COMPATIBILIDAD
+    public static void generarReportePagos() {
+        generarReportePagos(""); // Usa ruta por defecto
     }
 }

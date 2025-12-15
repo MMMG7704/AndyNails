@@ -33,7 +33,8 @@ public class ReporteEstadistico {
     private static final Color COLOR_SECUNDARIO = new Color(255, 182, 193); // Rosa
     private static final Color COLOR_TERCIARIO = new Color(255, 215, 0); // Dorado
     
-    public static void generarPDF() {
+    // MÉTODO MODIFICADO: Ahora acepta ruta como parámetro
+    public static void generarReporteEstadistico(String rutaDestino) {
         ConexionBD conexion = new ConexionBD();
         Connection conn = conexion.conectar();
 
@@ -99,123 +100,8 @@ public class ReporteEstadistico {
             String rutaImagen = "grafico_estadistico_temp.png";
             ChartUtilities.saveChartAsPNG(new File(rutaImagen), chart, 650, 450);
 
-            //  CREAR PDF PROFESIONAL
-            Document document = new Document();
-            String rutaPDF = "Reporte_Estadistico_AndyNails_" + 
-                           LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
-            
-            PdfWriter.getInstance(document, new FileOutputStream(rutaPDF));
-            document.open();
-
-            com.itextpdf.text.Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, 
-                new com.itextpdf.text.BaseColor(COLOR_PRINCIPAL.getRGB()));
-            com.itextpdf.text.Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA, 12, 
-                com.itextpdf.text.BaseColor.GRAY);
-            com.itextpdf.text.Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
-            com.itextpdf.text.Font destacadoFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
-
-            // Título principal
-            Paragraph titulo = new Paragraph("REPORTE ESTADÍSTICO - ANDYNAILS", tituloFont);
-            titulo.setAlignment(Element.ALIGN_CENTER);
-            titulo.setSpacingAfter(20);
-            document.add(titulo);
-
-            // Información de la empresa
-            Paragraph infoEmpresa = new Paragraph("AndyNails Studio - Sistema de Gestión de Citas", subtituloFont);
-            infoEmpresa.setAlignment(Element.ALIGN_CENTER);
-            infoEmpresa.setSpacingAfter(5);
-            document.add(infoEmpresa);
-
-            // Fecha de generación
-            String fechaGeneracion = LocalDateTime.now().format(
-                DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy 'a las' HH:mm"));
-            Paragraph fecha = new Paragraph("Generado el: " + fechaGeneracion, subtituloFont);
-            fecha.setAlignment(Element.ALIGN_CENTER);
-            fecha.setSpacingAfter(20);
-            document.add(fecha);
-
-            //  RESUMEN EJECUTIVO
-            Paragraph resumenTitulo = new Paragraph("RESUMEN EJECUTIVO", destacadoFont);
-            resumenTitulo.setSpacingAfter(10);
-            document.add(resumenTitulo);
-
-            Paragraph resumen = new Paragraph(
-                "Total de citas analizadas: " + totalCitas + "\n" +
-                "Servicios monitoreados: " + datos.size() + "\n" +
-                "Período: Datos históricos completos", normalFont);
-            resumen.setSpacingAfter(20);
-            document.add(resumen);
-
-            // 🔹 GRÁFICO
-            Paragraph graficoTitulo = new Paragraph("DISTRIBUCIÓN DE SERVICIOS MÁS SOLICITADOS", destacadoFont);
-            graficoTitulo.setAlignment(Element.ALIGN_CENTER);
-            graficoTitulo.setSpacingAfter(15);
-            document.add(graficoTitulo);
-
-            Image grafico = Image.getInstance(rutaImagen);
-            grafico.setAlignment(Element.ALIGN_CENTER);
-            grafico.scaleToFit(500, 350);
-            document.add(grafico);
-
-            document.add(new Paragraph(" "));
-
-            //  TABLA DETALLADA
-            Paragraph tablaTitulo = new Paragraph("DETALLE POR SERVICIO", destacadoFont);
-            tablaTitulo.setSpacingAfter(10);
-            document.add(tablaTitulo);
-
-            // Crear tabla
-            PdfPTable tabla = new PdfPTable(3);
-            tabla.setWidthPercentage(100);
-            tabla.setSpacingBefore(10);
-            tabla.setSpacingAfter(20);
-
-            // Encabezados de tabla
-            agregarCeldaTabla(tabla, "SERVICIO", true, COLOR_PRINCIPAL);
-            agregarCeldaTabla(tabla, "CANTIDAD", true, COLOR_PRINCIPAL);
-            agregarCeldaTabla(tabla, "PORCENTAJE", true, COLOR_PRINCIPAL);
-
-            // Datos de la tabla
-            for (Map.Entry<String, Integer> entry : datos.entrySet()) {
-                String servicio = entry.getKey();
-                int cantidad = entry.getValue();
-                double porcentaje = totalCitas > 0 ? (cantidad * 100.0 / totalCitas) : 0;
-                
-                agregarCeldaTabla(tabla, servicio, false, null);
-                agregarCeldaTabla(tabla, String.valueOf(cantidad), false, null);
-                agregarCeldaTabla(tabla, String.format("%.1f%%", porcentaje), false, null);
-            }
-
-            document.add(tabla);
-
-            // ANÁLISIS Y OBSERVACIONES
-            Paragraph analisisTitulo = new Paragraph("ANÁLISIS Y OBSERVACIONES", destacadoFont);
-            analisisTitulo.setSpacingAfter(10);
-            document.add(analisisTitulo);
-
-            // Encontrar servicio más popular
-            String servicioMasPopular = datos.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .map(Map.Entry::getKey)
-                .orElse("No disponible");
-
-            Paragraph analisis = new Paragraph(
-                "• El servicio más solicitado es: " + servicioMasPopular + "\n" +
-                "• Este reporte ayuda a identificar tendencias de preferencia de los clientes.\n" +
-                "• Los datos pueden utilizarse para optimizar inventario y capacitación.\n" +
-                "• Se recomienda revisar periódicamente para identificar cambios en las preferencias.",
-                normalFont);
-            analisis.setSpacingAfter(20);
-            document.add(analisis);
-
-            // PIE DE PÁGINA
-            Paragraph piePagina = new Paragraph(
-                "--- Reporte generado automáticamente por AndyNails System ---", 
-                FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9, com.itextpdf.text.BaseColor.GRAY));
-            piePagina.setAlignment(Element.ALIGN_CENTER);
-            document.add(piePagina);
-
-            document.close();
+            // CREAR PDF PROFESIONAL
+            String rutaPDF = crearPDFProfesional(datos, totalCitas, rutaImagen, rutaDestino);
 
             // Limpiar archivo temporal
             new File(rutaImagen).delete();
@@ -228,6 +114,143 @@ public class ReporteEstadistico {
             e.printStackTrace();
             System.err.println(" Error al generar el reporte: " + e.getMessage());
         }
+    }
+
+    // MÉTODO MODIFICADO: Crea PDF profesional con ruta personalizada
+    private static String crearPDFProfesional(Map<String, Integer> datos, int totalCitas, 
+                                             String rutaImagen, String rutaDestino) throws Exception {
+        Document document = new Document();
+        
+        // Definir ruta del PDF
+        String nombreArchivo = "Reporte_Estadistico_AndyNails_" + 
+                           LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss")) + ".pdf";
+        
+        String rutaPDF;
+        if (rutaDestino != null && !rutaDestino.trim().isEmpty()) {
+            // Asegurar que la ruta termine con separador de directorio
+            if (!rutaDestino.endsWith(File.separator)) {
+                rutaDestino += File.separator;
+            }
+            rutaPDF = rutaDestino + nombreArchivo;
+        } else {
+            // Ruta por defecto si no se especifica
+            rutaPDF = nombreArchivo;
+        }
+        
+        PdfWriter.getInstance(document, new FileOutputStream(rutaPDF));
+        document.open();
+
+        com.itextpdf.text.Font tituloFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 20, 
+            new com.itextpdf.text.BaseColor(COLOR_PRINCIPAL.getRGB()));
+        com.itextpdf.text.Font subtituloFont = FontFactory.getFont(FontFactory.HELVETICA, 12, 
+            com.itextpdf.text.BaseColor.GRAY);
+        com.itextpdf.text.Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
+        com.itextpdf.text.Font destacadoFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+
+        // Título principal
+        Paragraph titulo = new Paragraph("REPORTE ESTADÍSTICO - ANDYNAILS", tituloFont);
+        titulo.setAlignment(Element.ALIGN_CENTER);
+        titulo.setSpacingAfter(20);
+        document.add(titulo);
+
+        // Información de la empresa
+        Paragraph infoEmpresa = new Paragraph("AndyNails Studio - Sistema de Gestión de Citas", subtituloFont);
+        infoEmpresa.setAlignment(Element.ALIGN_CENTER);
+        infoEmpresa.setSpacingAfter(5);
+        document.add(infoEmpresa);
+
+        // Fecha de generación
+        String fechaGeneracion = LocalDateTime.now().format(
+            DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy 'a las' HH:mm"));
+        Paragraph fecha = new Paragraph("Generado el: " + fechaGeneracion, subtituloFont);
+        fecha.setAlignment(Element.ALIGN_CENTER);
+        fecha.setSpacingAfter(20);
+        document.add(fecha);
+
+        // RESUMEN EJECUTIVO
+        Paragraph resumenTitulo = new Paragraph("RESUMEN EJECUTIVO", destacadoFont);
+        resumenTitulo.setSpacingAfter(10);
+        document.add(resumenTitulo);
+
+        Paragraph resumen = new Paragraph(
+            "Total de citas analizadas: " + totalCitas + "\n" +
+            "Servicios monitoreados: " + datos.size() + "\n" +
+            "Período: Datos históricos completos", normalFont);
+        resumen.setSpacingAfter(20);
+        document.add(resumen);
+
+        // 🔹 GRÁFICO
+        Paragraph graficoTitulo = new Paragraph("DISTRIBUCIÓN DE SERVICIOS MÁS SOLICITADOS", destacadoFont);
+        graficoTitulo.setAlignment(Element.ALIGN_CENTER);
+        graficoTitulo.setSpacingAfter(15);
+        document.add(graficoTitulo);
+
+        Image grafico = Image.getInstance(rutaImagen);
+        grafico.setAlignment(Element.ALIGN_CENTER);
+        grafico.scaleToFit(500, 350);
+        document.add(grafico);
+
+        document.add(new Paragraph(" "));
+
+        // TABLA DETALLADA
+        Paragraph tablaTitulo = new Paragraph("DETALLE POR SERVICIO", destacadoFont);
+        tablaTitulo.setSpacingAfter(10);
+        document.add(tablaTitulo);
+
+        // Crear tabla
+        PdfPTable tabla = new PdfPTable(3);
+        tabla.setWidthPercentage(100);
+        tabla.setSpacingBefore(10);
+        tabla.setSpacingAfter(20);
+
+        // Encabezados de tabla
+        agregarCeldaTabla(tabla, "SERVICIO", true, COLOR_PRINCIPAL);
+        agregarCeldaTabla(tabla, "CANTIDAD", true, COLOR_PRINCIPAL);
+        agregarCeldaTabla(tabla, "PORCENTAJE", true, COLOR_PRINCIPAL);
+
+        // Datos de la tabla
+        for (Map.Entry<String, Integer> entry : datos.entrySet()) {
+            String servicio = entry.getKey();
+            int cantidad = entry.getValue();
+            double porcentaje = totalCitas > 0 ? (cantidad * 100.0 / totalCitas) : 0;
+            
+            agregarCeldaTabla(tabla, servicio, false, null);
+            agregarCeldaTabla(tabla, String.valueOf(cantidad), false, null);
+            agregarCeldaTabla(tabla, String.format("%.1f%%", porcentaje), false, null);
+        }
+
+        document.add(tabla);
+
+        // ANÁLISIS Y OBSERVACIONES
+        Paragraph analisisTitulo = new Paragraph("ANÁLISIS Y OBSERVACIONES", destacadoFont);
+        analisisTitulo.setSpacingAfter(10);
+        document.add(analisisTitulo);
+
+        // Encontrar servicio más popular
+        String servicioMasPopular = datos.entrySet().stream()
+            .max(Map.Entry.comparingByValue())
+            .map(Map.Entry::getKey)
+            .orElse("No disponible");
+
+        Paragraph analisis = new Paragraph(
+            "• El servicio más solicitado es: " + servicioMasPopular + "\n" +
+            "• Este reporte ayuda a identificar tendencias de preferencia de los clientes.\n" +
+            "• Los datos pueden utilizarse para optimizar inventario y capacitación.\n" +
+            "• Se recomienda revisar periódicamente para identificar cambios en las preferencias.",
+            normalFont);
+        analisis.setSpacingAfter(20);
+        document.add(analisis);
+
+        // PIE DE PÁGINA
+        Paragraph piePagina = new Paragraph(
+            "--- Reporte generado automáticamente por AndyNails System ---", 
+            FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9, com.itextpdf.text.BaseColor.GRAY));
+        piePagina.setAlignment(Element.ALIGN_CENTER);
+        document.add(piePagina);
+
+        document.close();
+        
+        return rutaPDF;
     }
 
     // Método auxiliar para agregar celdas a la tabla
@@ -247,7 +270,20 @@ public class ReporteEstadistico {
         tabla.addCell(celda);
     }
 
+    // MÉTODO PRINCIPAL ACTUALIZADO
     public static void main(String[] args) {
-        generarPDF();
+        // Ejemplo de uso con diferentes rutas
+        if (args.length > 0) {
+            // Si se pasa un argumento, usarlo como ruta
+            generarReporteEstadistico(args[0]);
+        } else {
+            // Si no se especifica ruta, usar el directorio actual
+            generarReporteEstadistico("");
+        }
+    }
+    
+    // MÉTODO SOBRECARGADO PARA MANTENER COMPATIBILIDAD
+    public static void generarPDF() {
+        generarReporteEstadistico(""); // Usa ruta por defecto
     }
 }
