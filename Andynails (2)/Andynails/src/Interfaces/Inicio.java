@@ -156,7 +156,6 @@ public class Inicio extends javax.swing.JFrame {
             .addGap(0, 0, Short.MAX_VALUE)
         );
 
-        jMenuBar2.setBackground(new java.awt.Color(255, 153, 255));
         jMenuBar2.setBorder(null);
 
         jMenu3.setText("LOGO");

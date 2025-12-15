@@ -271,14 +271,6 @@
             <Property name="text" type="java.lang.String" value="PAGOS  "/>
           </Properties>
           <SubComponents>
-            <MenuItem class="javax.swing.JMenuItem" name="menuPagoRestante">
-              <Properties>
-                <Property name="text" type="java.lang.String" value="Pago Restante"/>
-              </Properties>
-              <Events>
-                <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="menuPagoRestanteActionPerformed"/>
-              </Events>
-            </MenuItem>
             <MenuItem class="javax.swing.JMenuItem" name="jMenuItem8">
               <Properties>
                 <Property name="text" type="java.lang.String" value="Revision de Anticipos"/>

@@ -571,7 +571,6 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         menuCitas = new javax.swing.JMenuItem();
         menuAgendarCita = new javax.swing.JMenuItem();
         jMenuPagos = new javax.swing.JMenu();
-        menuPagoRestante = new javax.swing.JMenuItem();
         jMenuItem8 = new javax.swing.JMenuItem();
         jMenuLogin = new javax.swing.JMenu();
         jMenuItem6 = new javax.swing.JMenuItem();
@@ -933,14 +932,6 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
 
         jMenuPagos.setText("PAGOS  ");
 
-        menuPagoRestante.setText("Pago Restante");
-        menuPagoRestante.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuPagoRestanteActionPerformed(evt);
-            }
-        });
-        jMenuPagos.add(menuPagoRestante);
-
         jMenuItem8.setText("Revision de Anticipos");
         jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
@@ -1045,13 +1036,6 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
         this.dispose(); // cierra la actual
 
     }//GEN-LAST:event_jMenuItem6ActionPerformed
-
-    private void menuPagoRestanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuPagoRestanteActionPerformed
-        // TODO add your handling code here:
-        NewJPagoRestante pago = new NewJPagoRestante(this);
-        pago.setVisible(true);
-        this.setVisible(false);
-    }//GEN-LAST:event_menuPagoRestanteActionPerformed
 
     private void menuAgendarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuAgendarCitaActionPerformed
         // TODO add your handling code here:
@@ -1241,7 +1225,6 @@ public class NewJPanelAdministracionRec extends javax.swing.JFrame {
     private javax.swing.JMenuItem menuAgendarCita;
     private javax.swing.JMenuItem menuBuscarCitas;
     private javax.swing.JMenuItem menuCitas;
-    private javax.swing.JMenuItem menuPagoRestante;
     private javax.swing.JTable tabla;
     private javax.swing.JTable tablaResumen;
     // End of variables declaration//GEN-END:variables

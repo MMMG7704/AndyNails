@@ -70,11 +70,11 @@ public class NewJAgenC extends javax.swing.JFrame {
     public NewJAgenC() {
         initComponents();
         this.idUsuario = SesionUsuario.getIdUsuario();
-
-        // VERIFICAR si hay una cita pendiente en sesión
+        
+        // Inicializar lista de servicios
         serviciosSeleccionados = new java.util.ArrayList<>();
-        limpiarTodoAlInicio();
-
+        
+        // NO limpiar al inicio - restaurar de sesión
         init();
     }
 
@@ -121,17 +121,15 @@ public class NewJAgenC extends javax.swing.JFrame {
         jTextFieldFecha1.setEditable(false);
         jTextFieldFecha1.setFocusable(false);
 
-        // SOLO limpiar si NO viene del catálogo
-        if (!inicializacionDesdeCatalogo) {
-            // Restaurar servicios desde sesión si existen
-            java.util.List<Object[]> serviciosGuardados = SesionUsuario.getServiciosCita();
-            if (serviciosGuardados != null && !serviciosGuardados.isEmpty()) {
-                System.out.println("DEBUG - Restaurando servicios desde sesión: " + serviciosGuardados.size());
-                serviciosSeleccionados = new java.util.ArrayList<>(serviciosGuardados);
-            } else {
-                limpiarEstadoCompleto();
-            }
+        // RESTAURAR servicios desde sesión SI EXISTEN
+        java.util.List<Object[]> serviciosGuardados = SesionUsuario.getServiciosCita();
+        if (serviciosGuardados != null && !serviciosGuardados.isEmpty()) {
+            System.out.println("DEBUG - Restaurando servicios desde sesión: " + serviciosGuardados.size());
+            serviciosSeleccionados = new java.util.ArrayList<>(serviciosGuardados);
+        } else {
+            System.out.println("DEBUG - No hay servicios en sesión, lista vacía");
         }
+        
         // Inicializar conexión
         conexion = new ConexionBD("andynails");
 
@@ -163,7 +161,7 @@ public class NewJAgenC extends javax.swing.JFrame {
         if (!serviciosSeleccionados.isEmpty()) {
             indiceActual = Math.min(indiceActual, serviciosSeleccionados.size() - 1);
             mostrarServiciosSeleccionados();
-            iniciarCarrusel();
+            // NO iniciar carrusel automático - solo manual
         }
 
         System.out.println("=== INICIALIZACIÓN COMPLETADA ===");
@@ -233,6 +231,7 @@ public class NewJAgenC extends javax.swing.JFrame {
 
         // Limpiar hora
         cbHora.removeAllItems();
+        llenarComboHoras(); // Re-llenar con horas por defecto
 
         // Limpiar labels
         jLabel4.setIcon(null);
@@ -248,7 +247,6 @@ public class NewJAgenC extends javax.swing.JFrame {
         // Resetear índice
         indiceActual = 0;
 
-        // NO limpiar datos en sesión aquí, solo cuando el usuario confirme
         System.out.println("DEBUG - Estado limpiado completamente");
     }
 
@@ -262,25 +260,35 @@ public class NewJAgenC extends javax.swing.JFrame {
     }
 
    private void configurarListeners() {
-    btnRegresar.addActionListener(e -> btnRegresarActionPerformed(e));
+   // Configurar tooltips (texto emergente) para los botones
+    btnAnterior.setToolTipText("Ver servicio anterior (teclas: ← o PgUp)");
+    btnSiguiente.setToolTipText("Ver siguiente servicio (teclas: → o PgDown)");
     
-    cbHora.addActionListener(e -> {
-        String fecha = jTextFieldFecha1.getText().trim();
-        String hora = (String) cbHora.getSelectedItem();
-        
-        if (!fecha.isEmpty() && hora != null) {
-            System.out.println("Cambio de hora: " + fecha + " " + hora);
-            
-            // Primero verificar advertencias
-            verificarAdvertenciasFechaHora();
-            
-            // Luego actualizar el servicio actual
-            if (!serviciosSeleccionados.isEmpty()) {
-                actualizarFechaHoraServicioActual();
-                mostrarServiciosSeleccionados(); // Actualizar display
-            }
+    btnAnterior.addActionListener(e -> btnAnteriorActionPerformed(e));
+    btnSiguiente.addActionListener(e -> btnSiguienteActionPerformed(e));
+    
+    // También puedes agregar atajos de teclado
+    btnAnterior.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_LEFT, 0), "anterior");
+    btnAnterior.getActionMap().put("anterior", new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            btnAnteriorActionPerformed(e);
         }
     });
+    
+    btnSiguiente.getInputMap(javax.swing.JComponent.WHEN_IN_FOCUSED_WINDOW)
+        .put(javax.swing.KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_RIGHT, 0), "siguiente");
+    btnSiguiente.getActionMap().put("siguiente", new javax.swing.AbstractAction() {
+        @Override
+        public void actionPerformed(java.awt.event.ActionEvent e) {
+            btnSiguienteActionPerformed(e);
+        }
+    });
+    
+    // Configurar botones del carrusel
+    btnAnterior.addActionListener(e -> servicioAnterior());
+    btnSiguiente.addActionListener(e -> siguienteServicio());
 }
 
     private void estadoInicial() {
@@ -354,6 +362,9 @@ public class NewJAgenC extends javax.swing.JFrame {
 
             System.out.println("Actualizado servicio " + indiceActual + ": " + servicio[1]
                     + " - Fecha: " + fechaActual + " - Hora: " + horaActual);
+            
+            // Guardar en sesión
+            SesionUsuario.setServiciosCita(serviciosSeleccionados);
         }
     }
 
@@ -450,14 +461,6 @@ public class NewJAgenC extends javax.swing.JFrame {
             horaActual = "10:00";
         }
 
-        // Verificar disponibilidad
-        if (horaBloqueadaParaServicio(fechaActual, horaActual, descripcion)) {
-            JOptionPane.showMessageDialog(this,
-                    "La hora actual no está disponible para este servicio.\nPor favor seleccione otra hora antes de confirmar.",
-                    "Hora no disponible",
-                    JOptionPane.WARNING_MESSAGE);
-        }
-
         // Crear nuevo servicio
         Object[] nuevoServicio = new Object[5];
         nuevoServicio[0] = imagen;
@@ -476,9 +479,11 @@ public class NewJAgenC extends javax.swing.JFrame {
         if (!serviciosSeleccionados.isEmpty()) {
             indiceActual = serviciosSeleccionados.size() - 1;
             mostrarServiciosSeleccionados();
-            iniciarCarrusel();
         }
 
+        // Guardar en sesión
+        SesionUsuario.setServiciosCita(serviciosSeleccionados);
+        
         debugServiciosActuales();
     }
 
@@ -499,10 +504,19 @@ public class NewJAgenC extends javax.swing.JFrame {
     }
 
     private void servicioAnterior() {
-        if (serviciosSeleccionados.size() > 1) {
-            indiceActual = (indiceActual - 1 + serviciosSeleccionados.size()) % serviciosSeleccionados.size();
-            mostrarServiciosSeleccionados();
-        }
+         if (serviciosSeleccionados.size() > 1) {
+        indiceActual = (indiceActual - 1 + serviciosSeleccionados.size()) % serviciosSeleccionados.size();
+        mostrarServiciosSeleccionados();
+        System.out.println("Navegando a servicio anterior: " + (indiceActual + 1));
+        
+        // Actualizar la fecha/hora del calendario según el servicio actual
+        sincronizarCalendarioConServicioActual();
+    } else if (serviciosSeleccionados.size() == 1) {
+        JOptionPane.showMessageDialog(this,
+            "Solo hay 1 servicio en la lista.\nAgrega más servicios para navegar.",
+            "Un solo servicio",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
     }
 
     private boolean fechaBloqueada(String fecha) {
@@ -663,47 +677,58 @@ public class NewJAgenC extends javax.swing.JFrame {
         if (!serviciosSeleccionados.isEmpty()) {
             indiceActual = 0;
             mostrarServiciosSeleccionados();
-            iniciarCarrusel();
         } else {
             jLabel4.setIcon(null);
             jLabel5.setText("No hay servicios disponibles");
             jLabel8.setText("$0");
-            if (timer != null) {
-                timer.stop();
-            }
         }
     }
 
     private void iniciarCarrusel() {
-        if (timer != null) {
-            timer.stop();
-            timer = null;
-        }
-
-        if (serviciosSeleccionados.size() > 1) {
-            timer = new Timer(5000, e -> siguienteServicio());
-            timer.start();
-            System.out.println("Carrusel iniciado - Cambio cada 5 segundos");
-        } else {
-            mostrarServiciosSeleccionados();
-        }
+        // REMOVIDO: No usar timer automático
+        // El carrusel será solo manual con botones/clics
+        System.out.println("Carrusel manual activado - usar botones para navegar");
     }
 
-    private void siguienteServicio() {
-        if (!serviciosSeleccionados.isEmpty() && serviciosSeleccionados.size() > 1) {
-            if (timer != null) {
-                timer.stop();
-                new Timer(10000, e -> {
-                    if (timer != null) {
-                        timer.start();
-                    }
-                }).start();
+    // Método nuevo para sincronizar calendario
+private void sincronizarCalendarioConServicioActual() {
+    if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
+        Object[] servicio = serviciosSeleccionados.get(indiceActual);
+        String fecha = servicio.length > 3 ? (String) servicio[3] : "";
+        String hora = servicio.length > 4 ? (String) servicio[4] : "";
+        
+        if (!fecha.isEmpty()) {
+            try {
+                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
+                java.util.Date fechaServicio = formato.parse(fecha);
+                java.util.Calendar cal = java.util.Calendar.getInstance();
+                cal.setTime(fechaServicio);
+                jCalendar1.setCalendar(cal);
+                jTextFieldFecha1.setText(fecha);
+            } catch (Exception e) {
+                System.out.println("Error al sincronizar fecha: " + e.getMessage());
             }
-
-            indiceActual = (indiceActual + 1) % serviciosSeleccionados.size();
-            mostrarServiciosSeleccionados();
-            System.out.println("Cambiando a servicio: " + indiceActual);
         }
+        
+        if (!hora.isEmpty() && !hora.equals(cbHora.getSelectedItem())) {
+            cbHora.setSelectedItem(hora);
+        }
+    }
+}
+    private void siguienteServicio() {
+        if (serviciosSeleccionados.size() > 1) {
+        indiceActual = (indiceActual + 1) % serviciosSeleccionados.size();
+        mostrarServiciosSeleccionados();
+        System.out.println("Navegando a siguiente servicio: " + (indiceActual + 1));
+        
+        // Actualizar la fecha/hora del calendario según el servicio actual
+        sincronizarCalendarioConServicioActual();
+    } else if (serviciosSeleccionados.size() == 1) {
+        JOptionPane.showMessageDialog(this,
+            "Solo hay 1 servicio en la lista.\nAgrega más servicios para navegar.",
+            "Un solo servicio",
+            JOptionPane.INFORMATION_MESSAGE);
+    }
     }
 
     private boolean clienteTieneCitaMismaHora(String fecha, String hora) {
@@ -734,9 +759,12 @@ public class NewJAgenC extends javax.swing.JFrame {
 private void mostrarServiciosSeleccionados() {
     if (serviciosSeleccionados.isEmpty()) {
         jLabel4.setIcon(null);
-        jLabel5.setText("<html><b>No hay servicios seleccionados</b><br><br>" +
-                       "Agrega servicios desde el catálogo</html>");
+        jLabel5.setText("No hay servicios seleccionados");
         jLabel8.setText("$0");
+        
+        // Deshabilitar botones de navegación si no hay servicios
+        btnAnterior.setEnabled(false);
+        btnSiguiente.setEnabled(false);
         return;
     }
 
@@ -756,42 +784,22 @@ private void mostrarServiciosSeleccionados() {
         jLabel4.setIcon(null);
     }
 
-    // Construir texto HTML para jLabel5
-    StringBuilder info = new StringBuilder();
-    info.append("<html><div style='font-family: Arial; font-size: 12px;'>");
-    info.append("<b style='font-size: 14px; color: #333;'>").append(descripcion).append("</b><br><br>");
-    
-    info.append("<div style='background-color: #f0f0f0; padding: 5px; border-radius: 5px;'>");
-    info.append("<b>Posición:</b> ").append(indiceActual + 1).append(" de ").append(serviciosSeleccionados.size()).append("<br>");
-    
-    if (!fecha.isEmpty() && !hora.isEmpty()) {
-        info.append("<b>Fecha:</b> ").append(formatearFechaBonita(fecha)).append("<br>");
-        info.append("<b>Hora:</b> ").append(hora).append("<br>");
-        
-        // Sincronizar controles
-        if (!fecha.equals(jTextFieldFecha1.getText().trim())) {
-            try {
-                java.text.SimpleDateFormat formato = new java.text.SimpleDateFormat("yyyy-MM-dd");
-                java.util.Date fechaServicio = formato.parse(fecha);
-                java.util.Calendar cal = java.util.Calendar.getInstance();
-                cal.setTime(fechaServicio);
-                jCalendar1.setCalendar(cal);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        
-        if (!hora.equals(cbHora.getSelectedItem())) {
-            cbHora.setSelectedItem(hora);
-        }
-    } else {
-        info.append("<i style='color: #666;'>Fecha/Hora no asignadas</i><br>");
-        info.append("<small>Selecciona fecha y hora en el calendario</small>");
+    // Texto con información del servicio y posición
+    String texto = descripcion;
+    if (serviciosSeleccionados.size() > 1) {
+        texto += " [" + (indiceActual + 1) + "/" + serviciosSeleccionados.size() + "]";
     }
     
-    info.append("</div></div></html>");
+    if (!fecha.isEmpty()) {
+        texto += "\n📅 " + fecha;
+        if (!hora.isEmpty()) {
+            texto += " 🕒 " + hora;
+        }
+    } else {
+        texto += "\n⚠️ Fecha/Hora no asignada";
+    }
     
-    jLabel5.setText(info.toString());
+    jLabel5.setText(texto);
     
     // Mostrar precio
     if (precio != null && !precio.isEmpty()) {
@@ -800,22 +808,26 @@ private void mostrarServiciosSeleccionados() {
         jLabel8.setText("$0");
     }
     
-    // Mostrar el total
-    double total = calcularMontoTotal(serviciosSeleccionados);
-    System.out.println("Total actual: $" + total);
-}
-
-// Método auxiliar para formatear fecha
-private String formatearFechaBonita(String fecha) {
-    try {
-        java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd");
-        java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("dd/MM/yyyy");
-        java.util.Date fechaObj = formatoEntrada.parse(fecha);
-        return formatoSalida.format(fechaObj);
-    } catch (Exception e) {
-        return fecha;
+    // Habilitar/deshabilitar botones según posición
+    btnAnterior.setEnabled(serviciosSeleccionados.size() > 1);
+    btnSiguiente.setEnabled(serviciosSeleccionados.size() > 1);
+    
+    // Mostrar ayuda si hay varios servicios
+    if (serviciosSeleccionados.size() > 1) {
+        System.out.println("Mostrando servicio " + (indiceActual + 1) + " de " + serviciosSeleccionados.size());
     }
 }
+
+    private String formatearFechaBonita(String fecha) {
+        try {
+            java.text.SimpleDateFormat formatoEntrada = new java.text.SimpleDateFormat("yyyy-MM-dd");
+            java.text.SimpleDateFormat formatoSalida = new java.text.SimpleDateFormat("dd/MM/yyyy");
+            java.util.Date fechaObj = formatoEntrada.parse(fecha);
+            return formatoSalida.format(fechaObj);
+        } catch (Exception e) {
+            return fecha;
+        }
+    }
 
     private void actualizarCalendarioConFechaHora(String fecha, String hora) {
         try {
@@ -1122,104 +1134,97 @@ private String formatearFechaBonita(String fecha) {
         return 0.0;
     }
 
-private void configurarCalendario() {
-    jTextFieldFecha1.setEditable(false);
-    jTextFieldFecha1.setFocusable(false);
+    private void configurarCalendario() {
+        jTextFieldFecha1.setEditable(false);
+        jTextFieldFecha1.setFocusable(false);
 
-    if (jCalendar1 != null) {
-        java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
-        fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
-        fechaMinima.set(java.util.Calendar.MINUTE, 0);
-        fechaMinima.set(java.util.Calendar.SECOND, 0);
-        fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
+        if (jCalendar1 != null) {
+            java.util.Calendar fechaMinima = java.util.Calendar.getInstance();
+            fechaMinima.set(java.util.Calendar.HOUR_OF_DAY, 0);
+            fechaMinima.set(java.util.Calendar.MINUTE, 0);
+            fechaMinima.set(java.util.Calendar.SECOND, 0);
+            fechaMinima.set(java.util.Calendar.MILLISECOND, 0);
 
-        jCalendar1.setMinSelectableDate(fechaMinima.getTime());
+            jCalendar1.setMinSelectableDate(fechaMinima.getTime());
 
-        jCalendar1.addPropertyChangeListener("calendar", evt -> {
-            if (!procesandoCambioFecha && "calendar".equals(evt.getPropertyName())) {
-                procesandoCambioFecha = true;
-                try {
-                    actualizarFechaDesdeJCalendar();
-                    
-                    // NUEVO: Verificar advertencias después de cambiar la fecha
-                    verificarAdvertenciasFechaHora();
-                    
-                    if (!serviciosSeleccionados.isEmpty()) {
-                        actualizarFechaHoraServicioActual();
-                        mostrarServiciosSeleccionados(); // Actualizar display
+            jCalendar1.addPropertyChangeListener("calendar", evt -> {
+                if (!procesandoCambioFecha && "calendar".equals(evt.getPropertyName())) {
+                    procesandoCambioFecha = true;
+                    try {
+                        actualizarFechaDesdeJCalendar();
+                        
+                        // Verificar advertencias inmediatamente
+                        verificarAdvertenciasFechaHora();
+                        
+                        if (!serviciosSeleccionados.isEmpty()) {
+                            actualizarFechaHoraServicioActual();
+                            mostrarServiciosSeleccionados();
+                        }
+                    } finally {
+                        procesandoCambioFecha = false;
                     }
-                } finally {
-                    procesandoCambioFecha = false;
                 }
+            });
+
+            jCalendar1.setCalendar(fechaMinima);
+            actualizarFechaDesdeJCalendar();
+        }
+    }
+
+    private void verificarAdvertenciasFechaHora() {
+        String fecha = obtenerFechaSeleccionada();
+        String hora = (String) cbHora.getSelectedItem();
+        
+        if (fecha == null || fecha.isEmpty() || hora == null) {
+            return;
+        }
+        
+        System.out.println("Verificando advertencias para: " + fecha + " " + hora);
+        
+        // 1. Verificar si la fecha está bloqueada completamente
+        if (fechaBloqueada(fecha)) {
+            String motivo = obtenerMotivoBloqueo(fecha);
+            JOptionPane.showMessageDialog(this,
+                "⚠️ FECHA BLOQUEADA ⚠️\n\n" +
+                "La fecha " + fecha + " está completamente bloqueada.\n" +
+                "Motivo: " + motivo + "\n\n" +
+                "Por favor seleccione otra fecha.",
+                "Fecha no disponible",
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        // 2. Verificar si hay servicios seleccionados para verificar disponibilidad específica
+        if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
+            Object[] servicioActual = serviciosSeleccionados.get(indiceActual);
+            String descripcionServicioActual = (String) servicioActual[1];
+            
+            // 3. Verificar si la hora está bloqueada para el servicio actual
+            if (horaBloqueadaParaServicio(fecha, hora, descripcionServicioActual)) {
+                JOptionPane.showMessageDialog(this,
+                    "⚠️ HORA NO DISPONIBLE ⚠️\n\n" +
+                    "La hora " + hora + " no está disponible para:\n" +
+                    descripcionServicioActual + "\n\n" +
+                    "Por favor seleccione otra hora.",
+                    "Hora ocupada",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
             }
-        });
-
-        jCalendar1.setCalendar(fechaMinima);
-        actualizarFechaDesdeJCalendar();
-    }
-}
-
-
-private void verificarAdvertenciasFechaHora() {
-    String fecha = obtenerFechaSeleccionada();
-    String hora = (String) cbHora.getSelectedItem();
-    
-    if (fecha == null || fecha.isEmpty() || hora == null) {
-        return;
-    }
-    
-    System.out.println("Verificando advertencias para: " + fecha + " " + hora);
-    
-    // 1. Verificar si la fecha está bloqueada completamente
-    if (fechaBloqueada(fecha)) {
-        String motivo = obtenerMotivoBloqueo(fecha);
-        JOptionPane.showMessageDialog(this,
-            "⚠️ FECHA BLOQUEADA ⚠️\n\n" +
-            "La fecha " + fecha + " está completamente bloqueada.\n" +
-            "Motivo: " + motivo + "\n\n" +
-            "Por favor seleccione otra fecha.",
-            "Fecha no disponible",
-            JOptionPane.WARNING_MESSAGE);
-        return;
-    }
-    
-    // 2. Verificar si es fecha pasada (ya lo hace actualizarFechaDesdeJCalendar)
-    
-    // 3. Verificar si hay servicios seleccionados para verificar disponibilidad específica
-    if (!serviciosSeleccionados.isEmpty() && indiceActual < serviciosSeleccionados.size()) {
-        Object[] servicioActual = serviciosSeleccionados.get(indiceActual);
-        String descripcionServicioActual = (String) servicioActual[1];
-        
-        // 4. Verificar si la hora está bloqueada para el servicio actual
-        if (horaBloqueadaParaServicio(fecha, hora, descripcionServicioActual)) {
-            JOptionPane.showMessageDialog(this,
-                "⚠️ HORA NO DISPONIBLE ⚠️\n\n" +
-                "La hora " + hora + " no está disponible para:\n" +
-                descripcionServicioActual + "\n\n" +
-                "Por favor seleccione otra hora.",
-                "Hora ocupada",
-                JOptionPane.WARNING_MESSAGE);
-            return;
+            
+            // 4. Verificar si el cliente ya tiene una cita en esa misma hora
+            if (clienteTieneCitaMismaHora(fecha, hora)) {
+                JOptionPane.showMessageDialog(this,
+                    "⚠️ CITA DUPLICADA ⚠️\n\n" +
+                    "Ya tienes una cita agendada para:\n" +
+                    "Fecha: " + fecha + "\n" +
+                    "Hora: " + hora + "\n\n" +
+                    "Por favor seleccione otra hora o fecha.",
+                    "Hora ocupada",
+                    JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
-        
-        // 5. Verificar si el cliente ya tiene una cita en esa misma hora
-        if (clienteTieneCitaMismaHora(fecha, hora)) {
-            JOptionPane.showMessageDialog(this,
-                "⚠️ CITA DUPLICADA ⚠️\n\n" +
-                "Ya tienes una cita agendada para:\n" +
-                "Fecha: " + fecha + "\n" +
-                "Hora: " + hora + "\n\n" +
-                "Por favor seleccione otra hora o fecha.",
-                "Hora ocupada",
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        
-        // 6. Si todo está bien, mostrar confirmación
-        System.out.println("Fecha y hora válidas para: " + descripcionServicioActual);
     }
-}
-
 
     private void actualizarFechaDesdeJCalendar() {
         try {
@@ -1283,20 +1288,11 @@ private void verificarAdvertenciasFechaHora() {
     public void finalizarAgendado(int idPago) {
         insertarCitaYServicios(idPago);
 
-        // LIMPIAR datos locales después de guardar
-        serviciosSeleccionados.clear();
-        indiceActual = 0;
-
-        // Actualizar interfaz
-        jLabel4.setIcon(null);
-        jLabel5.setText("No hay servicios seleccionados");
-        jLabel8.setText("$0");
-
-        // Detener timer
-        if (timer != null) {
-            timer.stop();
-            timer = null;
-        }
+        // Limpiar datos locales después de guardar
+        limpiarEstadoCompleto();
+        
+        // Limpiar sesión
+        SesionUsuario.limpiarDatosCita();
 
         System.out.println("DEBUG - Datos locales limpiados después de guardar cita");
     }
@@ -1359,9 +1355,7 @@ private void verificarAdvertenciasFechaHora() {
     }
 
     private void restaurarServiciosDesdeSesion() {
-        // Este método ahora NO se llama automáticamente
-        // Solo se llama si realmente queremos restaurar desde sesión
-        System.out.println("DEBUG - NO restaurando servicios automáticamente desde sesión");
+        System.out.println("DEBUG - Restaurando servicios desde sesión");
     }
 
     private void eliminarServicioActual() {
@@ -1382,16 +1376,15 @@ private void verificarAdvertenciasFechaHora() {
                     jLabel4.setIcon(null);
                     jLabel5.setText("No hay servicios seleccionados");
                     jLabel8.setText("$0");
-                    if (timer != null) {
-                        timer.stop();
-                    }
                 } else {
                     if (indiceActual >= serviciosSeleccionados.size()) {
                         indiceActual = serviciosSeleccionados.size() - 1;
                     }
                     mostrarServiciosSeleccionados();
-                    iniciarCarrusel();
                 }
+                
+                // Actualizar sesión
+                SesionUsuario.setServiciosCita(serviciosSeleccionados);
 
                 System.out.println("Servicio eliminado. Total: " + serviciosSeleccionados.size());
             }
@@ -1416,7 +1409,6 @@ private void verificarAdvertenciasFechaHora() {
             if (!serviciosSeleccionados.isEmpty()) {
                 indiceActual = Math.min(indiceActual, serviciosSeleccionados.size() - 1);
                 mostrarServiciosSeleccionados();
-                iniciarCarrusel();
             }
 
             System.out.println("DEBUG - NewJAgenC se hace visible. Servicios: " + serviciosSeleccionados.size());
@@ -1468,7 +1460,6 @@ private void verificarAdvertenciasFechaHora() {
         if (!serviciosSeleccionados.isEmpty()) {
             this.indiceActual = this.serviciosSeleccionados.size() - 1;
             mostrarServiciosSeleccionados();
-            iniciarCarrusel();
         }
 
         // Guardar en sesión
@@ -1480,25 +1471,6 @@ private void verificarAdvertenciasFechaHora() {
     public void actualizarDesdeCatalogo(ImageIcon imagen, String descripcion, String precio) {
         System.out.println("DEBUG - Actualizando desde catálogo");
 
-        // VERIFICAR si el servicio YA EXISTE en la lista actual
-        boolean servicioExiste = false;
-        for (Object[] servicio : serviciosSeleccionados) {
-            String descripcionExistente = (String) servicio[1];
-            if (descripcionExistente.equals(descripcion)) {
-                servicioExiste = true;
-
-                int respuesta = JOptionPane.showConfirmDialog(this,
-                        "Este servicio ya está en tu lista de citas.\n"
-                        + "¿Deseas agregarlo como un servicio adicional?",
-                        "Servicio duplicado",
-                        JOptionPane.YES_NO_OPTION);
-
-                if (respuesta == JOptionPane.NO_OPTION) {
-                    return;
-                }
-                break;
-            }
-        }
         // Agregar nuevo servicio
         String fechaActual = jTextFieldFecha1.getText().trim();
         if (fechaActual.isEmpty()) {
@@ -1535,7 +1507,6 @@ private void verificarAdvertenciasFechaHora() {
         if (!serviciosSeleccionados.isEmpty()) {
             indiceActual = serviciosSeleccionados.size() - 1;
             mostrarServiciosSeleccionados();
-            iniciarCarrusel();
         }
 
         // Guardar en sesión
@@ -1554,18 +1525,10 @@ private void verificarAdvertenciasFechaHora() {
         serviciosSeleccionados.clear();
         indiceActual = 0;
 
-        // Limpiar sesión SOLO si las citas se guardaron exitosamente
-        // Esto debe llamarse DESPUÉS de que NewJCitaConf confirme el pago
         // Limpiar interfaz
         jLabel4.setIcon(null);
         jLabel5.setText("No hay servicios seleccionados");
         jLabel8.setText("$0");
-
-        // Detener timer
-        if (timer != null) {
-            timer.stop();
-            timer = null;
-        }
 
         // Resetear calendario
         java.util.Calendar hoy = java.util.Calendar.getInstance();
@@ -1665,10 +1628,6 @@ private void verificarAdvertenciasFechaHora() {
         serviciosSeleccionados.clear();
         indiceActual = 0;
 
-        // Limpiar sesión (por si acaso)
-        SesionUsuario.limpiarServiciosCita();
-        SesionUsuario.setMontoTotalCita(0);
-
         // Limpiar interfaz
         jLabel4.setIcon(null);
         jLabel5.setText("No hay servicios seleccionados");
@@ -1678,12 +1637,6 @@ private void verificarAdvertenciasFechaHora() {
         java.util.Calendar hoy = java.util.Calendar.getInstance();
         jCalendar1.setCalendar(hoy);
         cbHora.setSelectedItem("10:00");
-
-        // Detener timer
-        if (timer != null) {
-            timer.stop();
-            timer = null;
-        }
 
         System.out.println("Estado completamente limpiado");
     }
@@ -1714,6 +1667,9 @@ private void verificarAdvertenciasFechaHora() {
     nuevaVentana.setVisible(true);
     nuevaVentana.setLocationRelativeTo(null);
 }
+
+ 
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -1858,24 +1814,26 @@ private void verificarAdvertenciasFechaHora() {
             panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(panel6Layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(Jlabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(panel6Layout.createSequentialGroup()
-                .addContainerGap()
                 .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(label7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnAnterior))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(btnSiguiente))
-                .addGap(42, 42, 42))
-            .addGroup(panel6Layout.createSequentialGroup()
-                .addGap(0, 36, Short.MAX_VALUE)
-                .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(jLabel5, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addContainerGap(24, Short.MAX_VALUE))
+                    .addGroup(panel6Layout.createSequentialGroup()
+                        .addComponent(Jlabel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(panel6Layout.createSequentialGroup()
+                        .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(panel6Layout.createSequentialGroup()
+                                .addGap(0, 26, Short.MAX_VALUE)
+                                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 207, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addComponent(jLabel5, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(24, 24, 24))
+                    .addGroup(panel6Layout.createSequentialGroup()
+                        .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(label7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnAnterior))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel8, javax.swing.GroupLayout.PREFERRED_SIZE, 70, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(btnSiguiente))
+                        .addGap(42, 42, 42))))
         );
         panel6Layout.setVerticalGroup(
             panel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -2158,109 +2116,157 @@ private void verificarAdvertenciasFechaHora() {
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButton4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton4ActionPerformed
-        // Verificar que todos los servicios tengan fecha/hora
-        verificarYGuardarServicios();
+    // Verificar que todos los servicios tengan fecha/hora
+    verificarYGuardarServicios();
 
-        System.out.println("=== INICIANDO CONFIRMACIÓN DE CITA ===");
-        System.out.println("Servicios a confirmar: " + serviciosSeleccionados.size());
+    System.out.println("=== INICIANDO CONFIRMACIÓN DE CITA ===");
+    System.out.println("Servicios a confirmar: " + serviciosSeleccionados.size());
 
-        // Verificar que hay servicios
-        if (serviciosSeleccionados.isEmpty()) {
-            JOptionPane.showMessageDialog(this,
-                    "No hay servicios seleccionados.\nPor favor agrega al menos un servicio.",
-                    "Sin servicios",
-                    JOptionPane.WARNING_MESSAGE);
-            return;
+    // Verificar que hay servicios
+    if (serviciosSeleccionados.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+                "No hay servicios seleccionados.\nPor favor agrega al menos un servicio.",
+                "Sin servicios",
+                JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // Verificar que todos los servicios tengan fecha/hora
+    boolean todosCompletos = true;
+    StringBuilder errores = new StringBuilder();
+
+    for (Object[] servicio : serviciosSeleccionados) {
+        String fecha = servicio.length > 3 ? (String) servicio[3] : "";
+        String hora = servicio.length > 4 ? (String) servicio[4] : "";
+        String descripcion = (String) servicio[1];
+
+        if (fecha.isEmpty() || hora.isEmpty()) {
+            todosCompletos = false;
+            errores.append("• ").append(descripcion).append(": Sin fecha/hora asignada\n");
         }
+    }
 
-        // Verificar que todos los servicios tengan fecha/hora
-        boolean todosCompletos = true;
-        StringBuilder errores = new StringBuilder();
+    if (!todosCompletos) {
+        JOptionPane.showMessageDialog(this,
+                "Los siguientes servicios no tienen fecha/hora asignada:\n\n"
+                + errores.toString() + "\n"
+                + "Por favor navega con el carrusel y asigna fecha/hora a cada servicio.",
+                "Fechas/Horas incompletas",
+                JOptionPane.ERROR_MESSAGE);
+        return;
+    }
 
-        for (Object[] servicio : serviciosSeleccionados) {
-            String fecha = servicio.length > 3 ? (String) servicio[3] : "";
-            String hora = servicio.length > 4 ? (String) servicio[4] : "";
-            String descripcion = (String) servicio[1];
+    // CORRECCIÓN: Verificar disponibilidad SOLO para el usuario actual
+    // (no verificar citas propias como "ocupadas")
+    for (Object[] servicio : serviciosSeleccionados) {
+        String fecha = (String) servicio[3];
+        String hora = (String) servicio[4];
+        String descripcion = (String) servicio[1];
 
-            if (fecha.isEmpty() || hora.isEmpty()) {
-                todosCompletos = false;
-                errores.append("• ").append(descripcion).append(": Sin fecha/hora asignada\n");
-            }
-        }
-
-        if (!todosCompletos) {
+        // Verificar si la fecha está bloqueada completamente
+        if (fechaBloqueada(fecha)) {
+            String motivo = obtenerMotivoBloqueo(fecha);
             JOptionPane.showMessageDialog(this,
-                    "Los siguientes servicios no tienen fecha/hora asignada:\n\n"
-                    + errores.toString() + "\n"
-                    + "Por favor navega con el carrusel y asigna fecha/hora a cada servicio.",
-                    "Fechas/Horas incompletas",
+                    "FECHA BLOQUEADA\n\n"
+                    + "La fecha " + fecha + " está completamente bloqueada.\n"
+                    + "Motivo: " + motivo + "\n\n"
+                    + "Por favor seleccione otra fecha.",
+                    "Fecha no disponible",
                     JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        // Verificar disponibilidad (SOLO para citas YA GUARDADAS, no las actuales)
-        for (Object[] servicio : serviciosSeleccionados) {
-            String fecha = (String) servicio[3];
-            String hora = (String) servicio[4];
-            String descripcion = (String) servicio[1];
+        // Verificar si la hora está bloqueada (solo horarios generales)
+        // NO verificar si el usuario ya tiene cita a esa hora
+        java.sql.Time horaTime = java.sql.Time.valueOf(hora + ":00");
+        
+        // 1. Verificar en bloqueo_horario
+        String sqlBloqueo = "SELECT COUNT(*) FROM bloqueo_horario WHERE Fecha = ? "
+                + "AND ? BETWEEN Hora_inicio AND Hora_fin";
 
-            // Solo verificar si YA existe una cita para este servicio
-            if (citaYaGuardada(fecha, hora, descripcion)) {
-                int respuesta = JOptionPane.showConfirmDialog(this,
-                        "YA TIENES UNA CITA PARA ESTE SERVICIO:\n\n"
-                        + "Servicio: " + descripcion + "\n"
-                        + "Fecha: " + fecha + "\n"
-                        + "Hora: " + hora + "\n\n"
-                        + "¿Deseas agendar otra cita para el mismo servicio?",
-                        "Cita duplicada",
-                        JOptionPane.YES_NO_OPTION,
-                        JOptionPane.WARNING_MESSAGE);
-
-                if (respuesta == JOptionPane.NO_OPTION) {
+        try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sqlBloqueo)) {
+            ps.setString(1, fecha);
+            ps.setTime(2, horaTime);
+            
+            try (java.sql.ResultSet rs = ps.executeQuery()) {
+                if (rs.next() && rs.getInt(1) > 0) {
+                    JOptionPane.showMessageDialog(this,
+                            "HORA BLOQUEADA\n\n"
+                            + "La hora " + hora + " está bloqueada para agendamiento.\n"
+                            + "Por favor seleccione otra hora.",
+                            "Hora no disponible",
+                            JOptionPane.ERROR_MESSAGE);
                     return;
                 }
             }
-
-            // Verificar disponibilidad general (bloqueos)
-            if (horaBloqueadaParaServicioGeneral(fecha, hora, descripcion)) {
-                JOptionPane.showMessageDialog(this,
-                        "HORA NO DISPONIBLE\n\n"
-                        + "La hora " + hora + " no está disponible para:\n"
-                        + descripcion + "\n\n"
-                        + "Motivo: La hora está bloqueada o ocupada por otra cita.",
-                        "Hora no disponible",
-                        JOptionPane.ERROR_MESSAGE);
-                return;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
+        // 2. Verificar si OTRO usuario tiene cita a esa hora para el MISMO servicio
+        String sqlCitaOtroUsuario = """
+            SELECT COUNT(*) FROM cita c 
+            JOIN cita_has_servicios chs ON c.idCita = chs.idCita 
+            JOIN servicios s ON chs.idServicios = s.idServicios 
+            WHERE c.Fecha = ? AND c.Hora = ? 
+            AND c.Estado IN ('confirmada', 'reservada')
+            AND s.Nombre_servicio LIKE ?
+            AND c.idUsuarios != ?
+        """;
+        
+        int idServicio = obtenerIdServicioPorDescripcion(descripcion);
+        int idUsuarioActual = SesionUsuario.getIdUsuario();
+        
+        if (idServicio > 0) {
+            try (java.sql.Connection conn = conexion.getConexion(); java.sql.PreparedStatement ps = conn.prepareStatement(sqlCitaOtroUsuario)) {
+                ps.setString(1, fecha);
+                ps.setTime(2, horaTime);
+                ps.setString(3, "%" + descripcion + "%");
+                ps.setInt(4, idUsuarioActual);
+                
+                try (java.sql.ResultSet rs = ps.executeQuery()) {
+                    if (rs.next() && rs.getInt(1) > 0) {
+                        JOptionPane.showMessageDialog(this,
+                                "HORA OCUPADA\n\n"
+                                + "La hora " + hora + " ya está ocupada por otro cliente para:\n"
+                                + descripcion + "\n\n"
+                                + "Por favor seleccione otra hora.",
+                                "Hora no disponible",
+                                JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+    }
 
-        // DEBUG: Mostrar lo que se va a guardar
-        System.out.println("=== CONFIRMANDO Y GUARDANDO ===");
-        for (int i = 0; i < serviciosSeleccionados.size(); i++) {
-            Object[] servicio = serviciosSeleccionados.get(i);
-            System.out.println("Cita " + i + ": " + servicio[1]
-                    + " | Fecha: " + servicio[3]
-                    + " | Hora: " + servicio[4]
-                    + " | Precio: " + servicio[2]);
-        }
+    // DEBUG: Mostrar lo que se va a guardar
+    System.out.println("=== CONFIRMANDO Y GUARDANDO ===");
+    for (int i = 0; i < serviciosSeleccionados.size(); i++) {
+        Object[] servicio = serviciosSeleccionados.get(i);
+        System.out.println("Cita " + i + ": " + servicio[1]
+                + " | Fecha: " + servicio[3]
+                + " | Hora: " + servicio[4]
+                + " | Precio: " + servicio[2]);
+    }
 
-        // Guardar en sesión TEMPORALMENTE
-        SesionUsuario.setServiciosCita(serviciosSeleccionados);
+    // Guardar en sesión TEMPORALMENTE
+    SesionUsuario.setServiciosCita(serviciosSeleccionados);
 
-        double montoTotal = calcularMontoTotal(serviciosSeleccionados);
-        SesionUsuario.setMontoTotalCita(montoTotal);
+    double montoTotal = calcularMontoTotal(serviciosSeleccionados);
+    SesionUsuario.setMontoTotalCita(montoTotal);
 
-        System.out.println("Monto total: $" + montoTotal);
-        System.out.println("Servicios guardados en sesión: " + SesionUsuario.getServiciosCita().size());
+    System.out.println("Monto total: $" + montoTotal);
+    System.out.println("Servicios guardados en sesión: " + SesionUsuario.getServiciosCita().size());
 
-        // Crear ventana de confirmación
-        NewJCitaConf confirmacionWindow = new NewJCitaConf();
-        confirmacionWindow.setVisible(true);
+    // Crear ventana de confirmación
+    NewJCitaConf confirmacionWindow = new NewJCitaConf();
+    confirmacionWindow.setVisible(true);
 
-        // IMPORTANTE: NO limpiar aquí todavía - se limpiará después del pago
-        // this.dispose(); // Opcional: puedes cerrar o minimizar
-        System.out.println("=== CONFIRMACIÓN COMPLETADA ===");
-                this.dispose();
+    // Cerrar esta ventana
+    this.dispose();
 
 
     }//GEN-LAST:event_jButton4ActionPerformed
@@ -2432,9 +2438,16 @@ private void verificarAdvertenciasFechaHora() {
     }//GEN-LAST:event_jMenuItem6ActionPerformed
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
-        System.out.println("DEBUG - Regresando sin guardar en sesión");
+              System.out.println("DEBUG - Regresando y GUARDANDO en sesión antes de ir");
 
         try {
+            // GUARDAR servicios en sesión antes de salir
+            if (!serviciosSeleccionados.isEmpty()) {
+                actualizarFechaHoraServicioActual(); // Actualizar último servicio
+                SesionUsuario.setServiciosCita(serviciosSeleccionados);
+                System.out.println("Servicios guardados en sesión: " + serviciosSeleccionados.size());
+            }
+
             if (SesionUsuario.sesionActiva() && SesionUsuario.getIdUsuario() > 0) {
                 NewJMiscitasCi misCitas = new NewJMiscitasCi();
                 misCitas.setVisible(true);
@@ -2460,50 +2473,57 @@ private void verificarAdvertenciasFechaHora() {
     }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
 
     private void btnAnteriorActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAnteriorActionPerformed
-        // TODO add your handling code here:
-        // Detener el timer automático si está activo
-        if (timer != null && timer.isRunning()) {
-            timer.stop();
-        }
+      // Botón para ver el servicio anterior en el carrusel
+    System.out.println("Botón ANTERIOR presionado - Mostrando servicio previo");
+    
+    // Eliminado el timer automático - solo navegación manual
+    if (timer != null && timer.isRunning()) {
+        timer.stop();
+    }
 
-        // Ir al servicio anterior
-        servicioAnterior();
+    // Verificar si hay servicios
+    if (serviciosSeleccionados.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+            "No hay servicios para navegar.\nAgrega servicios primero.",
+            "Sin servicios",
+            JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
 
-        // Si quieres que el timer se reinicie después de un tiempo
-        if (serviciosSeleccionados.size() > 1) {
-            // Opcional: reiniciar timer después de 10 segundos
-            Timer restartTimer = new Timer(10000, e -> {
-                if (timer != null) {
-                    timer.start();
-                }
-                ((Timer) e.getSource()).stop();
-            });
-            restartTimer.setRepeats(false);
-            restartTimer.start();
-        }
+    // Ir al servicio anterior
+    servicioAnterior();
+    
+    // Mostrar información de posición
+    if (serviciosSeleccionados.size() > 1) {
+        System.out.println("Servicio actual: " + (indiceActual + 1) + " de " + serviciosSeleccionados.size());
+    }
     }//GEN-LAST:event_btnAnteriorActionPerformed
 
     private void btnSiguienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnSiguienteActionPerformed
-        // TODO add your handling code here:
-        if (timer != null && timer.isRunning()) {
-            timer.stop();
-        }
+        // Botón para ver el siguiente servicio en el carrusel
+    System.out.println("Botón SIGUIENTE presionado - Mostrando próximo servicio");
+    
+    // Eliminado el timer automático - solo navegación manual
+    if (timer != null && timer.isRunning()) {
+        timer.stop();
+    }
 
-        // Ir al siguiente servicio
-        siguienteServicio();
+    // Verificar si hay servicios
+    if (serviciosSeleccionados.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+            "No hay servicios para navegar.\nAgrega servicios primero.",
+            "Sin servicios",
+            JOptionPane.INFORMATION_MESSAGE);
+        return;
+    }
 
-        // Si quieres que el timer se reinicie después de un tiempo
-        if (serviciosSeleccionados.size() > 1) {
-            // Opcional: reiniciar timer después de 10 segundos
-            Timer restartTimer = new Timer(10000, e -> {
-                if (timer != null) {
-                    timer.start();
-                }
-                ((Timer) e.getSource()).stop();
-            });
-            restartTimer.setRepeats(false);
-            restartTimer.start();
-        }
+    // Ir al siguiente servicio
+    siguienteServicio();
+    
+    // Mostrar información de posición
+    if (serviciosSeleccionados.size() > 1) {
+        System.out.println("Servicio actual: " + (indiceActual + 1) + " de " + serviciosSeleccionados.size());
+    }
     }//GEN-LAST:event_btnSiguienteActionPerformed
 
     /**

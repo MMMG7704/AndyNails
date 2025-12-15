@@ -467,7 +467,7 @@ private boolean crearCitaIndividual(String fecha, String hora,
                 .addContainerGap(14, Short.MAX_VALUE))
         );
 
-        jLabel1.setIcon(new javax.swing.ImageIcon("C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\Andynails\\Andynails\\Img\\logo.jpg")); // NOI18N
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Img/logo.jpg"))); // NOI18N
 
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);

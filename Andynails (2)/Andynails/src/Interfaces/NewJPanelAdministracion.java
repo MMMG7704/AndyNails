@@ -525,7 +525,6 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         jMenuItem4 = new javax.swing.JMenuItem();
         jMenu12 = new javax.swing.JMenu();
         jMenuItem8 = new javax.swing.JMenuItem();
-        menuPagoRestante = new javax.swing.JMenuItem();
         jMenu2 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         jMenuItem2 = new javax.swing.JMenuItem();
@@ -906,14 +905,6 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         });
         jMenu12.add(jMenuItem8);
 
-        menuPagoRestante.setText("Pago Restante");
-        menuPagoRestante.addActionListener(new java.awt.event.ActionListener() {
-            public void actionPerformed(java.awt.event.ActionEvent evt) {
-                menuPagoRestanteActionPerformed(evt);
-            }
-        });
-        jMenu12.add(menuPagoRestante);
-
         jMenuBar1.add(jMenu12);
 
         jMenu2.setText("CATALÓGO  ");
@@ -1176,13 +1167,6 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jMenu14MenuSelected
 
-    private void menuPagoRestanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_menuPagoRestanteActionPerformed
-        // TODO add your handling code here:
-        NewJPagoRestante pago = new NewJPagoRestante(this);
-        pago.setVisible(true);
-        this.setVisible(false);
-    }//GEN-LAST:event_menuPagoRestanteActionPerformed
-
     private void jButtonSiguienteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonSiguienteActionPerformed
         // TODO add your handling code here:
         cambiarSemana(1);
@@ -1295,6 +1279,5 @@ public class NewJPanelAdministracion extends javax.swing.JFrame {
     private javax.swing.JTextField jTextField2;
     private javax.swing.JMenuItem jregistrarcliente;
     private javax.swing.JLabel lblFechaHoy;
-    private javax.swing.JMenuItem menuPagoRestante;
     // End of variables declaration//GEN-END:variables
 }
