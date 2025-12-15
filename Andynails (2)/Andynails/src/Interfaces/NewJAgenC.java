@@ -1794,14 +1794,16 @@ private void mostrarServiciosSeleccionados() {
 
         jLabel5.setText("jLabel5");
 
-        btnAnterior.setText("jButton1");
+        btnAnterior.setBackground(new java.awt.Color(255, 204, 255));
+        btnAnterior.setText("Anterior");
         btnAnterior.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnAnteriorActionPerformed(evt);
             }
         });
 
-        btnSiguiente.setText("jButton1");
+        btnSiguiente.setBackground(new java.awt.Color(255, 204, 255));
+        btnSiguiente.setText("Siguiente");
         btnSiguiente.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 btnSiguienteActionPerformed(evt);
