@@ -714,26 +714,31 @@ public class NewJCitaAgenda extends javax.swing.JFrame {
     }//GEN-LAST:event_jMenuItem4ActionPerformed
 
     private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
-        // TODO add your handling code here:
-       String nombreUsuario = SesionUsuario.getNombreUsuario();
-    
-    // Heurística simple basada en el nombre
-    if (nombreUsuario != null && 
-        (nombreUsuario.equalsIgnoreCase("admin") || 
-         nombreUsuario.toLowerCase().contains("recepcion") ||
-         nombreUsuario.equalsIgnoreCase("administrador"))) {
-        // Suponer que es staff
-        NewJPanelAdministracion adminPanel = new NewJPanelAdministracion();
-        adminPanel.setVisible(true);
-    } 
-    else {
-        // Suponer que es cliente
-        NewJAgenC agendarCita = new NewJAgenC();
-        agendarCita.setVisible(true);
+    // Obtener el nombre de usuario de la sesión
+    String nombreUsuario = SesionUsuario.getNombreUsuario();
+
+    if (nombreUsuario != null) {
+        String nombreMinusculas = nombreUsuario.toLowerCase();
+
+        // Si es administrador
+        if (nombreMinusculas.equals("admin") || nombreMinusculas.equals("administrador")) {
+            NewJPanelAdministracion adminPanel = new NewJPanelAdministracion();
+            adminPanel.setVisible(true);
+        } 
+        // Si es recepcionista
+        else if (nombreMinusculas.contains("recep")) {
+            NewJPanelAdministracionRec recepcionPanel = new NewJPanelAdministracionRec();
+            recepcionPanel.setVisible(true);
+        }
+        // Si no es staff, se puede abrir el panel de cliente (opcional)
+        else {
+            //NewJAgenC agendarCita = new NewJAgenC();
+            //agendarCita.setVisible(true);
+        }
+
+        // Cerrar la ventana actual
+        this.dispose();
     }
-    
-    this.dispose();
-    
     }//GEN-LAST:event_btnRegresarActionPerformed
 
     private void btnRegistrarCitaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegistrarCitaActionPerformed
