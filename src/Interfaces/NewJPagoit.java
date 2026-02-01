@@ -1,0 +1,1032 @@
+package Interfaces;
+
+import andynails.ConexionBD;
+import andynails.RedesSociales;
+import andynails.SesionUsuario;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import javax.swing.JFileChooser;
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.filechooser.FileNameExtensionFilter;
+
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/GUIForms/JFrame.java to edit this template
+ */
+/**
+ *
+ * @author User
+ */
+public class NewJPagoit extends javax.swing.JFrame {
+
+    ConexionBD conexion;
+    private File archivoSeleccionado;
+
+    /**
+     * Creates new form NewJCitaConf
+     */
+    public NewJPagoit() {
+        initComponents();
+        RedesSociales.configurarRedesSociales(INS, WPP, FACE);
+
+        conexion = new ConexionBD("andynails");// Inicializo la conexión a la base de datos
+        this.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        debugServiciosEnBD();
+        debugServiciosEnSesion(); // 
+
+        actualizarInterfazConMonto();
+
+    }
+
+    private void actualizarInterfazConMonto() {
+        double montoTotal = SesionUsuario.getMontoTotalCita();
+        String textoTransferencia
+                = "Datos para Transferencia Bancaria:\n"
+                + "Banco: Nombre Banco\n"
+                + "Cuenta CLABE: 012345678901234567\n"
+                + "Titular: Andy Nails\n"
+                + "Referencia: Anticipo + tu nombre completo\n\n"
+                + "MONTO A TRANSFERIR: $" + montoTotal;
+
+        jTextArea1.setText(textoTransferencia);
+        jTextArea1.setEditable(false);
+
+    }
+
+    private int obtenerIdUsuarioActual() {
+        return SesionUsuario.getIdUsuario();
+    }
+
+    private String usuarioActual() {
+        String nombre = SesionUsuario.getNombreUsuario();
+        if (nombre == null || nombre.isEmpty()) {
+            nombre = "usuario_sin_sesion"; // nombre genérico o temporal
+        }
+        return nombre.replaceAll("\\s+", "_");
+    }
+
+    // Para cerrar sesión en cualquier interfaz
+    private void jMenuItemCerrarSesionActionPerformed(java.awt.event.ActionEvent evt) {
+        andynails.SessionManager.cerrarSesion(this);
+    }
+
+// Para obtener datos del usuario
+    private void mostrarInfoUsuario() {
+        String usuario = andynails.SessionManager.getUsuarioLogueado();
+        String tipo = andynails.SessionManager.getTipoUsuario();
+        int id = andynails.SessionManager.getIdUsuario();
+
+        System.out.println("Usuario: " + usuario + ", Tipo: " + tipo + ", ID: " + id);
+    }
+
+    private void debugServiciosEnSesion() {
+        java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+        System.out.println("=== SERVICIOS EN SESIÓN ===");
+        for (Object[] servicio : servicios) {
+            System.out.println("Servicio: " + servicio[1]);
+        }
+        System.out.println("===========================");
+    }
+
+    private void debugServiciosEnBD() {
+        System.out.println("=== DEBUG SERVICIOS EN BD ===");
+        String sql = """
+        SELECT 
+            s.idServicios,
+            s.Nombre_servicio as Servicio,
+            cs.idCategoria_Servicio,
+            cs.Nombre_categoria as Categoria
+        FROM servicios s
+        LEFT JOIN categoria_servicio cs ON s.idServicios = cs.idServicios
+        ORDER BY s.idServicios
+        """;
+
+        try (java.sql.Connection conn = ConexionBD.getConnection(); java.sql.PreparedStatement ps = conn.prepareStatement(sql); java.sql.ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int idServicio = rs.getInt("idServicios");
+                String servicio = rs.getString("Servicio");
+                int idCategoria = rs.getInt("idCategoria_Servicio");
+                String categoria = rs.getString("Categoria");
+
+                System.out.println("Servicio ID: " + idServicio + " | '" + servicio
+                        + "' | Categoría ID: " + idCategoria + " | '" + categoria + "'");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println("=============================");
+    }
+
+    private void guardarComprobanteEnBD(String nombreArchivo) {
+        String sql = "UPDATE Pago SET Comprobante = ?, fecha_pago = NOW() WHERE idUsuarios = ?";
+
+        try (Connection conn = new ConexionBD().getConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            int idUsuario = obtenerIdUsuarioActual(); // viene de la sesión
+            ps.setString(1, nombreArchivo);
+            ps.setInt(2, idUsuario);
+
+            int filas = ps.executeUpdate();
+            if (filas == 0) {
+                JOptionPane.showMessageDialog(this, "No se encontró un registro de pago para este usuario.");
+            } else {
+                System.out.println("Comprobante guardado correctamente en BD.");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al guardar en la base de datos: " + e.getMessage());
+        }
+    }
+
+    // Método para obtener el monto total (debes implementarlo según tu lógica)
+    private double obtenerMontoTotalCita() {
+        return SesionUsuario.getMontoTotalCita(); // Implementa este método en SesionUsuario
+    }
+
+    // MÉTODO NUEVO PARA INSERTAR CITA DESPUÉS DEL PAGO
+private void insertarCitaYServicios(int idPago) {
+    java.util.Map<String, java.util.List<Object[]>> citasAgrupadas = SesionUsuario.getCitasAgrupadas();
+    
+    System.out.println("=== CREANDO CITAS DESDE NewJPagoit ===");
+    System.out.println("Número de citas a crear: " + citasAgrupadas.size());
+    
+    if (citasAgrupadas.isEmpty()) {
+        JOptionPane.showMessageDialog(this,
+                "Error: No hay citas válidas para agendar. " +
+                "Verifica que todos los servicios tengan fecha y hora asignadas.",
+                "Citas incompletas",
+                JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+    
+    int citasCreadas = 0;
+    
+    for (java.util.Map.Entry<String, java.util.List<Object[]>> entrada : citasAgrupadas.entrySet()) {
+        String[] partes = entrada.getKey().split("\\|");
+        String fecha = partes[0];
+        String hora = partes[1];
+        java.util.List<Object[]> serviciosCita = entrada.getValue();
+        
+        System.out.println("Creando cita para " + fecha + " " + hora 
+                + " con " + serviciosCita.size() + " servicios");
+        
+        if (crearCitaIndividual(fecha, hora, serviciosCita, idPago)) {
+            citasCreadas++;
+        }
+    }
+    
+    if (citasCreadas > 0) {
+        JOptionPane.showMessageDialog(this,
+                "¡" + citasCreadas + " cita(s) agendada(s) exitosamente!",
+                "Citas Confirmadas",
+                JOptionPane.INFORMATION_MESSAGE);
+        
+        // Limpiar datos de la sesión
+        SesionUsuario.limpiarDatosCita();
+    } else {
+        JOptionPane.showMessageDialog(this,
+                "No se pudieron crear las citas.",
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+private boolean crearCitaIndividual(String fecha, String hora, 
+                                   java.util.List<Object[]> servicios, int idPago) {
+    java.sql.Connection conn = null;
+    
+    try {
+        conn = ConexionBD.getConnection();
+        conn.setAutoCommit(false);
+        
+        // 1. INSERTAR CITA
+        String sqlCita = "INSERT INTO cita (Fecha, Hora, Estado, idUsuarios, Pago_idPago) " +
+                        "VALUES (?, ?, ?, ?, ?)";
+        java.sql.PreparedStatement psCita = conn.prepareStatement(sqlCita, 
+                java.sql.Statement.RETURN_GENERATED_KEYS);
+        
+        psCita.setDate(1, java.sql.Date.valueOf(fecha));
+        psCita.setTime(2, java.sql.Time.valueOf(hora + ":00"));
+        psCita.setString(3, "Confirmada");
+        psCita.setInt(4, SesionUsuario.getIdUsuario());
+        psCita.setInt(5, idPago);
+        
+        psCita.executeUpdate();
+        java.sql.ResultSet rs = psCita.getGeneratedKeys();
+        int idCita = 0;
+        if (rs.next()) {
+            idCita = rs.getInt(1);
+        }
+        
+        // 2. INSERTAR SERVICIOS DE ESTA CITA
+        String sqlServicios = "INSERT INTO cita_has_servicios (idCita, idServicios, " +
+                             "Pago_idPago, Monto_anticipo) VALUES (?, ?, ?, ?)";
+        java.sql.PreparedStatement psServicios = conn.prepareStatement(sqlServicios);
+        
+        double montoTotal = SesionUsuario.getMontoTotalCita();
+        
+        for (Object[] servicio : servicios) {
+            String descripcion = (String) servicio[1];
+            int idServicio = obtenerIdServicioPorDescripcion(descripcion);
+            
+            if (idServicio > 0) {
+                double precio = 0.0;
+                if (servicio.length > 2 && servicio[2] != null) {
+                    String precioStr = servicio[2].toString().replace("$", "").trim();
+                    try {
+                        precio = Double.parseDouble(precioStr);
+                    } catch (NumberFormatException e) {
+                        precio = montoTotal / servicios.size(); // Dividir el total entre servicios
+                    }
+                }
+                
+                psServicios.setInt(1, idCita);
+                psServicios.setInt(2, idServicio);
+                psServicios.setInt(3, idPago);
+                psServicios.setBigDecimal(4, java.math.BigDecimal.valueOf(precio));
+                psServicios.addBatch();
+            }
+        }
+        
+        psServicios.executeBatch();
+        conn.commit();
+        
+        System.out.println("✓ Cita " + idCita + " creada para " + fecha + " " + hora);
+        return true;
+        
+    } catch (Exception e) {
+        e.printStackTrace();
+        try {
+            if (conn != null) {
+                conn.rollback();
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    } finally {
+        try {
+            if (conn != null) {
+                conn.setAutoCommit(true);
+                conn.close();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+// Método auxiliar para obtener ID de servicio - CORREGIDO
+    private int obtenerIdServicioPorDescripcion(String descripcion) {
+        System.out.println("Buscando ID para: " + descripcion);
+
+        // Mapeo directo de descripciones a IDs de categorías generales
+        java.util.Map<String, Integer> mapeoServicios = new java.util.HashMap<>();
+
+        // Mapear descripciones específicas a categorías generales
+        mapeoServicios.put("uñas", 1);
+        mapeoServicios.put("francesa", 1);
+        mapeoServicios.put("ballerina", 1);
+        mapeoServicios.put("cuadradas", 1);
+        mapeoServicios.put("manicure", 1);
+        mapeoServicios.put("uña", 1);
+
+        mapeoServicios.put("maquillaje", 2);
+        mapeoServicios.put("makeup", 2);
+        mapeoServicios.put("maquillajes", 2);
+
+        mapeoServicios.put("peinado", 3);
+        mapeoServicios.put("peinados", 3);
+        mapeoServicios.put("cabello", 3);
+        mapeoServicios.put("hair", 3);
+
+        mapeoServicios.put("tatuaje", 15);
+        mapeoServicios.put("tatuajes", 15);
+        mapeoServicios.put("tattoo", 15);
+
+        mapeoServicios.put("otros", 16);
+        mapeoServicios.put("otro", 16);
+        mapeoServicios.put("otras", 16);
+
+        // Buscar por coincidencia en el texto
+        String descripcionLower = descripcion.toLowerCase();
+
+        for (String clave : mapeoServicios.keySet()) {
+            if (descripcionLower.contains(clave.toLowerCase())) {
+                int idEncontrado = mapeoServicios.get(clave);
+                System.out.println("Encontrado: '" + descripcion + "' -> Categoría ID: " + idEncontrado);
+                return idEncontrado;
+            }
+        }
+
+        // Si no encuentra, usar categoría "otros" por defecto
+        System.out.println("No se encontró categoría específica para: " + descripcion + ". Usando categoría 'otros' (ID 13)");
+        return 13;
+    }
+// Método de búsqueda alternativa
+
+    private int buscarServicioAlternativo(String descripcion) {
+        java.util.Map<String, Integer> mapeoServicios = new java.util.HashMap<>();
+
+        // Mapeo de descripciones a IDs de servicio
+        mapeoServicios.put("uñas francesa", 1);
+        mapeoServicios.put("francesa", 1);
+        mapeoServicios.put("uñas ballerina", 2);
+        mapeoServicios.put("ballerina", 2);
+        mapeoServicios.put("uñas cuadradas", 3);
+        mapeoServicios.put("cuadradas", 3);
+        mapeoServicios.put("maquillaje", 4);
+        mapeoServicios.put("peinado", 5);
+        mapeoServicios.put("peinados", 5);
+
+        // Buscar por coincidencia parcial
+        for (String clave : mapeoServicios.keySet()) {
+            if (descripcion.toLowerCase().contains(clave.toLowerCase())) {
+                System.out.println("Encontrado por mapeo alternativo: " + descripcion + " -> " + mapeoServicios.get(clave));
+                return mapeoServicios.get(clave);
+            }
+        }
+
+        System.out.println("No se encontró ID para: " + descripcion);
+        return 0;
+    }
+
+    private int buscarCategoriaAlternativa(String descripcion) {
+        int id = 0;
+        String sql = "SELECT idServicios FROM categoria_servicio WHERE Nombre_categoria LIKE ? LIMIT 1";
+
+        try (java.sql.Connection con = conexion.getConexion(); java.sql.PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setString(1, "%" + descripcion + "%");
+            java.sql.ResultSet rs = ps.executeQuery();
+
+            if (rs.next()) {
+                id = rs.getInt("idServicios");
+            } else {
+                // Usar valores por defecto
+                if (descripcion.toLowerCase().contains("uña") || descripcion.contains("Ballerina")
+                        || descripcion.contains("Cuadradas") || descripcion.contains("Francesa")) {
+                    id = 1;
+                } else if (descripcion.toLowerCase().contains("maquillaje")) {
+                    id = 2;
+                } else if (descripcion.toLowerCase().contains("peinado")) {
+                    id = 3;
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return id;
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jPanel4 = new javax.swing.JPanel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
+        jLabel1 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTextArea1 = new javax.swing.JTextArea();
+        jLabel2 = new javax.swing.JLabel();
+        btnEnviarComprobante = new javax.swing.JButton();
+        btnsubirdocumento = new javax.swing.JButton();
+        btnRegresar = new javax.swing.JButton();
+        jMenuBar1 = new javax.swing.JMenuBar();
+        jMenu2 = new javax.swing.JMenu();
+        jMenuItem6 = new javax.swing.JMenuItem();
+        jMenu1 = new javax.swing.JMenu();
+        jMenuItem7 = new javax.swing.JMenuItem();
+        jMenu10 = new javax.swing.JMenu();
+        jMenuItem9 = new javax.swing.JMenuItem();
+        jMenuItem10 = new javax.swing.JMenuItem();
+        jMenuItem11 = new javax.swing.JMenuItem();
+        jMenuItem12 = new javax.swing.JMenuItem();
+        jMenu4 = new javax.swing.JMenu();
+        jMenuItem4 = new javax.swing.JMenuItem();
+        jMenuItem8 = new javax.swing.JMenuItem();
+        jMenu5 = new javax.swing.JMenu();
+        jMenuItem5 = new javax.swing.JMenuItem();
+        jMenu19 = new javax.swing.JMenu();
+        jMenuItemCerrarSecion = new javax.swing.JMenuItem();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jPanel1.setBackground(new java.awt.Color(243, 224, 255));
+
+        jPanel4.setBackground(new java.awt.Color(204, 0, 204));
+
+        INS.setText("INS");
+
+        FACE.setText("FACE");
+
+        WPP.setText("WPP");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(115, 115, 115)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(134, 134, 134)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(123, 123, 123))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
+
+        jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Img/logo.jpg"))); // NOI18N
+
+        jTextArea1.setColumns(20);
+        jTextArea1.setRows(5);
+        jTextArea1.setText("Datos para Transferencia Bancaria:\n Banco: Nombre Banco\n Cuenta CLABE: 012345678901234567\n Titular: Andy Nails\n Referencia: Anticipo + tu nombre completo");
+        jScrollPane1.setViewportView(jTextArea1);
+
+        jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
+        jLabel2.setText("Transferencia bancaria");
+
+        btnEnviarComprobante.setBackground(new java.awt.Color(255, 204, 255));
+        btnEnviarComprobante.setText("Enviar comprobante");
+        btnEnviarComprobante.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEnviarComprobanteActionPerformed(evt);
+            }
+        });
+
+        btnsubirdocumento.setBackground(new java.awt.Color(255, 204, 255));
+        btnsubirdocumento.setText("Subir Documento");
+        btnsubirdocumento.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnsubirdocumentoActionPerformed(evt);
+            }
+        });
+
+        btnRegresar.setBackground(new java.awt.Color(255, 204, 255));
+        btnRegresar.setText("Regresar");
+        btnRegresar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnRegresarActionPerformed(evt);
+            }
+        });
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 222, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(59, 59, 59)
+                                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 257, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(132, 132, 132)
+                                .addComponent(jLabel2)))
+                        .addGap(0, 85, Short.MAX_VALUE))
+                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                        .addGap(138, 138, 138)
+                        .addComponent(btnsubirdocumento)
+                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(72, 72, 72)
+                        .addComponent(btnRegresar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addComponent(btnEnviarComprobante)
+                        .addGap(17, 17, 17))))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addGap(21, 21, 21)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 241, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(8, 8, 8)
+                        .addComponent(jLabel2)
+                        .addGap(18, 18, 18)
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(btnsubirdocumento)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(btnEnviarComprobante)
+                            .addComponent(btnRegresar))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 12, Short.MAX_VALUE)
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+        );
+
+        jMenu2.setText("LOGIN");
+
+        jMenuItem6.setText("jMenuItem6");
+        jMenu2.add(jMenuItem6);
+
+        jMenuBar1.add(jMenu2);
+
+        jMenu1.setText("INICIO");
+        jMenu1.addMenuListener(new javax.swing.event.MenuListener() {
+            public void menuCanceled(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuDeselected(javax.swing.event.MenuEvent evt) {
+            }
+            public void menuSelected(javax.swing.event.MenuEvent evt) {
+                jMenu1MenuSelected(evt);
+            }
+        });
+
+        jMenuItem7.setText("jMenuItem7");
+        jMenu1.add(jMenuItem7);
+
+        jMenuBar1.add(jMenu1);
+
+        jMenu10.setText("CATALÓGO");
+
+        jMenuItem9.setText("Uñas");
+        jMenuItem9.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem9ActionPerformed(evt);
+            }
+        });
+        jMenu10.add(jMenuItem9);
+
+        jMenuItem10.setText("Peinados");
+        jMenuItem10.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem10ActionPerformed(evt);
+            }
+        });
+        jMenu10.add(jMenuItem10);
+
+        jMenuItem11.setText("Maquillaje");
+        jMenuItem11.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem11ActionPerformed(evt);
+            }
+        });
+        jMenu10.add(jMenuItem11);
+
+        jMenuItem12.setText("Otros");
+        jMenuItem12.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem12ActionPerformed(evt);
+            }
+        });
+        jMenu10.add(jMenuItem12);
+
+        jMenuBar1.add(jMenu10);
+
+        jMenu4.setText("AGENDAR CITA");
+
+        jMenuItem4.setText("Agendar cita");
+        jMenuItem4.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem4ActionPerformed(evt);
+            }
+        });
+        jMenu4.add(jMenuItem4);
+
+        jMenuItem8.setText("Cancelar cita");
+        jMenuItem8.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem8ActionPerformed(evt);
+            }
+        });
+        jMenu4.add(jMenuItem8);
+
+        jMenuBar1.add(jMenu4);
+
+        jMenu5.setText("CONTACTO");
+
+        jMenuItem5.setText("Contacto");
+        jMenuItem5.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItem5ActionPerformed(evt);
+            }
+        });
+        jMenu5.add(jMenuItem5);
+
+        jMenuBar1.add(jMenu5);
+
+        jMenu19.setText("CERRAR SESIÓN");
+
+        jMenuItemCerrarSecion.setText("Cerrar sesión");
+        jMenuItemCerrarSecion.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jMenuItemCerrarSecionActionPerformed(evt);
+            }
+        });
+        jMenu19.add(jMenuItemCerrarSecion);
+
+        jMenuBar1.add(jMenu19);
+
+        setJMenuBar(jMenuBar1);
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+        );
+
+        pack();
+    }// </editor-fold>//GEN-END:initComponents
+
+    private void btnsubirdocumentoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnsubirdocumentoActionPerformed
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Seleccionar comprobante de pago");
+        fileChooser.setFileFilter(new FileNameExtensionFilter("PDF, JPG, PNG", "pdf", "jpg", "png"));
+
+        int resultado = fileChooser.showOpenDialog(this);
+        if (resultado == JFileChooser.APPROVE_OPTION) {
+            archivoSeleccionado = fileChooser.getSelectedFile();
+            JOptionPane.showMessageDialog(this, "Archivo seleccionado: " + archivoSeleccionado.getName());
+        }
+    }//GEN-LAST:event_btnsubirdocumentoActionPerformed
+
+    private void btnEnviarComprobanteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEnviarComprobanteActionPerformed
+    if (archivoSeleccionado == null) {
+        JOptionPane.showMessageDialog(this, 
+            "Primero selecciona un archivo de comprobante.",
+            "Archivo requerido", 
+            JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    // VERIFICAR DATOS DE CITAS MÚLTIPLES
+    java.util.List<Object[]> servicios = SesionUsuario.getServiciosCita();
+    
+    System.out.println("\n=== VERIFICACION ANTES DE PAGO ===");
+    System.out.println("Servicios en sesión: " + (servicios != null ? servicios.size() : "null"));
+    
+    // Validación exhaustiva
+    StringBuilder errores = new StringBuilder();
+    int serviciosSinFechaHora = 0;
+    
+    if (servicios == null || servicios.isEmpty()) {
+        errores.append("• No hay servicios seleccionados\n");
+    } else {
+        for (int i = 0; i < servicios.size(); i++) {
+            Object[] servicio = servicios.get(i);
+            String descripcion = (String) servicio[1];
+            String fecha = servicio.length > 3 ? (String) servicio[3] : "";
+            String hora = servicio.length > 4 ? (String) servicio[4] : "";
+            
+            if (fecha == null || fecha.trim().isEmpty() || 
+                hora == null || hora.trim().isEmpty()) {
+                serviciosSinFechaHora++;
+                errores.append("• Servicio '").append(descripcion)
+                       .append("' no tiene fecha/hora asignada\n");
+            }
+        }
+    }
+    
+    double montoTotal = SesionUsuario.getMontoTotalCita();
+    if (montoTotal <= 0) {
+        errores.append("• El monto total debe ser mayor a cero\n");
+    }
+    
+    // Si hay errores, mostrar mensaje detallado
+    if (errores.length() > 0) {
+        String mensaje = "Datos de cita incompletos:\n\n" + errores.toString();
+        if (serviciosSinFechaHora > 0) {
+            mensaje += "\nSolución:\n";
+            mensaje += "1. Regresa a 'Agendar Cita'\n";
+            mensaje += "2. Navega con las flechas del carrusel\n";
+            mensaje += "3. Asigna fecha/hora a cada servicio\n";
+            mensaje += "4. Vuelve a intentar el pago";
+        }
+        
+        JOptionPane.showMessageDialog(this, 
+            mensaje,
+            "Citas incompletas", 
+            JOptionPane.ERROR_MESSAGE);
+        return;
+    }
+
+    // Si llegamos aquí, todos los servicios tienen fecha/hora
+    System.out.println("✓ Todos los servicios tienen fecha/hora asignada");
+    
+    // Obtener citas agrupadas
+    java.util.Map<String, java.util.List<Object[]>> citasAgrupadas = SesionUsuario.getCitasAgrupadas();
+    System.out.println("Citas a crear: " + citasAgrupadas.size());
+    
+    // Mostrar resumen de citas
+    StringBuilder resumen = new StringBuilder();
+    resumen.append("Resumen de citas a crear:\n\n");
+    int contador = 1;
+    for (String clave : citasAgrupadas.keySet()) {
+        String[] partes = clave.split("\\|");
+        String fecha = partes[0];
+        String hora = partes[1];
+        java.util.List<Object[]> serviciosCita = citasAgrupadas.get(clave);
+        
+        resumen.append("Cita ").append(contador).append(":\n");
+        resumen.append("  Fecha: ").append(fecha).append("\n");
+        resumen.append("  Hora: ").append(hora).append("\n");
+        resumen.append("  Servicios: ").append(serviciosCita.size()).append("\n");
+        for (Object[] servicio : serviciosCita) {
+            resumen.append("    - ").append((String) servicio[1]).append("\n"); // CORRECCIÓN AQUÍ
+        }
+        resumen.append("\n");
+        contador++;
+    }
+    
+    System.out.println(resumen.toString());
+    
+    // Continuar con el proceso de pago...
+    String carpetaDestino = "comprobantes";
+    File carpeta = new File(carpetaDestino);
+    if (!carpeta.exists()) {
+        boolean creada = carpeta.mkdirs();
+        if (creada) {
+            System.out.println("Carpeta 'comprobantes' creada");
+        }
+    }
+
+    try {
+        // Generar nombre único para el archivo
+        String timestamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+        String nombreArchivo = usuarioActual() + "_" + timestamp + "_" + archivoSeleccionado.getName();
+        
+        System.out.println("Guardando comprobante: " + nombreArchivo);
+
+        Path destino = Paths.get(carpetaDestino, nombreArchivo);
+        Files.copy(archivoSeleccionado.toPath(), destino, StandardCopyOption.REPLACE_EXISTING);
+        System.out.println("Comprobante guardado en: " + destino.toString());
+
+        // INSERTAR PAGO Y OBTENER EL ID GENERADO
+        try (java.sql.Connection conn = ConexionBD.getConnection()) {
+            String sql = "INSERT INTO pago (idMetodo_Pago, fecha_pago, Estado_pago, Comprobante, Monto, idUsuarios) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
+            java.sql.PreparedStatement ps = conn.prepareStatement(sql, 
+                    java.sql.Statement.RETURN_GENERATED_KEYS);
+
+            ps.setInt(1, 4); // ID método de pago (Transferencia bancaria)
+            ps.setDate(2, new java.sql.Date(System.currentTimeMillis()));
+            ps.setString(3, "Pendiente");
+            ps.setString(4, nombreArchivo);
+            ps.setDouble(5, montoTotal);
+            ps.setInt(6, obtenerIdUsuarioActual());
+
+            int affectedRows = ps.executeUpdate();
+            System.out.println("Pago insertado en BD, filas afectadas: " + affectedRows);
+
+            if (affectedRows == 0) {
+                throw new java.sql.SQLException("No se pudo insertar el pago en la base de datos");
+            }
+
+            // OBTENER EL ID DEL PAGO RECIÉN INSERTADO
+            java.sql.ResultSet generatedKeys = ps.getGeneratedKeys();
+            int idPago = 0;
+            if (generatedKeys.next()) {
+                idPago = generatedKeys.getInt(1);
+                
+                // GUARDAR EL ID DEL PAGO EN LA SESIÓN
+                SesionUsuario.setIdPagoActual(idPago);
+                
+                System.out.println("Pago creado con ID: " + idPago);
+
+                // Mostrar confirmación al usuario
+                JOptionPane.showMessageDialog(this, 
+                    "Comprobante enviado correctamente.\n\n" +
+                    "Archivo: " + nombreArchivo + "\n" +
+                    "Monto: $" + String.format("%.2f", montoTotal) + "\n" +
+                    "Creando " + citasAgrupadas.size() + " cita(s)...",
+                    "Comprobante Aceptado", 
+                    JOptionPane.INFORMATION_MESSAGE);
+
+                // Crear las citas
+                insertarCitaYServicios(idPago);
+                
+
+                // Cerrar esta ventana y abrir Mis Citas
+                NewJMiscitasCi cliWindow = new NewJMiscitasCi();
+                cliWindow.setVisible(true);
+                this.dispose();
+                System.out.println("Ventana de pago cerrada, abriendo Mis Citas");
+
+            } else {
+                throw new java.sql.SQLException("No se pudo obtener el ID del pago generado");
+            }
+        }
+
+    } catch (IOException e) {
+        System.err.println("Error al guardar archivo: " + e.getMessage());
+        JOptionPane.showMessageDialog(this, 
+            "Error al guardar el comprobante:\n\n" + e.getMessage(),
+            "Error de Archivo", 
+            JOptionPane.ERROR_MESSAGE);
+    } catch (java.sql.SQLException e) {
+        System.err.println("Error en base de datos: " + e.getMessage());
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, 
+            "Error al procesar el pago:\n\n" + e.getMessage(),
+            "Error de Base de Datos", 
+            JOptionPane.ERROR_MESSAGE);
+    } catch (Exception e) {
+        System.err.println("Error inesperado: " + e.getMessage());
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, 
+            "Error inesperado:\n\n" + e.getMessage(),
+            "Error", 
+            JOptionPane.ERROR_MESSAGE);
+    }
+
+    }//GEN-LAST:event_btnEnviarComprobanteActionPerformed
+
+    private void jMenuItem5ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem5ActionPerformed
+        // TODO add your handling code here:
+        //boton de contacto
+        NewJContacto NewJContacto = new NewJContacto();
+        NewJContacto.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem5ActionPerformed
+
+    private void jMenuItem4ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem4ActionPerformed
+        // TODO add your handling code here:
+        //agendar cancelar
+        NewJCitaCliente NewJCitaCliente = new NewJCitaCliente();
+        NewJCitaCliente.setVisible(true);
+        this.dispose(); // cierra la actual
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem4ActionPerformed
+
+    private void jMenu1MenuSelected(javax.swing.event.MenuEvent evt) {//GEN-FIRST:event_jMenu1MenuSelected
+        // TODO add your handling code here:
+        //inicio
+        Inicio Inicio = new Inicio();
+        Inicio.setVisible(true);
+        this.dispose(); // cierra la actual
+
+    }//GEN-LAST:event_jMenu1MenuSelected
+
+    private void jMenuItem8ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem8ActionPerformed
+        // TODO add your handling code here:
+        //    NewJCancelarC NewJCancelarC = new NewJCancelarC();
+        //NewJCancelarC.setVisible(true);
+        //this.dispose(); // cierra la actual
+
+    }//GEN-LAST:event_jMenuItem8ActionPerformed
+
+    private void jMenuItem9ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem9ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoUñas NewJCatalogoUñas = new NewJCatalogoUñas();
+        NewJCatalogoUñas.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem9ActionPerformed
+
+    private void jMenuItem10ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem10ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoPeinado NewJCatalogoPeinado = new NewJCatalogoPeinado();
+        NewJCatalogoPeinado.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem10ActionPerformed
+
+    private void jMenuItem11ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem11ActionPerformed
+        // TODO add your handling code here:
+        NewJCatalogoMaq NewJCatalogoMaq = new NewJCatalogoMaq();
+        NewJCatalogoMaq.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem11ActionPerformed
+
+    private void jMenuItem12ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItem12ActionPerformed
+        // TODO add your handling code here:
+        ConexionBD conexionCatalogo = new ConexionBD("andynails");
+        NewJCatalogoGenerico catalogo = new NewJCatalogoGenerico(conexionCatalogo);
+        catalogo.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_jMenuItem12ActionPerformed
+
+    private void btnRegresarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnRegresarActionPerformed
+        // TODO add your handling code here:
+          NewJCitaConf NewJAgendarcita = new NewJCitaConf();
+        NewJAgendarcita.setVisible(true);
+        this.dispose(); // cierra la actual
+    }//GEN-LAST:event_btnRegresarActionPerformed
+
+    private void jMenuItemCerrarSecionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jMenuItemCerrarSecionActionPerformed
+        // TODO add your handling code here:
+        andynails.SessionManager.cerrarSesion(this);
+    }//GEN-LAST:event_jMenuItemCerrarSecionActionPerformed
+
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(NewJPagoit.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(NewJPagoit.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(NewJPagoit.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(NewJPagoit.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new NewJPagoit().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JLabel FACE;
+    private javax.swing.JLabel INS;
+    private javax.swing.JLabel WPP;
+    private javax.swing.JButton btnEnviarComprobante;
+    private javax.swing.JButton btnRegresar;
+    private javax.swing.JButton btnsubirdocumento;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JMenu jMenu1;
+    private javax.swing.JMenu jMenu10;
+    private javax.swing.JMenu jMenu19;
+    private javax.swing.JMenu jMenu2;
+    private javax.swing.JMenu jMenu4;
+    private javax.swing.JMenu jMenu5;
+    private javax.swing.JMenuBar jMenuBar1;
+    private javax.swing.JMenuItem jMenuItem10;
+    private javax.swing.JMenuItem jMenuItem11;
+    private javax.swing.JMenuItem jMenuItem12;
+    private javax.swing.JMenuItem jMenuItem4;
+    private javax.swing.JMenuItem jMenuItem5;
+    private javax.swing.JMenuItem jMenuItem6;
+    private javax.swing.JMenuItem jMenuItem7;
+    private javax.swing.JMenuItem jMenuItem8;
+    private javax.swing.JMenuItem jMenuItem9;
+    private javax.swing.JMenuItem jMenuItemCerrarSecion;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel4;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTextArea jTextArea1;
+    // End of variables declaration//GEN-END:variables
+}

@@ -1,0 +1,33 @@
+# NetBeans
+nbproject/private/
+build/
+dist/
+nbbuild/
+nbdist/
+
+# Archivos compilados
+*.class
+*.jar
+
+# Base de datos local
+*.db
+
+# Configuraciones personales
+*.properties
+
+# Logs
+*.log
+logs/
+
+# Temporales
+*.tmp
+*.temp
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.iml
+.vscode/
