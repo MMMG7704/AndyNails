@@ -405,8 +405,8 @@ public class Inicio extends javax.swing.JFrame {
     }
 
     private void iniciarCarruseles() {
-        java.util.List<String> imagenesUnas = cargarImagenes("C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\PROYECTOANDYNAILSCO\\Andynails (2)\\Andynails\\src\\Img\\unas");
-        java.util.List<String> imagenesMaquillaje = cargarImagenes("C:\\Users\\mgmmo\\Documents\\7SEMESTRE\\INGENIERIASOF\\PROYECTOANDYNAILSCO\\Andynails (2)\\Andynails\\src\\Img\\Maquillaje");
+        java.util.List<String> imagenesUnas = cargarImagenes("C:\\Users\\mgmmo\\Desktop\\Andy_Nails\\Andy_Nails\\src\\Img\\unas");
+        java.util.List<String> imagenesMaquillaje = cargarImagenes("C:\\Users\\mgmmo\\Desktop\\Andy_Nails\\Andy_Nails\\src\\Img\\Maquillaje");
 
         System.out.println("Imágenes uñas cargadas: " + imagenesUnas.size());
         System.out.println("Imágenes maquillaje cargadas: " + imagenesMaquillaje.size());

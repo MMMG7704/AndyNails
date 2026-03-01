@@ -28,10 +28,18 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     ConexionBD conexion;
     private int idCita = -1;
+     //Variables de prueba A/B
+    private boolean esVersionB;
+    private static int vistasA = 0;
+    private static int vistasB = 0;
+    private static int conversionesA = 0;
+    private static int conversionesB = 0;
+    
     private String categoriaSeleccionada;
 
     public NewJAgendarcitaREC(int idCita) {
         initComponents();
+            inicializarAB();
         setLocationRelativeTo(null);
 
         conexion = new ConexionBD();
@@ -69,6 +77,8 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     public NewJAgendarcitaREC(JFrame ventanaAnterior) {
         initComponents();
+         asignarVarianteAB();
+            inicializarAB();
         this.ventanaAnterior = ventanaAnterior;
 
         setLocationRelativeTo(null);
@@ -79,9 +89,28 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         cargarHoras();
         generarNumeroCitaAutomatico();
     }
+    
+    
+        
+    //metodo donde va a decidir el mensaje que se va a postrar para la prueba 
+    private void asignarVarianteAB() {
+    java.util.Random random = new java.util.Random();
+    esVersionB = random.nextBoolean(); // porcentaje a quien va dirijido 
+
+    if (esVersionB) {
+        jButton2.setText("Confirmar y agendar cita"); // Versión B
+        vistasB++;
+    } else {
+        jButton2.setText("Guardar cita"); // Versión A (control),este mensaje es el orginal del boton antes de las pruebas 
+        vistasA++;
+    }
+}
+    
 
     public NewJAgendarcitaREC() {
         initComponents();
+         asignarVarianteAB();
+            inicializarAB();
         setLocationRelativeTo(null);
 
         conexion = new ConexionBD();
@@ -100,6 +129,11 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         jLabelImagen.setText("Seleccione un servicio y categoría");
 
     }
+    
+      private void inicializarAB() {
+    asignarVarianteAB();
+    System.out.println("VARIANTE MOSTRADA: " + (esVersionB ? "B" : "A"));
+}
 
     private void cargarClientes() {
         try (Connection con = conexion.conectar()) {
@@ -1762,13 +1796,24 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
 
-        // Determinar si estamos creando o editando una cita
-        if (idCita > 0) {
-            actualizarCitaEditar();
-        } else {
-            registrarCitaNueva();
-        }
+    // Registrar conversión según variante
+    if (esVersionB) {
+        conversionesB++;
+    } else {
+        conversionesA++;
+    }
 
+    // Determinar si estamos creando o editando una cita
+    if (idCita > 0) {
+        actualizarCitaEditar();
+    } else {
+        registrarCitaNueva();
+    }
+
+    // Mostrar estadísticas
+    System.out.println("RESULTADOS A/B:");
+    System.out.println("Vistas A: " + vistasA + " | Conversiones A: " + conversionesA);
+    System.out.println("Vistas B: " + vistasB + " | Conversiones B: " + conversionesB);
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jComboBox3horaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3horaActionPerformed

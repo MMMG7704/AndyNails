@@ -27,8 +27,18 @@ public class NewJAgendarcita extends javax.swing.JFrame {
     ConexionBD conexion;
     private int idCita = -1;
 
+    //Variables de prueba A/B
+    private boolean esVersionB;
+    private static int vistasA = 0;
+    private static int vistasB = 0;
+    private static int conversionesA = 0;
+    private static int conversionesB = 0;
+    
+
     public NewJAgendarcita(int idCita) {
         initComponents();
+        asignarVarianteAB();
+            inicializarAB();
         RedesSociales.configurarRedesSociales(INS, WPP, FACE);
 
         setLocationRelativeTo(null);
@@ -46,8 +56,16 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
     private JFrame ventanaAnterior;
 
+    private void inicializarAB() {
+    asignarVarianteAB();
+    System.out.println("VARIANTE MOSTRADA: " + (esVersionB ? "B" : "A"));
+}
+    
     public NewJAgendarcita(JFrame ventanaAnterior) {
         initComponents();
+        asignarVarianteAB();  
+        inicializarAB(); 
+
         this.ventanaAnterior = ventanaAnterior;
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
@@ -61,6 +79,10 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
     public NewJAgendarcita() {
         initComponents();
+        //asignacion de nuestra variable A/B
+        asignarVarianteAB();
+            inicializarAB(); 
+
         setLocationRelativeTo(null);
         conexion = new ConexionBD();
         jLabel1.setText("REGISTRAR NUEVA CITA");
@@ -80,6 +102,21 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         generarNumeroCitaAutomatico();
     }
 
+    
+    //metodo donde va a decidir el mensaje que se va a postrar para la prueba 
+    private void asignarVarianteAB() {
+    java.util.Random random = new java.util.Random();
+    esVersionB = random.nextBoolean(); // porcentaje a quien va dirijido 
+
+    if (esVersionB) {
+        jButton2.setText("Confirmar y agendar cita"); // Versión B
+        vistasB++;
+    } else {
+        jButton2.setText("Guardar cita"); // Versión A (control),este mensaje es el orginal del boton antes de las pruebas 
+        vistasA++;
+    }
+}
+    
     private void cargarClientes() {
         try (Connection con = conexion.conectar()) {
             if (con == null) {
@@ -925,7 +962,6 @@ public class NewJAgendarcita extends javax.swing.JFrame {
         jLabel2.setText("CITA ");
 
         jButton2.setBackground(new java.awt.Color(255, 204, 255));
-        jButton2.setText("Guardar cita");
         jButton2.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 jButton2ActionPerformed(evt);
@@ -1113,7 +1149,7 @@ public class NewJAgendarcita extends javax.swing.JFrame {
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel17)
                             .addComponent(jLabel18)
-                            .addComponent(jButton2)
+                            .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 23, javax.swing.GroupLayout.PREFERRED_SIZE)
                             .addComponent(btnRegresar))
                         .addGap(31, 31, 31)
                         .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
@@ -1235,16 +1271,34 @@ public class NewJAgendarcita extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
 
-        // Determinar si estamos creando o editando una cita
-        if (idCita > 0) {
-            actualizarCita();
-        } else {
-            registrarCitaNueva();
-        }
-        NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
-        NewJPanelAdministracion.setVisible(true);
-        this.dispose(); // cierra la actual
+    boolean exito = false; // para registrar conversión
 
+    // Determinar si estamos creando o editando una cita
+    if (idCita > 0) {
+        actualizarCita();
+        exito = true;
+    } else {
+        registrarCitaNueva();
+        exito = true;
+    }
+
+    // contador para las conversiones de A/B
+    if (exito) {
+        if (esVersionB) {
+            conversionesB++;
+        } else {
+            conversionesA++;
+        }
+    }
+
+    // Mostrar resultados en consola (para ver el resulatdo de las pruebas)
+    System.out.println(" RESULTADOS A/B ");
+    System.out.println("Vistas A: " + vistasA + " | Conversiones A: " + conversionesA);
+    System.out.println("Vistas B: " + vistasB + " | Conversiones B: " + conversionesB);
+
+    NewJPanelAdministracion NewJPanelAdministracion = new NewJPanelAdministracion();
+    NewJPanelAdministracion.setVisible(true);
+    this.dispose(); 
 
     }//GEN-LAST:event_jButton2ActionPerformed
 

@@ -128,7 +128,6 @@ public class NewJCatalogoPeinado extends javax.swing.JFrame {
                 c.precio = precio;
                 c.nombre = nombre;
 
-                // 🔹 Clasificación automática
                 switch (nombre.toLowerCase().trim()) {
                     case "boda":
                     case "maquillaje boda":
