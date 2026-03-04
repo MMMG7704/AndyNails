@@ -28,18 +28,19 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     ConexionBD conexion;
     private int idCita = -1;
-     //Variables de prueba A/B
-    private boolean esVersionB;
+    //Variables de prueba A/B
+    private static Boolean esVersionBGlobal = null;
+    private boolean esVersionB; //Feature Flag
     private static int vistasA = 0;
     private static int vistasB = 0;
     private static int conversionesA = 0;
     private static int conversionesB = 0;
-    
+
     private String categoriaSeleccionada;
 
     public NewJAgendarcitaREC(int idCita) {
         initComponents();
-            inicializarAB();
+        inicializarAB();
         setLocationRelativeTo(null);
 
         conexion = new ConexionBD();
@@ -77,8 +78,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     public NewJAgendarcitaREC(JFrame ventanaAnterior) {
         initComponents();
-         asignarVarianteAB();
-            inicializarAB();
+        inicializarAB();
         this.ventanaAnterior = ventanaAnterior;
 
         setLocationRelativeTo(null);
@@ -89,28 +89,25 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         cargarHoras();
         generarNumeroCitaAutomatico();
     }
-    
-    
-        
+
+
     //metodo donde va a decidir el mensaje que se va a postrar para la prueba 
     private void asignarVarianteAB() {
-    java.util.Random random = new java.util.Random();
-    esVersionB = random.nextBoolean(); // porcentaje a quien va dirijido 
+        java.util.Random random = new java.util.Random();
+        esVersionB = random.nextBoolean(); // porcentaje a quien va dirijido 
 
-    if (esVersionB) {
-        jButton2.setText("Confirmar y agendar cita"); // Versión B
-        vistasB++;
-    } else {
-        jButton2.setText("Guardar cita"); // Versión A (control),este mensaje es el orginal del boton antes de las pruebas 
-        vistasA++;
+        if (esVersionB) {
+            jButton2.setText("Confirmar y agendar cita"); // Versión B
+            vistasB++;
+        } else {
+            jButton2.setText("Guardar cita"); // Versión A (control),este mensaje es el orginal del boton antes de las pruebas 
+            vistasA++;
+        }
     }
-}
-    
 
     public NewJAgendarcitaREC() {
         initComponents();
-         asignarVarianteAB();
-            inicializarAB();
+        inicializarAB();
         setLocationRelativeTo(null);
 
         conexion = new ConexionBD();
@@ -129,10 +126,82 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         jLabelImagen.setText("Seleccione un servicio y categoría");
 
     }
-    
-      private void inicializarAB() {
-    asignarVarianteAB();
-    System.out.println("VARIANTE MOSTRADA: " + (esVersionB ? "B" : "A"));
+
+private void inicializarAB() {
+
+    int totalVistas = vistasA + vistasB;
+    esVersionB = (totalVistas % 2 != 0);
+    // false = A (original)
+    // true  = B (experimental)
+
+    if (esVersionB) {
+
+        // version B 
+        jButton2.setText("Confirmar y agendar cita");
+        jButton2.setBackground(new java.awt.Color(255,153,255));
+
+        btnRegresar.setVisible(false);
+
+        lblRegresar.setVisible(true);
+
+        vistasB++;
+
+    } else {
+
+        // version A
+        jButton2.setText("Guardar cita");
+        jButton2.setBackground(new java.awt.Color(255, 204, 255));
+
+        btnRegresar.setVisible(true);
+
+        lblRegresar.setVisible(false);
+
+        vistasA++;
+    }
+
+    System.out.println("VARIANTE MOSTRADA: " + 
+        (esVersionB ? "B (PRUEBA)" : "A (ORIGINAL)"));
+     mostrarEstadisticasAB();
+}
+
+
+private void mostrarEstadisticasAB() {
+
+    int totalVistas = vistasA + vistasB;
+    int totalConversiones = conversionesA + conversionesB;
+
+    double tasaA = (vistasA > 0) ? (conversionesA * 100.0 / vistasA) : 0;
+    double tasaB = (vistasB > 0) ? (conversionesB * 100.0 / vistasB) : 0;
+
+    System.out.println("\n  Monitoreo de pruebas A/B");
+
+    System.out.println("Version A:");
+    System.out.println("Vistas: " + vistasA);
+    System.out.println("Conversiones: " + conversionesA);
+    System.out.println("Tasa de conversion: " + String.format("%.2f", tasaA) + "%");
+
+    System.out.println("\nVersion B:");
+    System.out.println("Vistas: " + vistasB);
+    System.out.println("Conversiones: " + conversionesB);
+    System.out.println("Tasa de conversion: " + String.format("%.2f", tasaB) + "%");
+
+    System.out.println("\nTotales:");
+    System.out.println("Total vistas: " + totalVistas);
+    System.out.println("Total conversiones: " + totalConversiones);
+
+    if (totalVistas < 10) {
+        System.out.println("No hay suficientes datos para una conclusion.");
+    } else {
+        if (tasaA > tasaB) {
+            System.out.println("Mejor version: Version A");
+        } else if (tasaB > tasaA) {
+            System.out.println("Mejor version: Version B");
+        } else {
+            System.out.println("Hay empate entre ambas versiones.");
+        }
+    }
+
+    System.out.println("\n");
 }
 
     private void cargarClientes() {
@@ -547,7 +616,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         return idUsuario;
     }
-    
+
 //pago temporal
     private void insertarServicio(int idCita, String nombreServicio, String nombreCategoria) {
         // Obtener el ID del cliente seleccionado
@@ -1396,15 +1465,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }
 
-//private void debugInformacion() {
-    //  System.out.println("=== DEBUG ===");
-    //System.out.println("Cliente seleccionado: " + jComboBoxnombrecliente.getSelectedItem());
-    //System.out.println("Servicio seleccionado: " + jComboBox1servicios.getSelectedItem());
-    //System.out.println("Categoría seleccionada: " + jComboBox1diseñoselecionado.getSelectedItem());
-    //System.out.println("Categoría guardada: " + categoriaSeleccionada);
-    //System.out.println("ID Cita: " + idCita);
-    //System.out.println("=== FIN DEBUG ===");
-//}
+
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -1415,10 +1476,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanel1 = new javax.swing.JPanel();
-        jPanel4 = new javax.swing.JPanel();
-        INS = new javax.swing.JLabel();
-        FACE = new javax.swing.JLabel();
-        WPP = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         jButton2 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
@@ -1444,6 +1501,11 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         jLabel13 = new javax.swing.JLabel();
         jComboBox1diseñoselecionado = new javax.swing.JComboBox<>();
         jLabelImagen = new javax.swing.JLabel();
+        lblRegresar = new javax.swing.JLabel();
+        jPanel4 = new javax.swing.JPanel();
+        INS = new javax.swing.JLabel();
+        FACE = new javax.swing.JLabel();
+        WPP = new javax.swing.JLabel();
         jMenuBar1 = new javax.swing.JMenuBar();
         jMenu4 = new javax.swing.JMenu();
         jMenu5 = new javax.swing.JMenu();
@@ -1458,38 +1520,6 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jPanel1.setBackground(new java.awt.Color(243, 224, 255));
-
-        jPanel4.setBackground(new java.awt.Color(204, 0, 204));
-
-        INS.setText("INS");
-
-        FACE.setText("FACE");
-
-        WPP.setText("WPP");
-
-        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
-        jPanel4.setLayout(jPanel4Layout);
-        jPanel4Layout.setHorizontalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(115, 115, 115)
-                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(190, 190, 190)
-                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(79, 79, 79))
-        );
-        jPanel4Layout.setVerticalGroup(
-            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel4Layout.createSequentialGroup()
-                .addGap(14, 14, 14)
-                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(INS)
-                    .addComponent(WPP)
-                    .addComponent(FACE))
-                .addContainerGap(14, Short.MAX_VALUE))
-        );
 
         jLabel2.setFont(new java.awt.Font("Serif", 3, 14)); // NOI18N
         jLabel2.setText("CITA ");
@@ -1575,6 +1605,48 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
         jLabelImagen.setText("jLabel3");
 
+        lblRegresar.setFont(new java.awt.Font("Segoe UI", 0, 36)); // NOI18N
+        lblRegresar.setForeground(new java.awt.Color(153, 0, 153));
+        lblRegresar.setText("←");
+        lblRegresar.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+        lblRegresar.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                lblRegresarMouseClicked(evt);
+            }
+        });
+
+        jPanel4.setBackground(new java.awt.Color(204, 0, 204));
+
+        INS.setText("INS");
+
+        FACE.setText("FACE");
+
+        WPP.setText("WPP");
+
+        javax.swing.GroupLayout jPanel4Layout = new javax.swing.GroupLayout(jPanel4);
+        jPanel4.setLayout(jPanel4Layout);
+        jPanel4Layout.setHorizontalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(115, 115, 115)
+                .addComponent(INS, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(190, 190, 190)
+                .addComponent(WPP, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(FACE, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(134, 134, 134))
+        );
+        jPanel4Layout.setVerticalGroup(
+            jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel4Layout.createSequentialGroup()
+                .addGap(14, 14, 14)
+                .addGroup(jPanel4Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(INS)
+                    .addComponent(WPP)
+                    .addComponent(FACE))
+                .addContainerGap(14, Short.MAX_VALUE))
+        );
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -1599,54 +1671,54 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                                                 .addGap(18, 18, 18)
                                                 .addComponent(chkno))
                                             .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, 85, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                                .addComponent(jLabel18)
-                                                .addGap(133, 133, 133)
-                                                .addComponent(btnRegresar)
-                                                .addGap(18, 18, 18)
-                                                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 105, javax.swing.GroupLayout.PREFERRED_SIZE))))))
+                                            .addComponent(jLabel18)))))
                             .addGroup(jPanel1Layout.createSequentialGroup()
                                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
-                                            .addGroup(jPanel1Layout.createSequentialGroup()
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(jLabel8)
-                                                    .addComponent(jLabel5))
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                    .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                            .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addComponent(jLabel1)
-                                                    .addComponent(jLabel11)
-                                                    .addComponent(jLabel12))
-                                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                                        .addGap(74, 74, 74)
-                                                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                                            .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                            .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))
-                                                    .addGroup(jPanel1Layout.createSequentialGroup()
-                                                        .addGap(18, 18, 18)
-                                                        .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 343, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                    .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                                         .addGroup(jPanel1Layout.createSequentialGroup()
-                                            .addComponent(jLabel4)
-                                            .addGap(33, 33, 33)
-                                            .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addComponent(jLabel8)
+                                                .addComponent(jLabel5))
+                                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addComponent(txtnumerocita, javax.swing.GroupLayout.PREFERRED_SIZE, 364, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                .addComponent(jComboBox1servicios, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                        .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
+                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addComponent(jLabel1)
+                                                .addComponent(jLabel11)
+                                                .addComponent(jLabel12))
+                                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                .addGroup(jPanel1Layout.createSequentialGroup()
+                                                    .addGap(74, 74, 74)
+                                                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                                        .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 243, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                                        .addComponent(lblCorreo, javax.swing.GroupLayout.PREFERRED_SIZE, 185, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                                .addGroup(jPanel1Layout.createSequentialGroup()
+                                                    .addGap(18, 18, 18)
+                                                    .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, 343, javax.swing.GroupLayout.PREFERRED_SIZE)))))
                                     .addGroup(jPanel1Layout.createSequentialGroup()
                                         .addComponent(jLabel13)
                                         .addGap(18, 18, 18)
                                         .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                                         .addGap(280, 280, 280)))
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(26, 26, 26))))
+                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(lblRegresar, javax.swing.GroupLayout.PREFERRED_SIZE, 37, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(235, 235, 235)
+                                        .addComponent(btnRegresar))
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jLabel4)
+                                        .addGap(33, 33, 33)
+                                        .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 305, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                                .addGap(164, 164, 164)
+                                .addComponent(jButton2, javax.swing.GroupLayout.PREFERRED_SIZE, 260, javax.swing.GroupLayout.PREFERRED_SIZE))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(347, 347, 347)
                         .addComponent(jLabel2)))
-                .addContainerGap(66, Short.MAX_VALUE))
+                .addContainerGap(208, Short.MAX_VALUE))
             .addComponent(jPanel4, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         jPanel1Layout.setVerticalGroup(
@@ -1654,13 +1726,13 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel2)
-                .addGap(46, 46, 46)
+                .addGap(18, 18, 18)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel1)
                             .addComponent(jComboBoxnombrecliente, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(25, 25, 25)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel11)
                             .addComponent(lblTelefono, javax.swing.GroupLayout.PREFERRED_SIZE, 16, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -1681,19 +1753,17 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel13)
                             .addComponent(jComboBox1diseñoselecionado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGap(72, 72, 72)
-                        .addComponent(jLabel4)
-                        .addGap(0, 0, Short.MAX_VALUE))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                                .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED))
+                                .addGap(72, 72, 72)
+                                .addComponent(jLabel4))
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addGap(41, 41, 41)
-                                .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 58, Short.MAX_VALUE)))
+                                .addGap(19, 19, 19)
+                                .addComponent(CalCitas, javax.swing.GroupLayout.PREFERRED_SIZE, 194, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(41, 41, 41)
+                        .addComponent(jLabelImagen, javax.swing.GroupLayout.PREFERRED_SIZE, 237, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 37, Short.MAX_VALUE)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel15)
                             .addComponent(jComboBox3hora, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
@@ -1705,11 +1775,15 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
                         .addGap(18, 18, 18)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                             .addComponent(jLabel17)
-                            .addComponent(jLabel18)
-                            .addComponent(jButton2)
-                            .addComponent(btnRegresar))
-                        .addGap(31, 31, 31)
-                        .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                            .addComponent(jLabel18))))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(lblRegresar)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(btnRegresar)
+                        .addComponent(jButton2)))
+                .addGap(38, 38, 38)
+                .addComponent(jPanel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
 
         jMenu4.setText("INICIO");
@@ -1782,13 +1856,13 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(0, 0, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(jPanel1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(0, 0, Short.MAX_VALUE))
         );
 
         pack();
@@ -1796,24 +1870,24 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
 
     private void jButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButton2ActionPerformed
 
-    // Registrar conversión según variante
-    if (esVersionB) {
-        conversionesB++;
-    } else {
-        conversionesA++;
-    }
+        // Registrar conversión según variante
+        if (esVersionB) {
+            conversionesB++;
+        } else {
+            conversionesA++;
+        }
 
-    // Determinar si estamos creando o editando una cita
-    if (idCita > 0) {
-        actualizarCitaEditar();
-    } else {
-        registrarCitaNueva();
-    }
+        // Determinar si estamos creando o editando una cita
+        if (idCita > 0) {
+            actualizarCitaEditar();
+        } else {
+            registrarCitaNueva();
+        }
 
-    // Mostrar estadísticas
-    System.out.println("RESULTADOS A/B:");
-    System.out.println("Vistas A: " + vistasA + " | Conversiones A: " + conversionesA);
-    System.out.println("Vistas B: " + vistasB + " | Conversiones B: " + conversionesB);
+        // Mostrar estadísticas
+        System.out.println("RESULTADOS A/B:");
+        System.out.println("Vistas A: " + vistasA + " | Conversiones A: " + conversionesA);
+        System.out.println("Vistas B: " + vistasB + " | Conversiones B: " + conversionesB);
     }//GEN-LAST:event_jButton2ActionPerformed
 
     private void jComboBox3horaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jComboBox3horaActionPerformed
@@ -1934,6 +2008,21 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
         }
     }//GEN-LAST:event_jComboBox1diseñoselecionadoActionPerformed
 
+    private void lblRegresarMouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_lblRegresarMouseClicked
+        // TODO add your handling code here:
+                // TODO add your handling code here:
+          try {
+            NewJCitaAgenda agendar = new NewJCitaAgenda();
+            agendar.setVisible(true);
+            this.dispose();
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this,
+                "Error al regresar: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }//GEN-LAST:event_lblRegresarMouseClicked
+
     private void CalCitasPropertyChange(java.beans.PropertyChangeEvent evt) {
         if ("calendar".equals(evt.getPropertyName())) {
             Date fechaSeleccionada = obtenerFechaSeleccionada(); // Cambia esta línea
@@ -2021,6 +2110,7 @@ public class NewJAgendarcitaREC extends javax.swing.JFrame {
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel4;
     private javax.swing.JLabel lblCorreo;
+    private javax.swing.JLabel lblRegresar;
     private javax.swing.JLabel lblTelefono;
     private javax.swing.JMenuItem menuAgendaCitas;
     private javax.swing.JMenuItem menuAgendarCita;
